@@ -54,7 +54,7 @@ export default function AlgoTradingLovableUI() {
       form.append("prompt", currentInput);
       form.append("email", email);
       
-      const res = await fetch("http://127.0.0.1:8000/api/autocomplete", {
+      const res = await fetch("https://richacle.onrender.com/api/autocomplete", {
         method: "POST",
         body: form,
       });
@@ -91,7 +91,7 @@ export default function AlgoTradingLovableUI() {
 
   const fetchStrategies = async (userEmail: string) => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/user/${userEmail}`);
+      const res = await fetch(`https://richacle.onrender.com/user/${userEmail}`);
       const data = await res.json();
       setStrategies(data.strategies || []);
     } catch (e) {
@@ -130,7 +130,7 @@ export default function AlgoTradingLovableUI() {
       form.append("input", input);
       if (editingStrat) form.append("id", editingStrat.id);
 
-      const res = await fetch("http://127.0.0.1:8000/api/strategy", {
+      const res = await fetch("https://richacle.onrender.com/api/strategy", {
         method: "POST",
         body: form,
       });
@@ -167,7 +167,7 @@ export default function AlgoTradingLovableUI() {
       form.append("strategyId", stratId);
       form.append("mode", mode);
 
-      const res = await fetch("http://127.0.0.1:8000/api/deploy", {
+      const res = await fetch("https://richacle.onrender.com/api/deploy", {
         method: "POST",
         body: form,
       });

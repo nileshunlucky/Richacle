@@ -97,7 +97,7 @@ useEffect(() => {
   if (!email) return;
   const fetchStrategies = async () => {
     try {
-      const res = await fetch(`http://127.0.0.1:8000/user/${email}`);
+      const res = await fetch(`https://richacle.onrender.com/user/${email}`);
       const data = await res.json();
 
       setTerminal(data?.terminal);
@@ -156,7 +156,7 @@ useEffect(() => {
   form.append("toggle", String(next));
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/terminal", {
+    const res = await fetch("https://richacle.onrender.com/api/terminal", {
       method: "POST",
       body: form,
     });
@@ -184,7 +184,7 @@ const toggleEngine = async () => {
   form.append("toggle", String(next));
 
   try {
-    const res = await fetch("http://127.0.0.1:8000/api/engine", {
+    const res = await fetch("https://richacle.onrender.com/api/engine", {
       method: "POST",
       body: form,
     });
@@ -209,7 +209,7 @@ const handleStop = async (id: string) => {
     form.append("email", email);
     form.append("strategyId", id);
 
-    const res = await fetch(`http://127.0.0.1:8000/api/stop`, {
+    const res = await fetch(`https://richacle.onrender.com/api/stop`, {
       method: "POST",
       body: form,
     });
@@ -234,7 +234,7 @@ const handleSquareOFF = async (id: string) => {
     form.append("email", email);
     form.append("strategyId", id);
 
-    const res = await fetch(`http://127.0.0.1:8000/api/squareoff`, {
+    const res = await fetch(`https://richacle.onrender.com/api/squareoff`, {
       method: "POST",
       body: form,
     });
@@ -272,7 +272,7 @@ const handleSquareOFF = async (id: string) => {
       form.append("apiKey", apiKey);
       form.append("apiSecret", apiSecret);
 
-      const res = await fetch("http://127.0.0.1:8000/api/binance", {
+      const res = await fetch("https://richacle.onrender.com/api/binance", {
         method: "POST",
         body: form,
       });
@@ -300,7 +300,7 @@ const handleSquareOFF = async (id: string) => {
       form.append("strategyId", id);
       form.append("mode", mode);
 
-      const res = await fetch("http://127.0.0.1:8000/api/deploy", {
+      const res = await fetch("https://richacle.onrender.com/api/deploy", {
         method: "POST",
         body: form,
       });

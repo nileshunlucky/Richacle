@@ -1,6 +1,11 @@
 ccxt
 pandas
 numpy
-requests
 pymongo
 python-dotenv
+gunicorn
+fastapi
+pydantic
+openai
+requests
+uvicorn
