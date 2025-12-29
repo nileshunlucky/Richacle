@@ -199,7 +199,7 @@ export default function AlgoTradingLovableUI() {
 
       toast.success(`Algo deployed: ${mode}`)
     } catch (e) {
-      toast.error("Something went wrong", e);
+      toast.error("Something went wrong");
     }
   };
 
