@@ -20,7 +20,6 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
 
-
 // --- Components ---
 
 const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
@@ -52,6 +51,16 @@ const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, o
   </div>
 )
 
+interface Strategy {
+  id: string;
+  name: string;
+  status: string;
+  input?: string;
+  last_error?: string;
+  live_pnl?: number | string;
+  paper_pnl?: number | string;
+}
+
 // --- Main Page ---
 
 export default function Dashboard() {
@@ -65,7 +74,7 @@ export default function Dashboard() {
   const [totalPnl, setTotalPnl] = useState(0)
   const [strategiesPerf, setStrategiesPerf] = useState(0)
   const [mode, setMode] = useState<string | null>(null)
-  const [strategies, setStrategies] = useState([]);
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
 
   const router = useRouter();
 
@@ -323,7 +332,7 @@ const handleSquareOFF = async (id: string) => {
 
       toast.success(`Algo deployed: ${mode}`)
       setStrategies(prev => prev.map(s => s.id === id ? { ...s, status: "running" } : s));
-      setMod("")
+      setMode(null);
     } catch (e) {
       toast.error("Something went wrong", e);
       console.log(e)
