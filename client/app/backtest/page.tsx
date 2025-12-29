@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabaseClient";
@@ -29,7 +29,7 @@ interface Strategy {
   code: string;
 }
 
-export default function BacktestUI() {
+function BacktestContent() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [selectedStrat, setSelectedStrat] = useState<Strategy | null>(null);
   const [loading, setLoading] = useState(false);
@@ -263,6 +263,19 @@ export default function BacktestUI() {
         </AnimatePresence>
       </div>
     </div>
+  );
+}
+
+// 2. Export a default function that wraps the content in Suspense
+export default function BacktestUI() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <Loader2 className="animate-spin text-zinc-500" />
+      </div>
+    }>
+      <BacktestContent />
+    </Suspense>
   );
 }
 
