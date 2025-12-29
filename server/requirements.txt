@@ -11,4 +11,3 @@ requests
 uvicorn
 python-multipart
 docker
-traceback
