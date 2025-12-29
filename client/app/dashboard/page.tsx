@@ -334,7 +334,7 @@ const handleSquareOFF = async (id: string) => {
       setStrategies(prev => prev.map(s => s.id === id ? { ...s, status: "running" } : s));
       setMode(null);
     } catch (e) {
-      toast.error("Something went wrong", e);
+      toast.error("Something went wrong");
       console.log(e)
     }
   };
