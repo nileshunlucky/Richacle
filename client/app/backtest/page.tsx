@@ -42,7 +42,7 @@ function BacktestContent() {
 
   const fetchStrategies = useCallback(async (userEmail: string, autoSelectId?: string | null) => {
     try {
-      const res = await fetch(`http://43.204.237.247:8000/user/${userEmail}`);
+      const res = await fetch(`https://api.richacle.com/user/${userEmail}`);
       const data = await res.json();
       const fetchedStrategies = data.strategies || [];
       setStrategies(fetchedStrategies);
@@ -75,7 +75,7 @@ function BacktestContent() {
         return;
       }
 
-      const res = await fetch("http://43.204.237.247:8000/api/backtest", {
+      const res = await fetch("https://api.richacle.com/api/backtest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strategy: selectedStrat.code, email: userEmail }),
