@@ -34,7 +34,7 @@ useEffect(() => {
       const form = new FormData();
       form.append("email", email);
 
-      const res = await fetch("https://richacle.onrender.com/add-user", {
+      const res = await fetch("http://43.204.237.247:8000/add-user", {
         method: "POST",
         body: form,
       });

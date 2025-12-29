@@ -72,8 +72,8 @@ async def deploy(email: str = Form(...), strategyId: str = Form(...), mode: str 
             image="trading-bot-runner:latest",
             name=unique_name,
             detach=True,
-            mem_limit="150m",        # Hard limit: 150MB RAM
-            mem_reservation="100m",  # Soft limit: 100MB RAM
+            mem_limit="300m",       # Hard limit: 300MB RAM
+            mem_reservation="200m",  # Soft limit: 100MB RAM
             cpu_period=100000,
             cpu_quota=10000,         # Limit to 10% of a CPU core
             restart_policy={"Name": "on-failure", "MaximumRetryCount": 5},
