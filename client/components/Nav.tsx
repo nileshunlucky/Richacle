@@ -27,7 +27,7 @@ export default function Navbar() {
   }, []);
 
   return (
-    <nav className="z-10 flex flex-col items-center justify-between px-8 py-6 md:max-w-7xl md:mx-auto">
+    <nav className="z-10 flex w-full flex-col items-center justify-between px-8 py-6 md:max-w-7xl md:mx-auto">
       <div className="flex items-center justify-between w-full">
         
         <Link href="/">
@@ -64,7 +64,7 @@ export default function Navbar() {
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="md:hidden overflow-hidden absolute top-20 left-0 right-0 bg-black shadow-md mx-4 rounded-md"
+            className="md:hidden w-full z-50 overflow-hidden absolute top-20 bg-black shadow-md mx-4 rounded-md"
           >
             <div className="px-2 py-4">
               <ul className="flex flex-col gap-4 text-base">

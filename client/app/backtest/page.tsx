@@ -79,14 +79,14 @@ function BacktestContent() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strategy: selectedStrat.code, email: userEmail }),
-      });
+      });  
 
       if (res.status === 403) {
           toast.error("Insufficient backtest credits.");
           router.push("/pricing");
           return;
       }
-
+      
       const data = await res.json();
 
       if (data.status === "success") {
@@ -107,6 +107,7 @@ function BacktestContent() {
       }
     } catch (err) { 
       toast.error("Could not connect to server.");
+      console.log(err)
     } finally { 
       setLoading(false); 
     }
