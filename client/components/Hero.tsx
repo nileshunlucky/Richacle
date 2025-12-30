@@ -58,7 +58,25 @@ const FeatureCard = ({ icon: Icon, title, description, badge }: any) => (
 
 export default function AILandingPage() {
   const [input, setInput] = useState("");
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+  const fetchalluserdata = async () => {
+    try {
+
+      const res = await fetch("https://api.richacle.com/users-full")
+
+      const data = await res.json();
+      setUsers(data.length);
+      console.log(data);
+    } catch (err) {
+      console.error("Failed to user data:", err);
+    }
+  };
+
+  fetchalluserdata();
+}, []);
 
   // --- Typography Animation Logic ---
   useEffect(() => {
@@ -205,6 +223,16 @@ export default function AILandingPage() {
               <Button variant="secondary">Create Strategy</Button>
             </Link>
           </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="flex items-center justify-center gap-3 text-xs md:text-xl"
+          >
+            {users}+ INVESTERS TRUSTED
+          </motion.div>
+
+          
 
       {/* Feature Grid */}
       <section className="py-32 px-6 bg-[#030008]/50">

@@ -142,6 +142,10 @@
   display: none;
 }
 
+*{
+  scroll-behavior: smooth;
+}
+
 /* Editor background */
 .monaco-editor,
 .monaco-editor-background,

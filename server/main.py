@@ -61,3 +61,19 @@ def save_referral(email: str = Form(...)):
 
     users_collection.insert_one(user_data)
     return {"message": "User added successfully"}
+
+@app.get("/users-full")
+def get_users_full():
+
+    try:
+        # Fetch all users with all fields
+        users = list(users_collection.find({}))
+
+        # Convert ObjectId to string for JSON serialization
+        for user in users:
+            if '_id' in user and hasattr(user['_id'], '__str__'):
+                user['_id'] = str(user['_id'])
+        return users
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Error fetching user data")
