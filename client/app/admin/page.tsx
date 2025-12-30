@@ -3,8 +3,28 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
+interface Strategy {
+  mode: "LIVE" | "PAPER";
+  status: "running" | "stopped" | "error";
+  name?: string;
+}
+
+interface User {
+  _id: string;
+  email: string;
+  active: boolean;
+  plan: string;
+  copilot: number;
+  backtest: number;
+  credits: number;
+  binance?: {
+    apiKey?: string;
+  };
+  strategies?: Strategy[];
+}
+
 export default function AdminDashboard() {
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

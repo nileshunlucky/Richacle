@@ -69,7 +69,6 @@ export default function AILandingPage() {
 
       const data = await res.json();
       setUsers(data.length);
-      console.log(data);
     } catch (err) {
       console.error("Failed to user data:", err);
     }
