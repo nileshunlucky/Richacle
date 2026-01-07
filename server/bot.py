@@ -17,21 +17,24 @@ AMOUNT = float(os.getenv("AMOUNT", 10.0))
 LEVERAGE = int(os.getenv("LEVERAGE", 1))
 STARTING_BALANCE = 10000.0
 
-# Support dynamic SL/TP from environment or default to your 2%/5%
+# Stop Loss / Take Profit
 STOP_LOSS = float(os.getenv("STOP_LOSS", 0.02))
 TAKE_PROFIT = float(os.getenv("TAKE_PROFIT", 0.05))
 
 # --- Conditional Exchange Initialization ---
 exchange = None
+exchange_config = {
+    'apiKey': API_KEY,
+    'secret': API_SECRET,
+    'enableRateLimit': True,
+    'options': {'defaultType': 'future'}  # CRITICAL: Sets CCXT to Futures Mode
+}
+
 if MODE == "LIVE":
-    exchange = ccxt.binance({
-        'apiKey': API_KEY,
-        'secret': API_SECRET,
-        'enableRateLimit': True,
-    })
+    exchange = ccxt.binance(exchange_config)
 else:
-    # Public markets only for paper trading
-    exchange = ccxt.binance({'enableRateLimit': True})
+    # Public markets for paper trading
+    exchange = ccxt.binance({'enableRateLimit': True, 'options': {'defaultType': 'future'}})
 
 # --- Helper Functions ---
 def get_strategy_state():
@@ -82,13 +85,7 @@ def log_error_to_db(error_msg):
     try:
         users_collection.update_one(
             {"email": EMAIL, "strategies.id": STRATEGY_ID},
-            {
-                "$set": {
-                    "strategies.$.status": "error",
-                    "strategies.$.last_error": str(error_msg),
-                    "strategies.$.error_at": datetime.now()
-                }
-            }
+            {"$set": {"strategies.$.status": "error", "strategies.$.last_error": str(error_msg), "strategies.$.error_at": datetime.now()}}
         )
     except Exception as db_e:
         print(f"🔥 Meta-Error: {db_e}")
@@ -96,7 +93,7 @@ def log_error_to_db(error_msg):
 def main():
     if not STRATEGY_CODE: return
 
-    print(f"🚀 Bot starting | Mode: {MODE} | Symbol: {SYMBOL}")
+    print(f"🚀 Bot starting | Mode: {MODE} | Symbol: {SYMBOL} | Leverage: {LEVERAGE}x")
     exchange.load_markets()
 
     if MODE == "LIVE":
@@ -104,8 +101,9 @@ def main():
             exchange.set_leverage(LEVERAGE, SYMBOL)
             exchange.set_margin_mode('ISOLATED', SYMBOL)
         except Exception as e:
-            print(f"⚠️ Leverage Config Error: {e}")
+            print(f"⚠️ Leverage Config Warning: {e}")
 
+    # Inject strategy code
     local_env = {"pd": pd, "np": np}
     exec(STRATEGY_CODE, local_env)
     run_strategy = local_env.get("run_strategy")
@@ -115,16 +113,17 @@ def main():
             state = get_strategy_state()
             df = fetch_data()
             current_price = float(df['close'].iloc[-1])
-            
             _, signal = run_strategy(df)
             
             current_wallet = STARTING_BALANCE + state['total_pnl']
             print(f"🕒 {datetime.now().strftime('%H:%M:%S')} | Wallet: ${current_wallet:.2f} | Pos: {state['pos']} | Signal: {signal}")
 
             # --- 1. EXIT LOGIC (SL/TP) ---
-            if state['pos'] > 0:
+            if state['pos'] != 0:
                 entry_price = state['entry']
-                price_change_pct = (current_price - entry_price) / entry_price
+                # Calculate profit: Longs benefit from price UP, Shorts from price DOWN
+                is_long = state['pos'] > 0
+                price_change_pct = (current_price - entry_price) / entry_price if is_long else (entry_price - current_price) / entry_price
                 
                 exit_reason = ""
                 if price_change_pct <= -STOP_LOSS:
@@ -133,33 +132,51 @@ def main():
                     exit_reason = f"TAKE PROFIT hit at {current_price}"
 
                 if exit_reason:
-                    trade_pnl = (current_price - entry_price) * state['pos']
+                    trade_pnl = price_change_pct * (abs(state['pos']) * entry_price)
                     if MODE == "LIVE":
-                        exchange.create_market_sell_order(SYMBOL, abs(state['pos']))
+                        side = "sell" if is_long else "buy"
+                        exchange.create_order(SYMBOL, 'market', side, abs(state['pos']))
                     
                     update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl)
                     print(f"🛑 {exit_reason} | PnL: ${trade_pnl:.2f}")
-                    time.sleep(1) 
                     continue 
 
-            # --- 2. EXECUTION LOGIC ---
-            if signal == "BUY" and state['pos'] <= 0:
-                qty = calculate_dynamic_qty(current_price)
-                if qty > 0:
+            # --- 2. EXECUTION LOGIC (LONG & SHORT) ---
+            # BUY SIGNAL
+            if signal == "BUY":
+                if state['pos'] < 0: # Close Short first
+                    trade_pnl = (state['entry'] - current_price) * abs(state['pos'])
                     if MODE == "LIVE":
-                        exchange.create_market_buy_order(SYMBOL, qty)
-                    update_strategy_state(pos=qty, entry=current_price)
-                    print(f"📈 [{MODE}] Execution: Bought {qty} at {current_price}")
-                else:
-                    print("❌ Qty too small for exchange filters.")
+                        exchange.create_market_buy_order(SYMBOL, abs(state['pos']))
+                    update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl)
+                    print(f"🔄 Closed SHORT at {current_price}")
+                    state = get_strategy_state() # Update local state after close
 
-            elif signal == "SELL" and state['pos'] > 0:
-                trade_pnl = (current_price - state['entry']) * state['pos']
-                if MODE == "LIVE":
-                    exchange.create_market_sell_order(SYMBOL, abs(state['pos']))
-                
-                update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl)
-                print(f"📉 [{MODE}] Execution: Sold at {current_price} | PnL: ${trade_pnl:.2f}")
+                if state['pos'] == 0: # Open Long
+                    qty = calculate_dynamic_qty(current_price)
+                    if qty > 0:
+                        if MODE == "LIVE":
+                            exchange.create_market_buy_order(SYMBOL, qty)
+                        update_strategy_state(pos=qty, entry=current_price)
+                        print(f"📈 [FUTURES] Opened LONG: {qty} at {current_price}")
+
+            # SELL SIGNAL
+            elif signal == "SELL":
+                if state['pos'] > 0: # Close Long first
+                    trade_pnl = (current_price - state['entry']) * state['pos']
+                    if MODE == "LIVE":
+                        exchange.create_market_sell_order(SYMBOL, abs(state['pos']))
+                    update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl)
+                    print(f"🔄 Closed LONG at {current_price}")
+                    state = get_strategy_state() # Update local state after close
+
+                if state['pos'] == 0: # Open Short
+                    qty = calculate_dynamic_qty(current_price)
+                    if qty > 0:
+                        if MODE == "LIVE":
+                            exchange.create_market_sell_order(SYMBOL, qty)
+                        update_strategy_state(pos=-qty, entry=current_price) # Negative pos = Short
+                        print(f"📉 [FUTURES] Opened SHORT: {qty} at {current_price}")
 
             time.sleep(60)
 
