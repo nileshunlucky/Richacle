@@ -162,7 +162,7 @@ async def predict_trade(
         )
         timeframe = timeframeres.output_text.strip()
 
-        prompt = f"""
+        prompt = """
 You are a code generator, not a chat assistant.
 Your output will be executed directly by Python without modification.
 
@@ -175,7 +175,6 @@ STRICT OUTPUT CONTRACT:
 - DO NOT include imports, comments, prints, or explanations.
 - Indicator imports (like pandas as pd) are handled by the environment.
 - You may use 'pd' for pandas and 'np' for numpy. 
-- Do not use any other libraries (like ta or talib) as they are not available.
 
 DATA:
 df columns = ['timestamp','open','high','low','close','volume']
@@ -189,20 +188,13 @@ RULES:
    - If `open_trade` is NOT None: Check the Exit condition. If met, add 'exit_price', append to `trades`, and set `open_trade = None`.
 5. Identify 'latest_signal': If the last candle meets the entry condition, "BUY". If it meets the exit condition, "SELL". Otherwise, "HOLD".
 6. After the loop: If `open_trade` is still not None, close it using the last available 'close' price and append to `trades`.
-7. Output must follow the structure:
-   def run_strategy(df):
-       trades = []
-       open_trade = None
-       # calculations...
-       # loop...
-       return trades, latest_signal
 
 USER REQUEST:
-{input}
+[[USER_INPUT]]
 
 PREVIOUS CONTEXT:
-{existing_strategy.get("code") if existing_strategy else "None"}
-"""
+[[CONTEXT]]
+""".replace("[[USER_INPUT]]", input).replace("[[CONTEXT]]", str(existing_strategy.get("code") if existing_strategy else "None"))
 
         response = openai_client.responses.create(
             model="gpt-4o-mini",
