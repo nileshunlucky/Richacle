@@ -1,5 +1,6 @@
 import docker
 import uuid
+import traceback
 from fastapi import APIRouter, HTTPException, Form
 import ccxt
 from db import users_collection
@@ -48,7 +49,7 @@ async def deploy(email: str = Form(...), strategyId: str = Form(...), mode: str 
         )
     # --- PLAN VALIDATION END ---
 
-    strategy = next((s for s in user["strategies"] if s["id"] == strategyId), None)
+    strategy = next((s for s in user.get("strategies", []) if s.get("id") == strategyId), None)
 
     # Prevent duplicate deployment of the same strategy
     if strategy.get("status") == "running":
@@ -63,6 +64,9 @@ async def deploy(email: str = Form(...), strategyId: str = Form(...), mode: str 
     
     if not api_key or not api_secret:
         raise HTTPException(status_code=403, detail="Binance API keys missing in profile")
+
+    if not client:
+        raise HTTPException(status_code=500, detail="Docker engine is not available")
 
     try:
         # 3. Docker Deployment
@@ -107,6 +111,7 @@ async def deploy(email: str = Form(...), strategyId: str = Form(...), mode: str 
         return {"status": "success", "container_id": container.id}
 
     except Exception as e:
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Docker Error: {str(e)}")
 
 @router.post("/api/stop")
