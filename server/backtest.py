@@ -13,7 +13,7 @@ class BacktestRequest(BaseModel):
     email: str
 
 def fetch_max_ohlcv(symbol="BTC/USDT", timeframe="1h"):
-    exchange = ccxt.kraken({
+    exchange = ccxt.binance({
         "enableRateLimit": True
     })
 
