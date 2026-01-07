@@ -11,7 +11,7 @@ import {
   ShieldCheck,
   ArrowUp,
   Loader2,
-  X
+  X,
 } from "lucide-react";
 
 // --- Custom Modern Components ---
@@ -104,13 +104,8 @@ export default function AILandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#05010d] text-white selection:bg-purple-500/30 font-sans ">
+    <div className="min-h-screen  font-sans ">
       
-      {/* Background Radial Gradients to match image UI */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-900/20 blur-[120px] rounded-full" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-900/20 blur-[120px] rounded-full" />
-      </div>
 
       {/* Hero Section */}
       <section className="p-5 relative overflow-hidden flex flex-col items-center">
@@ -167,7 +162,6 @@ export default function AILandingPage() {
 
           <div className="relative group max-w-3xl mx-auto">
             {/* Glow effect behind prompt */}
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500/20 to-transparent blur-xl opacity-50" />
             
             <div className="relative bg-[#0a0a0a] border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
               <textarea
@@ -207,70 +201,160 @@ export default function AILandingPage() {
           </motion.div>
 
           
-
-      {/* Feature Grid */}
-      <section className="py-32 px-6 bg-[#030008]/50">
-        <div className="max-w-7xl mx-auto">
-          <div className="mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tighter mb-4 text-white">Engineered for Alpha.</h2>
-            <p className="text-zinc-500 text-lg">Four pillars of institutional-grade algorithmic trading.</p>
-          </div>
+ {/* --- PREMIUM 3-STEP WORKFLOW --- */}
+      <section className="py-24 md:py-32 px-4 md:px-6 bg-black">
+        <div className="max-w-6xl mx-auto">
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <FeatureCard 
-              icon={Activity}
-              badge="Monitor"
-              title="Real-time P&L"
-              description="Unified dashboard for your entire portfolio across spot and futures markets."
-            />
-            <FeatureCard 
-              icon={Code2}
-              badge="Build"
-              title="AI Code Editor"
-              description="Describe your strategy in English; our AI agent writes the high-performance Python code."
-            />
-            <FeatureCard 
-              icon={BarChart3}
-              badge="Verify"
-              title="Backtesting"
-              description="Test strategies against 10 years of historical Binance tick data in seconds."
-            />
-            <FeatureCard 
-              icon={Zap}
-              badge="Deploy"
-              title="1-Click Live"
-              description="Seamlessly transition from Paper Trading to Live execution on Binance."
-            />
+          <div className="mb-16 md:mb-24">
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-white mb-3">
+              Three simple steps
+            </h2>
+            <p className="text-zinc-500 text-base md:text-lg">Build, test, deploy — all in minutes</p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-6">
+            
+            {/* Step 1: Create */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="group"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center text-sm font-bold">
+                  1
+                </div>
+                <div className="h-px flex-1 bg-zinc-800" />
+              </div>
+              
+              <div className="h-48 md:h-56 rounded-2xl bg-zinc-950 border border-zinc-800 p-5 flex flex-col justify-between transition-all hover:border-zinc-700">
+                <div className="space-y-3">
+                  <div className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold">AI Input</div>
+                  <div className="bg-black/50 border border-zinc-800 rounded-lg p-3">
+                    <p className="text-xs text-zinc-400 leading-relaxed">
+                      "Buy BTC when RSI drops below 30..."
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                    <span className="text-[9px] text-zinc-600 uppercase tracking-wider">Processing</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-2">
+                <h3 className="text-lg md:text-xl font-medium text-white">Create with AI</h3>
+                <p className="text-sm text-zinc-500 leading-relaxed">
+                  Describe your strategy in plain English. GPT-5 builds the logic instantly.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Step 2: Backtest */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="group"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center text-sm font-bold">
+                  2
+                </div>
+                <div className="h-px flex-1 bg-zinc-800" />
+              </div>
+
+              <div className="h-48 md:h-56 rounded-2xl bg-zinc-950 border border-zinc-800 p-5 flex flex-col justify-between transition-all hover:border-zinc-700">
+                <div>
+                  <div className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold mb-4">Performance</div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-black/50 border border-zinc-800 rounded-lg p-3">
+                      <div className="text-[9px] text-zinc-600 uppercase mb-1">Return</div>
+                      <div className="text-lg font-semibold text-white">+247%</div>
+                    </div>
+                    <div className="bg-black/50 border border-zinc-800 rounded-lg p-3">
+                      <div className="text-[9px] text-zinc-600 uppercase mb-1">Win Rate</div>
+                      <div className="text-lg font-semibold text-white">68%</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="h-12 flex items-end gap-1">
+                  {[40, 55, 35, 65, 45, 70, 50, 75, 60, 80].map((h, i) => (
+                    <div key={i} className="flex-1 bg-zinc-800 rounded-t" style={{ height: `${h}%` }} />
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-2">
+                <h3 className="text-lg md:text-xl font-medium text-white">Backtest Results</h3>
+                <p className="text-sm text-zinc-500 leading-relaxed">
+                  Validate against years of historical data before going live.
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Step 3: Deploy */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="group"
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-8 h-8 rounded-full bg-white text-black flex items-center justify-center text-sm font-bold">
+                  3
+                </div>
+                <div className="h-px flex-1 bg-zinc-800" />
+              </div>
+
+              <div className="h-48 md:h-56 rounded-2xl bg-zinc-950 border border-zinc-800 p-5 gap-3 flex flex-col justify-between transition-all hover:border-zinc-700">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold">Status</span>
+                    <div className="flex items-center gap-2 px-2 py-1 bg-black border border-zinc-800 rounded-full">
+                      <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      <span className="text-[9px] text-white font-medium">LIVE</span>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center bg-black/50 border border-zinc-800 rounded-lg p-2.5">
+                      <span className="text-xs text-zinc-500">Exchange</span>
+                      <span className="text-xs text-white font-medium">Binance</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-black/50 border border-zinc-800 rounded-lg p-2.5">
+                      <span className="text-xs text-zinc-500">Mode</span>
+                      <span className="text-xs text-white font-medium">Paper Trading</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <button className="w-full py-3 bg-white text-black text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors">
+                  Deploy
+                </button>
+              </div>
+
+              <div className="mt-6 space-y-2">
+                <h3 className="text-lg md:text-xl font-medium text-white">Deploy & Execute</h3>
+                <p className="text-sm text-zinc-500 leading-relaxed">
+                  Go Paper/Live trading with one click. Directly connected to Binance API.
+                </p>
+              </div>
+            </motion.div>
+
           </div>
         </div>
       </section>
+       
 
-      {/* Integration Section */}
-      <section className="py-24 border-y border-zinc-900 bg-zinc-950/20">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-12">
-            <div>
-                <h3 className="text-3xl font-bold mb-4">Native Binance Integration</h3>
-                <p className="text-zinc-500 max-w-md leading-relaxed">Secure API connectivity with end-to-end encryption. Trade BTC, ETH, and 500+ pairs with the world's most liquid exchange.</p>
-                <div className="flex items-center gap-6 mt-8 opacity-40">
-                    <span className="font-black text-2xl tracking-tighter italic">BINANCE</span>
-                    <span className="font-black text-2xl tracking-tighter italic">TRADINGVIEW</span>
-                </div>
-            </div>
-            <div className="relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-white rounded-2xl blur opacity-10" />
-                <div className="relative bg-zinc-950 p-8 rounded-2xl border border-zinc-900">
-                    <ShieldCheck className="w-12 h-12 text-purple-500 mb-4" />
-                    <p className="text-xl font-semibold mb-2">Non-Custodial Security</p>
-                    <p className="text-zinc-500 text-sm">We never touch your funds. Your API keys are encrypted locally.</p>
-                </div>
-            </div>
-        </div>
-      </section>
 
       {/* Footer CTA */}
-      <section className="py-40 px-6 text-center">
+      <section className="my-10 px-6 text-center">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-5xl md:text-7xl font-bold tracking-tighter mb-8 bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent">
+          <h2 className="text-3xl md:text-7xl font-bold tracking-tighter mb-8 bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent">
             Ready to beat the market?
           </h2>
           <div className="flex items-center justify-center gap-3 text-xs md:text-xl">
