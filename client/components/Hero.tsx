@@ -209,7 +209,7 @@ export default function AILandingPage() {
             <h2 className="text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-white mb-3">
               Three simple steps
             </h2>
-            <p className="text-zinc-500 text-base md:text-lg">Build, test, deploy — all in minutes</p>
+            <p className="text-zinc-500 text-base md:text-lg">Build, test, deploy — all in 1</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-6">

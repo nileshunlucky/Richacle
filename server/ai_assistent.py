@@ -138,7 +138,6 @@ async def predict_trade(
                 "Examples:\n"
                 "Input: 'stop loss 3%' -> Output: 0.03\n"
                 "Input: 'sl at 2.5%' -> Output: 0.025\n"
-                "Default: 0.02"
             )
         },
                     {"role": "user", "content": input},
@@ -162,39 +161,48 @@ async def predict_trade(
         )
         timeframe = timeframeres.output_text.strip()
 
-        prompt = """
-You are a code generator, not a chat assistant.
-Your output will be executed directly by Python without modification.
+        prompt = f"""
+You are a professional Quant Coder. Generate a Python function for a LONG-ONLY trading strategy.
 
-STRICT OUTPUT CONTRACT:
-- Output ONLY valid Python code.
-- Output ONLY ONE function named run_strategy(df).
-- Output must start with: def run_strategy(df):
-- Output must end with: return trades, latest_signal
-- NEVER use markdown, backticks, or code fences.
-- DO NOT include imports, comments, prints, or explanations.
-- Indicator imports (like pandas as pd) are handled by the environment.
-- You may use 'pd' for pandas and 'np' for numpy. 
+STRICT RULES:
+1. Output ONLY the function `def run_strategy(df):`. No markdown, no backticks, no comments.
+2. Use 'pd' for pandas and 'np' for numpy.
+3. The function MUST return: `trades` (a list of dicts) and `latest_signal` (a string).
+4. Trade Dictionary Format: 
+   - Each trade MUST be: {{'entry_price': float, 'exit_price': float, 'qty': 1}}
+5. latest_signal: "BUY" (if current candle meets entry), "SELL" (if in trade and exit met), or "HOLD".
 
-DATA:
-df columns = ['timestamp','open','high','low','close','volume']
+ENVIRONMENT:
+- df columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+- All price columns are already floats.
 
-RULES:
-1. LONG only strategy. Use a variable `open_trade = None` to track state.
-2. Calculate indicators (SMA, RSI, etc.) using 'df' and append them as columns to 'df'.
-3. Loop through `range(len(df))` to simulate trades.
-4. Inside the loop:
-   - If `open_trade` is None: Check the Entry condition. If met, set `open_trade = {'entry_price': current_price, 'qty': 1}`.
-   - If `open_trade` is NOT None: Check the Exit condition. If met, add 'exit_price', append to `trades`, and set `open_trade = None`.
-5. Identify 'latest_signal': If the last candle meets the entry condition, "BUY". If it meets the exit condition, "SELL". Otherwise, "HOLD".
-6. After the loop: If `open_trade` is still not None, close it using the last available 'close' price and append to `trades`.
+EXAMPLE STRUCTURE:
+def run_strategy(df):
+    df['ema'] = df['close'].ewm(span=20).mean()
+    trades = []
+    open_trade = None
+    latest_signal = "HOLD"
+    for i in range(len(df)):
+        price = df['close'].iloc[i]
+        if open_trade is None:
+            if price > df['ema'].iloc[i]: # Entry Logic
+                open_trade = {{'entry_price': price, 'qty': 1}}
+                if i == len(df)-1: latest_signal = "BUY"
+        else:
+            if price < df['ema'].iloc[i]: # Exit Logic
+                trades.append({{'entry_price': open_trade['entry_price'], 'exit_price': price, 'qty': 1}})
+                open_trade = None
+                if i == len(df)-1: latest_signal = "SELL"
+    if open_trade:
+        trades.append({{'entry_price': open_trade['entry_price'], 'exit_price': df['close'].iloc[-1], 'qty': 1}})
+    return trades, latest_signal
 
-USER REQUEST:
-[[USER_INPUT]]
+USER STRATEGY REQUEST:
+{input}
 
-PREVIOUS CONTEXT:
-[[CONTEXT]]
-""".replace("[[USER_INPUT]]", input).replace("[[CONTEXT]]", str(existing_strategy.get("code") if existing_strategy else "None"))
+PREVIOUS CODE CONTEXT:
+{existing_strategy.get("code") if existing_strategy else "None"}
+"""
 
         response = openai_client.responses.create(
             model="gpt-4o-mini",
