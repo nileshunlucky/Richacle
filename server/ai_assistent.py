@@ -72,12 +72,12 @@ async def predict_trade(
                 "Rules:\n"
                 "1. Output ONLY the number (e.g., 100.5).\n"
                 "2. Remove any '$' or 'USDT' symbols.\n"
-                "3. If no amount is found, output '10.0' as the default.\n"
+                "3. If no amount is found, output '25.0' as the default.\n"
                 "4. No words, no punctuation, no explanations.\n"
                 "\nExamples:\n"
                 "Input: 'buy $500 of btc' -> Output: 500\n"
                 "Input: 'trade with 25.5 usdt' -> Output: 25.5\n"
-                "Input: 'start a strategy' -> Output: 10.0"
+                "Input: 'start a strategy' -> Output: 25.0"
             )},
                     {"role": "user", "content": input},
                 ],
@@ -86,9 +86,9 @@ async def predict_trade(
 
         try:
           clean_amount = "".join(c for c in raw_amount if c.isdigit() or c == '.')
-          amount = float(clean_amount) if clean_amount else 10.0
+          amount = float(clean_amount) if clean_amount else 25.0
         except ValueError:
-          amount = 10.0 # Final fallback if AI hallucinates text
+          amount = 25.0 # Final fallback if AI hallucinates text
 
         leverageres = openai_client.responses.create(
             model="gpt-4o-mini",
