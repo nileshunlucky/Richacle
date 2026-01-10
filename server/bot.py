@@ -27,13 +27,11 @@ exchange_config = {
     'apiKey': API_KEY,
     'secret': API_SECRET,
     'enableRateLimit': True,
-    'fetchCurrencies': False,
-    'options': {'defaultType': 'future'}  
+    'options': {'defaultType': 'future'}  # CRITICAL: Sets CCXT to Futures Mode
 }
 
 if MODE == "LIVE":
     exchange = ccxt.binance(exchange_config)
-    exchange.set_sandbox_mode(True)
 else:
     # Public markets for paper trading
     exchange = ccxt.binance({'enableRateLimit': True, 'options': {'defaultType': 'future'}})
