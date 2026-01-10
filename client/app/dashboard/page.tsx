@@ -13,11 +13,17 @@ import {
   Power,
   Loader2,
   XCircle,
-  X
+  X,
+  Copy
 } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 
 // --- Components ---
@@ -459,7 +465,7 @@ const handleSquareOFF = async (id: string) => {
                       <div className="flex items-center gap-2 px-3 py-1 bg-zinc-950/50 rounded-full">
                         <div className={`h-1.5 w-1.5 rounded-full ${
                           s.status === "running" 
-                          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" 
+                          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" 
                           :"bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
                         }`} />
                         <span className="text-[9px] uppercase tracking-[0.15em] font-bold text-zinc-500">
@@ -579,6 +585,29 @@ const handleSquareOFF = async (id: string) => {
                     placeholder="Enter your API Secret"
                     className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
                   />
+                </div>
+                <div className="space-y-2">
+                  
+      <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1 flex items-center gap-2">Public IPv4 address
+                  <Tooltip>
+      <TooltipTrigger asChild>
+      <button type="button" className="outline-none">
+            <Info 
+              size={13} 
+              className="text-zinc-600 hover:text-zinc-300 transition-colors" 
+            />
+          </button>
+      </TooltipTrigger>
+      <TooltipContent>
+<p>
+  Copy this IP to Binance&apos;s &quot;Restrict access to trusted IPs only&quot; 
+  setting to enable secure trading.
+</p>
+      </TooltipContent>
+    </Tooltip>
+    </label>
+                  <p onClick={()=> navigator.clipboard.writeText("43.204.237.247")} className="w-full flex justify-between items-center bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700">43.204.237.247 <Copy size={16} className="text-zinc-500 group-hover:text-zinc-100 transition-colors" /></p>
+                  
                 </div>
                 <div className="pt-4 flex gap-3">
                   <button 
