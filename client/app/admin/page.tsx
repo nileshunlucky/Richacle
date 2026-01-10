@@ -14,8 +14,37 @@ import {
 } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient";
 
+interface UserData {
+  _id: string;
+  email: string;
+  plan: string;
+  credits: number;
+  copilot: number;
+  backtest: number;
+  engine: boolean;
+  terminal: boolean;
+  active: boolean;
+  binance?: {
+    apiKey: string;
+    apiSecret: string;
+  };
+  strategies?: Array<{
+    id: string;
+    name: string;
+    symbol: string;
+    timeframe: string;
+    mode: string;
+    amount: string | number;
+    leverage: string | number;
+    status: string;
+    live_pnl?: string;
+    paper_pnl?: string;
+    input: string;
+  }>;
+}
+
 export default function AdminDirectory() {
-  const [users, setUsers] = useState([])
+  const [users, setUsers] = useState<UserData[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [email, setEmail] = useState("")
