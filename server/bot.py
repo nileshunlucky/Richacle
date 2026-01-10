@@ -13,7 +13,7 @@ STRATEGY_CODE = os.getenv("STRATEGY_CODE")
 SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
 TIMEFRAME = os.getenv("TIMEFRAME", "1h")
 MODE = os.getenv("MODE", "PAPER") 
-AMOUNT = float(os.getenv("AMOUNT", 10.0)) 
+AMOUNT = float(os.getenv("AMOUNT", 25)) 
 LEVERAGE = int(os.getenv("LEVERAGE", 1))
 STARTING_BALANCE = 10000.0
 
@@ -27,11 +27,13 @@ exchange_config = {
     'apiKey': API_KEY,
     'secret': API_SECRET,
     'enableRateLimit': True,
-    'options': {'defaultType': 'future'}  # CRITICAL: Sets CCXT to Futures Mode
+    'fetchCurrencies': False,
+    'options': {'defaultType': 'future'}  
 }
 
 if MODE == "LIVE":
     exchange = ccxt.binance(exchange_config)
+    exchange.set_sandbox_mode(True)
 else:
     # Public markets for paper trading
     exchange = ccxt.binance({'enableRateLimit': True, 'options': {'defaultType': 'future'}})
