@@ -8,9 +8,7 @@ import {
   Key, 
   Cpu, 
   Terminal,
-  Search,
-  TrendingUp,
-  TrendingDown
+  Search
 } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient";
 
@@ -220,8 +218,16 @@ export default function AdminDirectory() {
                         <SmallStat label="Lev" value={`${strat.leverage}x`} />
                         <SmallStat label="Status" value={strat.status} />
                         {/* New PNL Stats */}
-                        <SmallStat label="Live PNL" value={`$${strat.live_pnl || '0'}`} color={parseFloat(strat.live_pnl) >= 0 ? 'text-green-400' : parseFloat(strat.live_pnl) <= 0 ? "text-red-500" :'text-white'} />
-                        <SmallStat label="Paper PNL" value={`$${strat.paper_pnl || '0'}`} color={parseFloat(strat.paper_pnl) >= 0 ? 'text-green-400' : parseFloat(strat.live_pnl) <= 0 ? "text-red-500" :'text-white'} />
+                        <SmallStat 
+                          label="Live PNL" 
+                          value={`$${strat.live_pnl || '0'}`} 
+                          color={parseFloat(strat.live_pnl || '0') >= 0 ? 'text-green-400' : 'text-red-500'} 
+                        />
+                        <SmallStat 
+                          label="Paper PNL" 
+                          value={`$${strat.paper_pnl || '0'}`} 
+                          color={parseFloat(strat.paper_pnl || '0') >= 0 ? 'text-green-400' : 'text-red-500'} 
+                        />
                       </div>
 
                       <p className="text-xs text-white/50 leading-relaxed line-clamp-2">
@@ -239,7 +245,7 @@ export default function AdminDirectory() {
   )
 }
 
-function StatusItem({ label, value }) {
+function StatusItem({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="text-left md:text-center">
       <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-1">{label}</p>
@@ -248,7 +254,7 @@ function StatusItem({ label, value }) {
   )
 }
 
-function AccessBadge({ active, icon }) {
+function AccessBadge({ active, icon }: { active: boolean; icon: React.ReactNode }) {
   return (
     <div className={`p-2 rounded-lg border transition-colors ${
       active ? 'bg-white/10 border-white/20 text-white' : 'bg-transparent border-white/5 text-white/10'
@@ -258,7 +264,7 @@ function AccessBadge({ active, icon }) {
   )
 }
 
-function SmallStat({ label, value, color = "text-white/70" }) {
+function SmallStat({ label, value, color = "text-white/70" }: { label: string; value: string | number; color?: string }) {
   return (
     <div className="bg-black/40 p-2 rounded-lg border border-white/5">
       <p className="text-[8px] uppercase text-white/20 font-bold tracking-tighter">{label}</p>
