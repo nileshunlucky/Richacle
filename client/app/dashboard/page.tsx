@@ -87,8 +87,8 @@ const pnlColor =
   totalPnl === 0
     ? ""
     : totalPnl > 0
-    ? "bg-gradient-to-t from-black to-green-700"
-    : "bg-gradient-to-t from-black to-red-700"
+    ? "bg-gradient-to-t from-black via-black to-green-700"
+    : "bg-gradient-to-t from-black via-black to-red-700"
 
 const perfColor =
   strategiesPerf === 0

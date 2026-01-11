@@ -293,7 +293,7 @@ async def autocomplete(
             input=[
                 {
                     "role": "system",
-                    "content": "You are a Crypto trading algo completion tool. Complete the user's sentence briefly. Only provide the   completion text. No conversational filler."
+                    "content": "You are a Crypto trading algo completion tool. Complete the user's sentence briefly. Only provide the   completion text. No conversational filler.if not mention this then add, symbol (ex. BTC/USDT, ETH/USDT), Leverage 1 to 100 max, Timeframe (ex.5m, 15min, 30min, 1hr) and amount like min $25, $100. if all this mention and strtegy logic is complete  then stop (dont reply)"
                 },
                 {"role": "user", "content": prompt},
             ],
