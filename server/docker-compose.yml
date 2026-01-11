@@ -9,4 +9,5 @@ services:
       - "8000:8000"
     restart: always
     environment:
+      - LOG_LEVEL=debug
       - PYTHONUNBUFFERED=1

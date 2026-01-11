@@ -23,7 +23,6 @@ export default function AlgoTradingLovableUI() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [editingStrat, setEditingStrat] = useState<Strategy | null>(null);
-  const [mode, setMode] = useState<string | null>(null)
 
 
   const router = useRouter();
@@ -154,7 +153,7 @@ export default function AlgoTradingLovableUI() {
     }
   };
 
-  const handleDeploy = async (stratId: string, mode: string) => {
+  const handleDeploy = async (stratId: string) => {
     if (!email){
       toast.error("Not authenticated");
       return;
@@ -165,7 +164,6 @@ export default function AlgoTradingLovableUI() {
       const form = new FormData();
       form.append("email", email);
       form.append("strategyId", stratId);
-      form.append("mode", mode);
 
       const res = await fetch("https://api.richacle.com/api/deploy", {
         method: "POST",
@@ -197,7 +195,7 @@ export default function AlgoTradingLovableUI() {
         return;
       }
 
-      toast.success(`Algo deployed: ${mode}`)
+      toast.success(`Algo deployed`)
     } catch (e) {
       toast.error("Something went wrong");
     }
@@ -331,27 +329,12 @@ export default function AlgoTradingLovableUI() {
   <div className="flex w-full items-center gap-3 px-4 py-3 text-xs text-zinc-300 border-t border-zinc-900 cursor-not-allowed animate-pulse">
     Running
   </div>
-) : mode !== null ? (
-  <>
-  <button 
-    onClick={() => handleDeploy(strat.id, "PAPER")}
-    className="flex w-full items-center gap-3 px-4 py-3 text-xs text-zinc-300 hover:bg-white hover:text-black transition border-t border-zinc-900"
-  >
-    PAPER
-  </button>
-  <button 
-    onClick={() => handleDeploy(strat.id, "LIVE")}
-    className="flex w-full items-center gap-3 px-4 py-3 text-xs text-zinc-300 hover:bg-white hover:text-black transition border-t border-zinc-900"
-  >
-    LIVE
-  </button>
-  </>
 ) : (
   <button
-      onClick={() => setMode("select")}
+      onClick={() => handleDeploy(strat.id)}
      className="flex w-full items-center gap-3 px-4 py-3 text-xs text-zinc-300 hover:bg-white hover:text-black transition border-t border-zinc-900"
     >
-      DEPLOY
+      Deploy
     </button>
 )}
 

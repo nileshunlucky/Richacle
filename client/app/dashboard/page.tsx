@@ -79,7 +79,6 @@ export default function Dashboard() {
   const [email, setEmail] = useState("")
   const [totalPnl, setTotalPnl] = useState(0)
   const [strategiesPerf, setStrategiesPerf] = useState(0)
-  const [mode, setMode] = useState<string | null>(null)
   const [strategies, setStrategies] = useState<Strategy[]>([]);
 
   const router = useRouter();
@@ -109,8 +108,6 @@ useEffect(() => {
       setTerminal(data?.terminal);
        setEngine(data?.engine);
       setStrategies(data?.strategies);
-       setApiKey(data?.binance?.apiKey);
-      setApiSecret(data?.binance?.apiSecret);
     } catch {
       toast.error("Failed loading strategies!");
     }
@@ -118,6 +115,21 @@ useEffect(() => {
   fetchStrategies();
   const interval = setInterval(fetchStrategies, 10000); // Poll every 10s
   return () => clearInterval(interval);
+}, [email]);
+
+useEffect(() => {
+  if (!email) return;
+  const fetchBinance = async () => {
+    try {
+      const res = await fetch(`https://api.richacle.com/user/${email}`);
+      const data = await res.json();
+       setApiKey(data?.binance?.apiKey);
+      setApiSecret(data?.binance?.apiSecret);
+    } catch {
+      toast.error("Failed loading strategies!");
+    }
+  };
+  fetchBinance();;
 }, [email]);
 
 useEffect(() => {
@@ -152,34 +164,7 @@ useEffect(() => {
     };
     getUser();
   }, []);
-  
-  const toggleTerminal = async () => {
-  if (!email) return;
-  const next = !terminal;
 
-  const form = new FormData();
-  form.append("email", email);
-  form.append("toggle", String(next));
-
-  try {
-    const res = await fetch("https://api.richacle.com/api/terminal", {
-      method: "POST",
-      body: form,
-    });
-
-    if (res.status === 403) {
-      toast.error("Add Binance keys before enabling terminal!");
-      return;
-    }
-
-  setTerminal(next);
- 
-  if (!next) setEngine(false);
- 
-  } catch {
-    toast.error("Error toggling terminal!");
-  }
-};
 
 const toggleEngine = async () => {
   if (!email) return;
@@ -286,7 +271,10 @@ const handleSquareOFF = async (id: string) => {
       if(res.ok){
         toast.success("Binance Connected")
         setIsModalOpen(false)
-      }
+      } else if (res.status === 401) {
+   
+    toast.error("Invalid Binance API Key or Secret");
+  }
     } catch (e) {
       toast.error("Something went wrong");
     } finally {
@@ -294,7 +282,7 @@ const handleSquareOFF = async (id: string) => {
     }
   };
 
-  const handleDeploy = async (id: string, mode: string) => {
+  const handleDeploy = async (id: string) => {
     if (!email){
       toast.error("Not Authenticated");
       return;
@@ -304,7 +292,6 @@ const handleSquareOFF = async (id: string) => {
       const form = new FormData();
       form.append("email", email);
       form.append("strategyId", id);
-      form.append("mode", mode);
 
       const res = await fetch("https://api.richacle.com/api/deploy", {
         method: "POST",
@@ -336,9 +323,8 @@ const handleSquareOFF = async (id: string) => {
         return;
       }
 
-      toast.success(`Algo deployed: ${mode}`)
+      toast.success(`Algo deployed`)
       setStrategies(prev => prev.map(s => s.id === id ? { ...s, status: "running" } : s));
-      setMode(null);
     } catch (e) {
       toast.error("Something went wrong");
       console.log(e)
@@ -401,7 +387,12 @@ const handleSquareOFF = async (id: string) => {
   }).format(strategiesPerf)}
                 </p>
               </div>
-              <Toggle label="Terminal" status={terminal} onToggle={toggleTerminal} />
+              <Toggle label="Terminal" status={terminal} onToggle={() => {
+    if (!terminal) {
+      toast.error("Add Binance API Key or Secret");
+      return;
+    }
+  }}/>
               <Toggle label="Trading Engine" status={engine} onToggle={() => {
     if (!terminal) {
       toast.error("Enable Terminal First");
@@ -494,35 +485,15 @@ const handleSquareOFF = async (id: string) => {
           SQUARE OFF
         </button>
       </>
-    ) : mode !== s.id ? (
+    ) : (
       <button
-        onClick={() => setMode(s.id)}
+         onClick={() => {
+            handleDeploy(s.id);
+          }}
         className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95"
       >
         DEPLOY
       </button>
-    ) : (
-      <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
-        <button
-          onClick={() => {
-            handleDeploy(s.id, "PAPER");
-          }}
-          className="bg-zinc-800 hover:bg-zinc-700 text-white px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all"
-        >
-          PAPER
-        </button>
-        <button
-          onClick={() => {
-            handleDeploy(s.id, "LIVE");
-          }}
-          className="bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all"
-        >
-          LIVE
-        </button>
-        <button onClick={() => setMode(null)} className="p-1 text-zinc-500 hover:text-white">
-          <X size={14} />
-        </button>
-      </div>
     )}
   </div>
 

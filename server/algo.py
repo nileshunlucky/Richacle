@@ -13,7 +13,7 @@ except Exception:
     client = None # Fallback for local dev environments without Docker
 
 @router.post("/api/deploy")
-async def deploy(email: str = Form(...), strategyId: str = Form(...), mode: str = Form(...)):
+async def deploy(email: str = Form(...), strategyId: str = Form(...)):
     # 1. Find user and specific strategy in one go
     user = users_collection.find_one({"email": email})
     
@@ -94,7 +94,6 @@ async def deploy(email: str = Form(...), strategyId: str = Form(...), mode: str 
                 "STOP_LOSS": strategy["stop_loss"],
                 "TAKE_PROFIT": strategy["take_profit"],
                 "TIMEFRAME": strategy["timeframe"],
-                "MODE": mode,
             }
         )
 
@@ -104,7 +103,6 @@ async def deploy(email: str = Form(...), strategyId: str = Form(...), mode: str 
             {"$set": {
                 "strategies.$.container_id": container.id,
                 "strategies.$.status": "running",
-                "strategies.$.mode": mode
             }}
         )
         
