@@ -289,14 +289,17 @@ const handleSquareOFF = async (id: string) => {
     }
 
     try {
-      const form = new FormData();
-      form.append("email", email);
-      form.append("strategyId", id);
 
       const res = await fetch("https://api.richacle.com/api/deploy", {
-        method: "POST",
-        body: form,
-      });
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", 
+      },
+      body: JSON.stringify({
+        email: email,
+        strategyId: id,
+      }),
+    });
 
       const data = await res.json()
 
@@ -321,6 +324,10 @@ const handleSquareOFF = async (id: string) => {
         toast.error("Binance API keys missing!.");
         router.push("/dashboard");
         return;
+      }
+
+      if(!res.ok){
+        console.error("data", data)
       }
 
       toast.success(`Algo deployed`)

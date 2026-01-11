@@ -2,6 +2,7 @@ import docker
 import uuid
 import traceback
 from fastapi import APIRouter, HTTPException, Form
+from pydantic import BaseModel
 import ccxt
 from db import users_collection
 
@@ -12,8 +13,17 @@ try:
 except Exception:
     client = None # Fallback for local dev environments without Docker
 
+
+# 1. Define the schema
+class DeployRequest(BaseModel):
+    email: str
+    strategyId: str
+
 @router.post("/api/deploy")
-async def deploy(email: str = Form(...), strategyId: str = Form(...)):
+async def deploy(request: DeployRequest):
+
+    email = request.email
+    strategyId = request.strategyId
     # 1. Find user and specific strategy in one go
     user = users_collection.find_one({"email": email})
     
@@ -66,6 +76,7 @@ async def deploy(email: str = Form(...), strategyId: str = Form(...)):
         raise HTTPException(status_code=403, detail="Binance API keys missing in profile")
 
     if not client:
+        print("Docker engine is not available")
         raise HTTPException(status_code=500, detail="Docker engine is not available")
 
     try:
@@ -110,6 +121,7 @@ async def deploy(email: str = Form(...), strategyId: str = Form(...)):
 
     except Exception as e:
         traceback.print_exc()
+        print("Docker Error:", {str(e)})
         raise HTTPException(status_code=500, detail=f"Docker Error: {str(e)}")
 
 @router.post("/api/stop")
