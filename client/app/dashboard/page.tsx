@@ -85,10 +85,10 @@ export default function Dashboard() {
 
 const pnlColor =
   totalPnl === 0
-    ? "text-white"
+    ? ""
     : totalPnl > 0
-    ? "text-green-500"
-    : "text-red-500"
+    ? "bg-gradient-to-t from-black to-green-700"
+    : "bg-gradient-to-t from-black to-red-700"
 
 const perfColor =
   strategiesPerf === 0
@@ -343,20 +343,12 @@ const handleSquareOFF = async (id: string) => {
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header Section (Based on Image Ref) */}
-        <Card className="relative overflow-hidden group">
+        <Card className={`relative overflow-hidden group ${pnlColor}`}>
           <div className="relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div>
-                <h1 className="text-4xl font-light tracking-tight">Hello <span className="font-semibold text-white">{email.split("@")[0]}</span></h1>
-                <div className="mt-8 flex items-center gap-4">
-                  <div className="flex items-center gap-1 bg-zinc-950 border border-zinc-800 rounded-full px-4 py-2 text-sm group-hover:border-zinc-700 transition-colors cursor-pointer">
-                    <ChevronLeft size={14} className="text-zinc-500" />
-                    <div className="flex items-center gap-2 px-2">
-                      <div className="w-5 h-5 bg-zinc-100 rounded-sm flex items-center justify-center text-[10px] text-black font-bold">B</div>
-                      <span className="font-medium">Binance</span>
-                    </div>
-                    <ChevronRight size={14} className="text-zinc-500" />
-                  </div>
+              <div className="flex items-center justify-between w-full">
+                <h1 className="md:text-4xl ">{email.split("@")[0]}</h1>
+                <div className="flex items-center gap-2">
                   <button 
                     onClick={() => setIsModalOpen(true)}
                     className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors"
@@ -366,9 +358,9 @@ const handleSquareOFF = async (id: string) => {
                 </div>
               </div>
 
-              <div className="text-right">
-                <p className="text-xs text-zinc-500 uppercase tracking-[0.2em] mb-1">Total P&L</p>
-                <h2 className={`text-5xl tracking-tighter ${pnlColor}`}>
+              <div className=" w-full flex items-center justify-center">
+               
+                <h2 className={`text-5xl tracking-tighter `}>
   $
   {new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
