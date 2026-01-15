@@ -25,15 +25,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 
-
-// --- Components ---
-
-const Card = ({ children, className = "" }: { children: React.ReactNode, className?: string }) => (
-  <div className={`bg-zinc-900/40 border border-zinc-800/60 rounded-3xl p-6 ${className}`}>
-    {children}
-  </div>
-)
-
 const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, onToggle: () => void }) => (
   <div className="flex flex-col gap-3">
     <div className="flex items-center gap-2">
@@ -96,6 +87,7 @@ const perfColor =
     : strategiesPerf > 0
     ? "text-green-500"
     : "text-red-500"
+
 
 
 useEffect(() => {
@@ -343,7 +335,7 @@ const handleSquareOFF = async (id: string) => {
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header Section (Based on Image Ref) */}
-        <Card className={`relative overflow-hidden group ${pnlColor}`}>
+        <div className={`relative overflow-hidden group rounded-xl p-5 ${pnlColor}`}>
           <div className="relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div className="flex items-center justify-between w-full">
@@ -368,24 +360,20 @@ const handleSquareOFF = async (id: string) => {
   }).format(totalPnl)}
 </h2>
 
-              </div>
-            </div>
 
-            <div className="mt-12 pt-8 border-t border-zinc-800/50 grid grid-cols-2 md:grid-cols-4 gap-8">
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Market Type</p>
-                <p className="text-lg font-medium">Crypto</p>
               </div>
-              <div>
-                <p className="text-[10px] uppercase tracking-widest text-zinc-500 mb-2">Strategies Perf.</p>
-                <p className={`text-lg font-medium ${perfColor}`}>
+
+              <p className={`text-lg text-center w-full font-medium ${perfColor}`}>
                 $
   {new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(strategiesPerf)}
                 </p>
-              </div>
+            </div>
+
+            <div className="mt-12 pt-8 border-t border-zinc-800/50 grid grid-cols-2 md:grid-cols-4 gap-8">
+              
               <Toggle label="Terminal" status={terminal} onToggle={() => {
     if (!terminal) {
       toast.error("Add Binance API Key or Secret");
@@ -401,7 +389,7 @@ const handleSquareOFF = async (id: string) => {
   }} />
             </div>
           </div>
-        </Card>
+        </div>
 
       {/* Strategies List - Perfectly aligned with max-w-6xl */}
         <div className="pt-4">

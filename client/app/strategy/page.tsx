@@ -204,9 +204,18 @@ export default function AlgoTradingLovableUI() {
   return (
     <div className="relative min-h-screen w-screen overflow-x-hidden bg-black text-white pb-20">
       {/* Background Effect */}
-      <div className="absolute inset-0 bg-black">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.35),rgba(0,0,0,0.95)_65%)]" />
-      </div>
+<div className="absolute inset-0 bg-[#020205]"> {/* Slightly off-black for better contrast */}
+  
+  {/* Primary Deep Glow (Wide) */}
+  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.3),transparent_70%)]" />
+
+  {/* Intense Inner Core Glow (Stronger) */}
+  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.4)_0%,transparent_50%)]" />
+
+  {/* Subtle Top-Down Highlight (Premium Touch) */}
+
+  
+</div>
 
       <div className="relative z-10 flex h-full flex-col items-center px-4 pt-20">
         <div className="flex flex-col md:flex-row items-center justify-between gap-2">

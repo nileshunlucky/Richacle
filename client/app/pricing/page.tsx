@@ -23,7 +23,7 @@ export default function Home() {
         "Binance Intergration",
       ],
       cta: "Get Started",
-      link: "/admin/dashboard",
+      link: "/dashboard",
       featured: false
     },
     {
