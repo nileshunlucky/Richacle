@@ -161,14 +161,17 @@ export default function AlgoTradingLovableUI() {
 
       setActiveMenu(null);
     try {
-      const form = new FormData();
-      form.append("email", email);
-      form.append("strategyId", stratId);
 
       const res = await fetch("https://api.richacle.com/api/deploy", {
-        method: "POST",
-        body: form,
-      });
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", 
+      },
+      body: JSON.stringify({
+        email: email,
+        strategyId: stratId,
+      }),
+    });
 
       const data = await res.json()
 
@@ -198,6 +201,7 @@ export default function AlgoTradingLovableUI() {
       toast.success(`Algo deployed`)
     } catch (e) {
       toast.error("Something went wrong");
+      console.error(e)
     }
   };
 

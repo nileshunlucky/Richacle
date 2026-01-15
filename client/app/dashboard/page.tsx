@@ -400,7 +400,7 @@ const handleSquareOFF = async (id: string) => {
             <div className="h-[1px] flex-grow mx-4 bg-zinc-800/50" /> {/* Subtle divider line */}
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-3 flex flex-col-reverse">
             {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
               <div className="bg-zinc-900/20 border border-zinc-800/40 rounded-2xl py-12 text-center">
                 <p className="text-zinc-600 text-sm font-light">No active execution threads</p>
