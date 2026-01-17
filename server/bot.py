@@ -94,7 +94,7 @@ def main():
         print("❌ No Strategy Code found.")
         return
 
-    print(f"🚀 Bot starting | LIVE FUTURES | Symbol: {SYMBOL} | Leverage: {LEVERAGE}x")
+    print(f"🚀 Bot starting | {MODE} FUTURES | Symbol: {SYMBOL} | Leverage: {LEVERAGE}x")
     exchange.load_markets()
 
     try:
