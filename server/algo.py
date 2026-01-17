@@ -116,6 +116,7 @@ async def deploy(request: DeployRequest):
             {"email": email, "strategies.id": strategyId},
             {"$set": {
                 "strategies.$.container_id": container.id,
+                "strategies.$.mode": mode,
                 "strategies.$.status": "running",
             }}
         )
@@ -190,6 +191,13 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
                 'options': {'defaultType': 'future'}
             })
 
+            is_paper = strategy.get("mode", "PAPER") == "PAPER" 
+            if is_paper:
+                exchange.enable_demo_trading(True)
+                print("Closing PAPER positions...")
+            else:
+                print("Closing LIVE positions...")
+
             # Fetch all positions with a balance
             positions = exchange.fetch_positions()
             
@@ -227,7 +235,12 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
     users_collection.update_one(
         {"email": email, "strategies.id": strategyId},
         {
-            "$set": {"strategies.$.status": "stopped"},
+            "$set": {"strategies.$.status": "stopped",
+                "strategies.$.paper_pos": 0,    # Reset these!
+                "strategies.$.paper_entry": 0,
+                "strategies.$.live_pos": 0,
+                "strategies.$.live_entry": 0
+            },
             "$unset": {
             "strategies.$.container_id": "",
             "strategies.$.error_at": "",

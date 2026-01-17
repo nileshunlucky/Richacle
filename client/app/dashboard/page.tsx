@@ -68,7 +68,7 @@ export default function Dashboard() {
   const [apiKey, setApiKey] = useState("")
   const [apiSecret, setApiSecret] = useState("")
   const [email, setEmail] = useState("")
-  const [deployingId, setDeployingId] = useState(null);
+  const [deployingId, setDeployingId] = useState<string | null>(null);
   const [totalPnl, setTotalPnl] = useState(0)
   const [strategiesPerf, setStrategiesPerf] = useState(0)
   const [strategies, setStrategies] = useState<Strategy[]>([]);

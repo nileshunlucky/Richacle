@@ -70,14 +70,14 @@ async def predict_trade(
                     {"role": "system", "content": (
                 "Extract the trading amount in USDT from the user input. "
                 "Rules:\n"
-                "1. Output ONLY the number (e.g., 100.5).\n"
+                "1. Output ONLY the number (e.g., 100.0).\n"
                 "2. Remove any '$' or 'USDT' symbols.\n"
-                "3. If no amount is found, output '25.0' as the default.\n"
+                "3. If no amount is found, output '100.0' as the default.\n"
                 "4. No words, no punctuation, no explanations.\n"
                 "\nExamples:\n"
                 "Input: 'buy $500 of btc' -> Output: 500\n"
-                "Input: 'trade with 25.5 usdt' -> Output: 25.5\n"
-                "Input: 'start a strategy' -> Output: 25.0"
+                "Input: 'trade with 100.0 usdt' -> Output: 100.0\n"
+                "Input: 'start a strategy' -> Output: 100.0"
             )},
                     {"role": "user", "content": input},
                 ],
@@ -86,9 +86,9 @@ async def predict_trade(
 
         try:
           clean_amount = "".join(c for c in raw_amount if c.isdigit() or c == '.')
-          amount = float(clean_amount) if clean_amount else 25.0
+          amount = float(clean_amount) if clean_amount else 100.0
         except ValueError:
-          amount = 25.0 # Final fallback if AI hallucinates text
+          amount = 100.0 # Final fallback if AI hallucinates text
 
         leverageres = openai_client.responses.create(
             model="gpt-4o-mini",
@@ -293,7 +293,7 @@ async def autocomplete(
             input=[
                 {
                     "role": "system",
-                    "content": "You are a Crypto trading algo completion tool. Complete the user's sentence briefly. Only provide the   completion text. No conversational filler.if not mention this then add, symbol (ex. BTC/USDT, ETH/USDT), Leverage 1 to 100 max, Timeframe (ex.5m, 15min, 30min, 1hr) and amount like min $25, $100. if all this mention and strtegy logic is complete  then stop (dont reply)"
+                    "content": "You are a Crypto trading algo completion tool. Complete the user's sentence briefly. Only provide the   completion text. No conversational filler.if not mention this then add, symbol (ex. BTC/USDT, ETH/USDT), Leverage 1 to 100 max, Timeframe (ex.5m, 15min, 30min, 1hr) and amount like min $$100. if all this mention and strtegy logic is complete  then stop (dont reply)"
                 },
                 {"role": "user", "content": prompt},
             ],
