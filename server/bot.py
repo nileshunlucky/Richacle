@@ -34,7 +34,7 @@ exchange = ccxt.binance({
 if MODE == "LIVE":
     print("LIVE MODE")
 else:
-    exchange.set_sandbox_mode(True)
+    exchange.enable_demo_trading(True)
     print("PAPER MODE")
 
 DB_PREFIX = "live" if MODE == "LIVE" else "paper"

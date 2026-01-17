@@ -18,7 +18,10 @@ async def autocomplete(
         'apiKey': apiKey,
         'secret': apiSecret,
         'enableRateLimit': True,
+        'options': {'defaultType': 'future'},
     })
+
+    exchange.enable_demo_trading(True)
 
     try:
         # 2. Validate credentials by calling a private endpoint
