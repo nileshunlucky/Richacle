@@ -68,6 +68,7 @@ export default function Dashboard() {
   const [apiKey, setApiKey] = useState("")
   const [apiSecret, setApiSecret] = useState("")
   const [email, setEmail] = useState("")
+  const [deployingId, setDeployingId] = useState(null);
   const [totalPnl, setTotalPnl] = useState(0)
   const [strategiesPerf, setStrategiesPerf] = useState(0)
   const [strategies, setStrategies] = useState<Strategy[]>([]);
@@ -274,7 +275,7 @@ const handleSquareOFF = async (id: string) => {
     }
   };
 
-  const handleDeploy = async (id: string) => {
+  const handleDeploy = async (id: string, mode: string) => {
     if (!email){
       toast.error("Not Authenticated");
       return;
@@ -290,6 +291,7 @@ const handleSquareOFF = async (id: string) => {
       body: JSON.stringify({
         email: email,
         strategyId: id,
+        mode: mode,
       }),
     });
 
@@ -400,7 +402,7 @@ const handleSquareOFF = async (id: string) => {
             <div className="h-[1px] flex-grow mx-4 bg-zinc-800/50" /> {/* Subtle divider line */}
           </div>
 
-          <div className="space-y-3 flex flex-col-reverse">
+          <div className="gap-2 flex flex-col-reverse">
             {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
               <div className="bg-zinc-900/20 border border-zinc-800/40 rounded-2xl py-12 text-center">
                 <p className="text-zinc-600 text-sm font-light">No active execution threads</p>
@@ -419,8 +421,8 @@ const handleSquareOFF = async (id: string) => {
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col gap-1">
                         <h4 className="text-sm font-medium text-zinc-100">{s.name}</h4>
-                        <p className="text-[10px] text-zinc-500 font-mono mt-0.5 uppercase tracking-tighter opacity-70">
-                          {s.input || "Standard_Config"}
+                        <p className="text-[10px] text-zinc-500 mt-0.5 opacity-70">
+                          {s.input}
                         </p>
                           {/* Row 2: Error Message (Only shows if status is error) */}
   {s.status === "error" && s.last_error && (
@@ -455,33 +457,56 @@ const handleSquareOFF = async (id: string) => {
                       <div className="flex flex-col items-end gap-2">
   {/* Row 1: Action Buttons */}
   <div className="flex gap-2">
-    {s.status === "running" || s.status === "error" ? (
-      <>
-        <button
-          onClick={() => handleStop(s.id)}
-          className="bg-zinc-100 flex items-center gap-1.5 hover:bg-white text-zinc-950 px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
-        >
-          <Power size={12} />
-          STOP
-        </button>
-        <button
-          onClick={() => handleSquareOFF(s.id)}
-          className="bg-zinc-100 flex items-center gap-1.5 hover:bg-white text-zinc-950 px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
-        >
-          <XCircle size={12} />
-          SQUARE OFF
-        </button>
-      </>
-    ) : (
-      <button
-         onClick={() => {
-            handleDeploy(s.id);
-          }}
-        className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95"
-      >
-        DEPLOY
-      </button>
-    )}
+   {s.status === "running" || s.status === "error" ? (
+  <>
+    <button
+      onClick={() => handleStop(s.id)}
+      className="bg-zinc-100 flex items-center gap-1.5 hover:bg-white text-zinc-950 px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+    >
+      <Power size={12} />
+      STOP
+    </button>
+    <button
+      onClick={() => handleSquareOFF(s.id)}
+      className="bg-zinc-100 flex items-center gap-1.5 hover:bg-white text-zinc-950 px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+    >
+      <XCircle size={12} />
+      SQUARE OFF
+    </button>
+  </>
+) : deployingId === s.id ? ( // Only show if this specific ID is being deployed
+  <>
+    <button
+      onClick={() => {
+        handleDeploy(s.id, "LIVE");
+        setDeployingId(null); // Reset after action
+      }}
+      className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+    >
+      LIVE
+    </button>
+    <button
+      onClick={() => {
+        handleDeploy(s.id, "PAPER");
+        setDeployingId(null); // Reset after action
+      }}
+      className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+    >
+      PAPER
+    </button>
+    {/* Optional: Add a cancel button */}
+    <button onClick={() => setDeployingId(null)} className="text-zinc-500 text-[10px]">
+      Cancel
+    </button>
+  </>
+) : (
+  <button
+    onClick={() => setDeployingId(s.id)} // Set this strategy as the one being deployed
+    className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+  >
+    DEPLOY
+  </button>
+)}
   </div>
 
 

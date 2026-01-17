@@ -11,6 +11,7 @@ from db import users_collection
 EMAIL = os.getenv("EMAIL")
 API_KEY = os.getenv("BINANCE_API_KEY")
 API_SECRET = os.getenv("BINANCE_API_SECRET")
+MODE = os.getenv("MODE", "PAPER")
 STRATEGY_ID = os.getenv("STRATEGY_ID")
 STRATEGY_CODE = os.getenv("STRATEGY_CODE")
 SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
@@ -30,6 +31,14 @@ exchange = ccxt.binance({
     'options': {'defaultType': 'future'}
 })
 
+if MODE == "LIVE":
+    print("LIVE MODE")
+else:
+    exchange.set_sandbox_mode(True)
+    print("PAPER MODE")
+
+DB_PREFIX = "live" if MODE == "LIVE" else "paper"
+
 # --- Helper Functions ---
 def get_strategy_state():
     user = users_collection.find_one({"email": EMAIL, "strategies.id": STRATEGY_ID})
@@ -37,9 +46,9 @@ def get_strategy_state():
         for strat in user.get('strategies', []):
             if strat['id'] == STRATEGY_ID:
                 return {
-                    "pos": float(strat.get('live_pos', 0.0)),
-                    "entry": float(strat.get('live_entry', 0.0)),
-                    "total_pnl": float(strat.get('live_pnl', 0.0))
+                    "pos": float(strat.get(f'{DB_PREFIX}_pos', 0.0)),
+                    "entry": float(strat.get(f'{DB_PREFIX}_entry', 0.0)),
+                    "total_pnl": float(strat.get(f'{DB_PREFIX}_pnl', 0.0))
                 }
     return {"pos": 0.0, "entry": 0.0, "total_pnl": 0.0}
 
@@ -48,12 +57,12 @@ def update_strategy_state(pos, entry=0.0, pnl_inc=0.0):
         {"email": EMAIL, "strategies.id": STRATEGY_ID},
         {
             "$set": {
-                "strategies.$.live_pos": pos,
-                "strategies.$.live_entry": entry,
+                f"strategies.$.{DB_PREFIX}_pos": pos,
+                f"strategies.$.{DB_PREFIX}_entry": entry,
                 "strategies.$.status": "running",
                 "strategies.$.last_update": datetime.now(),
             },
-            "$inc": {"strategies.$.live_pnl": pnl_inc}
+            "$inc": {f"strategies.$.{DB_PREFIX}_pnl": pnl_inc}
         }
     )
 

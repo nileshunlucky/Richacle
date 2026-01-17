@@ -256,7 +256,7 @@ function BacktestContent() {
               </div>
             </motion.div>
           ) : (
-            <div className="h-48 flex flex-col items-center justify-center text-zinc-800 border border-zinc-900/50 rounded-2xl bg-zinc-950/10">
+            <div className="h-48 flex flex-col items-center justify-center text-zinc-800 ">
               <Activity size={24} className="mb-3 opacity-10" />
               <span className="uppercase tracking-[0.4em] theseason">RICHACLE</span>
             </div>

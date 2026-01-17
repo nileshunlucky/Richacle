@@ -18,12 +18,14 @@ except Exception:
 class DeployRequest(BaseModel):
     email: str
     strategyId: str
+    mode: str
 
 @router.post("/api/deploy")
 async def deploy(request: DeployRequest):
 
     email = request.email
     strategyId = request.strategyId
+    mode = request.mode
     # 1. Find user and specific strategy in one go
     user = users_collection.find_one({"email": email})
     
@@ -97,6 +99,7 @@ async def deploy(request: DeployRequest):
                 "EMAIL": email,
                 "BINANCE_API_KEY": api_key,
                 "BINANCE_API_SECRET": api_secret,
+                "MODE": mode,
                 "STRATEGY_ID": strategyId,
                 "STRATEGY_CODE": strategy["code"],
                 "SYMBOL": strategy["symbol"],
