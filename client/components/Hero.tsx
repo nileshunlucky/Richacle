@@ -110,7 +110,7 @@ export default function AILandingPage() {
       
 
       {/* Hero Section */}
-      <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5 pb-20">
+      <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5">
 
         <div className="max-w-5xl mx-auto text-center z-10">
           <motion.h1 
@@ -145,10 +145,10 @@ export default function AILandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-zinc-400 mb-10 max-w-2xl mx-auto leading-relaxed text-xs md:text-lg"
+            className="text-zinc-400 mb-10 max-w-2xl mx-auto md:text-lg"
           >
-            Build, backtest, and deploy hyper-efficient trading strategies <br className="hidden md:block"/> 
-            in natural language. Directly integrated with Binance for seamless execution.
+            Build, backtest, and deploy. <br /> 
+            Create crypto algos by chatting with AI
           </motion.p>
 
         </div>
@@ -179,11 +179,10 @@ export default function AILandingPage() {
   {/* 2. The Black Top Mask (Top 50%) */}
   <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-1/2" />
 
-  {/* 3. The Black Bottom Mask (Bottom 10%) */}
-  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent h-[30%]" />
+
 
   {/* 4. Global Saturation Boost */}
-  <div className="absolute inset-0 bg-white/5 mix-blend-overlay pointer-events-none" />
+  <div className="absolute inset-0 bg-white/8 mix-blend-overlay pointer-events-none" />
 
 </div>
           
