@@ -208,18 +208,28 @@ export default function AlgoTradingLovableUI() {
 
   return (
     <div className="relative min-h-screen w-screen overflow-x-hidden bg-black text-white pb-20">
-      {/* Background Effect */}
-<div className="absolute inset-0 bg-[#020205]"> {/* Slightly off-black for better contrast */}
+{/* Instagram Full Bright Glow with Top Black Fade */}
+<div className="absolute inset-0 bg-black overflow-hidden">
   
-  {/* Primary Deep Glow (Wide) */}
-  <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(139,92,246,0.3),transparent_70%)]" />
+  {/* 1. The Main Vibrant Layer */}
+  <div 
+    className="absolute inset-0 opacity-100"
+    style={{
+      background: `
+        radial-gradient(circle at 0% 100%, rgba(255, 220, 107, 1) 0%, rgba(253, 29, 29, 0.6) 35%, transparent 70%),
+        radial-gradient(circle at 100% 100%, rgba(225, 48, 108, 0.9) 0%, rgba(131, 58, 180, 0.7) 40%, transparent 80%),
+        radial-gradient(circle at 50% 50%, rgba(64, 93, 230, 0.8) 0%, transparent 100%)
+      `,
+      filter: 'blur(40px)' // Softens the blend between these intense colors
+    }}
+  />
 
-  {/* Intense Inner Core Glow (Stronger) */}
-  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(168,85,247,0.4)_0%,transparent_50%)]" />
+  {/* 2. The Black Top Mask (Creates the fade from the top) */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-[50%]" />
 
-  {/* Subtle Top-Down Highlight (Premium Touch) */}
+  {/* 3. Global Saturation Boost */}
+  <div className="absolute inset-0 bg-white/5 mix-blend-overlay pointer-events-none" />
 
-  
 </div>
 
       <div className="relative z-10 flex h-full flex-col items-center px-4 pt-20">
@@ -234,7 +244,7 @@ export default function AlgoTradingLovableUI() {
         </div>
 
         <p className="mt-4 text-center text-zinc-400 max-w-xl md:text-xl text-sm">
-          Create algo logic in simple English with AI.
+          Create crypto algos by chatting with AI
         </p>
 
         {/* Prompt Box */}
@@ -286,8 +296,8 @@ export default function AlgoTradingLovableUI() {
             />
             
             <div className="flex items-center justify-between px-4 pb-3">
-              <div className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-                {loadingSuggestion ? <h1 className="animate-pulse">GPT-5.1 Copilot</h1> : suggestion ? "Press Tab to accept" : "GPT-5.1 Copilot"}
+              <div className="text-[10px] text-zinc-500 uppercase font-bold">
+                {loadingSuggestion ? <h1 className="animate-pulse"><span className="theseason">RICHACLE</span> Copilot</h1> : suggestion ? "Press Tab to accept" : "RICHACLE Copilot"}
               </div>
 
               <button
@@ -303,7 +313,7 @@ export default function AlgoTradingLovableUI() {
 
         {/* Strategies Section */}
         <div className="mt-12 w-full max-w-3xl space-y-4">
-          <h2 className="text-sm font-medium uppercase tracking-widest text-zinc-500">My Strategies</h2>
+          <h2 className="text-xs uppercase">My Strategies</h2>
           
           <div className="flex flex-col-reverse gap-3">
             {strategies.map((strat) => (
