@@ -115,7 +115,7 @@ async def deploy(request: DeployRequest):
             {"email": email, "strategies.id": strategyId},
             {"$set": {
                 "strategies.$.container_id": container.id,
-                "strategies.$.mode": demo,
+                "strategies.$.demo": demo,
                 "strategies.$.status": "running",
             }}
         )
@@ -190,7 +190,7 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
                 'options': {'defaultType': 'future'}
             })
 
-            is_demo = strategy.get("mode")
+            is_demo = strategy.get("demo")
             if is_demo:
                 exchange.enable_demo_trading(True)
 

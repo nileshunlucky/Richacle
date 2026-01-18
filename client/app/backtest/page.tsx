@@ -16,7 +16,7 @@ import {
   LineElement, Title, Tooltip, Legend, Filler 
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import { Activity, Database, Loader2, ChevronRight } from "lucide-react";
+import { Activity, Loader2, ChevronRight } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -196,9 +196,6 @@ function BacktestContent() {
       <div className="max-w-4xl mx-auto space-y-10">
         
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-zinc-500 text-[9px] uppercase font-bold tracking-[0.25em] px-1">
-            <Database size={12} /> <span>BackTest Engine</span>
-          </div>
 
           <div className="flex flex-col md:flex-row items-center gap-3">
             <div className="relative w-full flex-1">
@@ -214,7 +211,7 @@ function BacktestContent() {
                     <SelectItem key={strat.id} value={strat.id} className="rounded-lg p-3 my-0.5 cursor-pointer">
                       <div className="flex items-center justify-between w-full min-w-[200px]">
                         <div>
-                          <h3 className="text-xs font-bold uppercase tracking-tight">{strat.name}</h3>
+                          <h3 className="text-xs font-bold uppercase">{strat.name}</h3>
                           <p className="text-[9px] opacity-50 mt-0.5 font-mono">{strat.input}</p>
                         </div>
                         <ChevronRight size={12} className="ml-4 opacity-20" />
@@ -228,7 +225,7 @@ function BacktestContent() {
             <Button
               onClick={handleBacktest}
               disabled={loading || !selectedStrat}
-              className="h-14 px-10 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold text-xs uppercase tracking-widest disabled:opacity-20 w-full md:w-[180px]"
+              className="h-14 px-10 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold text-xs uppercase disabled:opacity-20 w-full md:w-[180px]"
             >
               {loading ? <Loader2 className="animate-spin size-4" /> : "Back Test"}
             </Button>
@@ -246,9 +243,9 @@ function BacktestContent() {
               </div>
 
               <div className=" bg-zinc-950/20 p-3 md:p-8 rounded-2xl">
-                <div className="flex justify-between items-center mb-8 text-[9px] uppercase tracking-[0.2em] font-bold text-zinc-600">
+                <div className="flex justify-between items-center mb-8 text-[9px] uppercase font-bold text-zinc-600">
                   <span>Equity Curve</span>
-                  <span className="text-zinc-200 tracking-normal">{result.total_trades} TRADES</span>
+                  <span className="text-zinc-200 ">{result.total_trades} TRADES</span>
                 </div>
                 <div className="h-[250px] md:h-[350px]">
                   <Line data={chartData} options={chartOptions} />
@@ -258,7 +255,7 @@ function BacktestContent() {
           ) : (
             <div className="h-48 flex flex-col items-center justify-center text-zinc-800 ">
               <Activity size={24} className="mb-3 opacity-10" />
-              <span className="uppercase tracking-[0.4em] theseason">RICHACLE</span>
+              <span className="uppercase theseason">RICHACLE</span>
             </div>
           )}
         </AnimatePresence>
@@ -283,8 +280,8 @@ export default function BacktestUI() {
 function Stat({ label, value, color }: { label: string, value: string, color: string }) {
   return (
     <div className="space-y-1 py-2 px-1 border-l border-zinc-900 md:border-none">
-      <p className="text-[8px] text-zinc-600 uppercase font-bold tracking-widest">{label}</p>
-      <p className={`text-2xl md:text-3xl font-medium tracking-tighter ${color}`}>{value}</p>
+      <p className="text-[8px] text-zinc-600 uppercase font-bold ">{label}</p>
+      <p className={`text-2xl md:text-3xl font-medium  ${color}`}>{value}</p>
     </div>
   );
 }
