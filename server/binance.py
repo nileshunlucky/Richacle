@@ -12,6 +12,7 @@ async def autocomplete(
     email: str = Form(...),
     apiKey: str = Form(...), 
     apiSecret: str = Form(...), 
+    isDemo: bool = Form(...), 
 ):
     # 1. Initialize the Binance client
     exchange = ccxt.binance({
@@ -21,7 +22,8 @@ async def autocomplete(
         'options': {'defaultType': 'future'},
     })
 
-    exchange.enable_demo_trading(True)
+    if isDemo:
+        exchange.enable_demo_trading(True)
 
     try:
         # 2. Validate credentials by calling a private endpoint
@@ -45,7 +47,8 @@ async def autocomplete(
                 "$set": {
                     "binance": {
                         "apiKey": apiKey, 
-                        "apiSecret": apiSecret
+                        "apiSecret": apiSecret,
+                        "demo": isDemo
                     },
                     "terminal": True
                 }

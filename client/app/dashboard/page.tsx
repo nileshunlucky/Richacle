@@ -24,6 +24,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {Switch} from "@/components/ui/switch"
 
 const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, onToggle: () => void }) => (
   <div className="flex flex-col gap-3">
@@ -55,7 +56,7 @@ interface Strategy {
   input?: string;
   last_error?: string;
   live_pnl?: number | string;
-  paper_pnl?: number | string;
+  demo_pnl?: number | string;
 }
 
 // --- Main Page ---
@@ -65,10 +66,10 @@ export default function Dashboard() {
   const [terminal, setTerminal] = useState(false)
   const [engine, setEngine] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isDemo, setIsDemo] = useState(false)
   const [apiKey, setApiKey] = useState("")
   const [apiSecret, setApiSecret] = useState("")
   const [email, setEmail] = useState("")
-  const [deployingId, setDeployingId] = useState<string | null>(null);
   const [totalPnl, setTotalPnl] = useState(0)
   const [strategiesPerf, setStrategiesPerf] = useState(0)
   const [strategies, setStrategies] = useState<Strategy[]>([]);
@@ -118,6 +119,7 @@ useEffect(() => {
       const data = await res.json();
        setApiKey(data?.binance?.apiKey);
       setApiSecret(data?.binance?.apiSecret);
+      setIsDemo(data?.binance?.demo);
     } catch {
       toast.error("Failed loading strategies!");
     }
@@ -133,9 +135,9 @@ useEffect(() => {
 
   strategies.forEach(s => {
     const live = Number(s.live_pnl || 0)
-    const paper = Number(s.paper_pnl || 0)
+    const demo = Number(s.demo_pnl || 0)
 
-    const sTotal = live + paper
+    const sTotal = live + demo
     total += sTotal
 
     if (s.status === "running") {
@@ -255,6 +257,7 @@ const handleSquareOFF = async (id: string) => {
       form.append("email", email);
       form.append("apiKey", apiKey);
       form.append("apiSecret", apiSecret);
+      form.append("isDemo", isDemo);
 
       const res = await fetch("https://api.richacle.com/api/binance", {
         method: "POST",
@@ -275,7 +278,7 @@ const handleSquareOFF = async (id: string) => {
     }
   };
 
-  const handleDeploy = async (id: string, mode: string) => {
+  const handleDeploy = async (id: string) => {
     if (!email){
       toast.error("Not Authenticated");
       return;
@@ -291,7 +294,6 @@ const handleSquareOFF = async (id: string) => {
       body: JSON.stringify({
         email: email,
         strategyId: id,
-        mode: mode,
       }),
     });
 
@@ -474,34 +476,9 @@ const handleSquareOFF = async (id: string) => {
       SQUARE OFF
     </button>
   </>
-) : deployingId === s.id ? ( // Only show if this specific ID is being deployed
-  <>
-    <button
-      onClick={() => {
-        handleDeploy(s.id, "LIVE");
-        setDeployingId(null); // Reset after action
-      }}
-      className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
-    >
-      LIVE
-    </button>
-    <button
-      onClick={() => {
-        handleDeploy(s.id, "PAPER");
-        setDeployingId(null); // Reset after action
-      }}
-      className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
-    >
-      PAPER
-    </button>
-    {/* Optional: Add a cancel button */}
-    <button onClick={() => setDeployingId(null)} className="text-zinc-500 text-[10px]">
-      Cancel
-    </button>
-  </>
 ) : (
   <button
-    onClick={() => setDeployingId(s.id)} // Set this strategy as the one being deployed
+    onClick={() => handleDeploy(s.id)} // Set this strategy as the one being deployed
     className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
   >
     DEPLOY
@@ -523,96 +500,110 @@ const handleSquareOFF = async (id: string) => {
 
       {/* Binance Modal */}
       <AnimatePresence>
-        {isModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsModalOpen(false)}
-              className="absolute inset-0 bg-black backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl p-8 shadow-2xl"
-            >
-              <div className="flex items-center gap-3 mb-8">
-                <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center">
-                  <ShieldCheck size={20} />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold">Binance API</h2>
-                  <p className="text-sm text-zinc-500">Securely connect your exchange</p>
-                </div>
-              </div>
-
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1">API Key</label>
-                  <input 
-                    type="text" 
-                    value={apiKey}
-                  onChange={(e)=> setApiKey(e.target.value)}
-                    placeholder="Enter your API Key"
-                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1">Secret Key</label>
-                  <input 
-                    value={apiSecret}
-                  onChange={(e)=> setApiSecret(e.target.value)}
-                    type="password" 
-                    placeholder="Enter your API Secret"
-                    className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
-                  />
-                </div>
-                <div className="space-y-2">
-                  
-      <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1 flex items-center gap-2">Public IPv4 address
-                  <Tooltip>
-      <TooltipTrigger asChild>
-      <button type="button" className="outline-none">
-            <Info 
-              size={13} 
-              className="text-zinc-600 hover:text-zinc-300 transition-colors" 
-            />
-          </button>
-      </TooltipTrigger>
-      <TooltipContent>
-<p>
-  Copy this IP to Binance&apos;s &quot;Restrict access to trusted IPs only&quot; 
-  setting to enable secure trading.
-</p>
-      </TooltipContent>
-    </Tooltip>
-    </label>
-                  <p onClick={()=> navigator.clipboard.writeText("43.204.237.247")} className="w-full flex justify-between items-center bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700">43.204.237.247 <Copy size={16} className="text-zinc-500 group-hover:text-zinc-100 transition-colors" /></p>
-                  
-                </div>
-                <div className="pt-4 flex gap-3">
-                  <button 
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white transition-colors"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                  onClick={handleBinance}
-                  disabled={loading}
-                    className="flex-1 flex items-center justify-center bg-zinc-100 text-zinc-950 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-white transition-all active:scale-95"
-                  >
-                    
-                    {loading ? <Loader2 size={16} className="animate-spin" /> : "Connect"}
-                  </button>
-                </div>
-              </div>
-            </motion.div>
+  {isModalOpen && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setIsModalOpen(false)}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+        className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl p-8 shadow-2xl text-white"
+      >
+        {/* Header with Switch */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Binance API</h2>
+              <p className="text-sm text-zinc-500">{isDemo ? 'Demo Trading' : 'Live Trading'}</p>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-[9px] uppercase tracking-tighter text-zinc-500 font-bold">Demo</span>
+            <Switch 
+              checked={isDemo} 
+              onCheckedChange={setIsDemo} 
+            />
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1">API Key</label>
+            <input 
+              type="text" 
+              value={apiKey}
+              onChange={(e)=> setApiKey(e.target.value)}
+              placeholder="Enter your API Key"
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1">Secret Key</label>
+            <input 
+              value={apiSecret}
+              onChange={(e)=> setApiSecret(e.target.value)}
+              type="password" 
+              placeholder="Enter your API Secret"
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
+            />
+          </div>
+
+          {/* IP Address - HIDDEN IF DEMO */}
+          {!isDemo && (
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1 flex items-center gap-2">
+                Public IPv4 address
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="outline-none">
+                      <Info size={13} className="text-zinc-600 hover:text-zinc-300 transition-colors" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy this IP to Binance's IP restriction setting.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </label>
+              <div 
+                onClick={()=> navigator.clipboard.writeText("43.204.237.247")} 
+                className="w-full flex justify-between items-center bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm cursor-pointer hover:border-zinc-700 transition-colors"
+              >
+                <span className="text-zinc-400">43.204.237.247</span>
+                <Copy size={16} className="text-zinc-500" />
+              </div>
+            </div>
+          )}
+
+          <div className="pt-4 flex gap-3">
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              className="flex-1 px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleBinance}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center bg-zinc-100 text-zinc-950 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-white transition-all active:scale-95"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : "Connect"}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
     </div>
   )
 }

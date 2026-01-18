@@ -11,7 +11,7 @@ from db import users_collection
 EMAIL = os.getenv("EMAIL")
 API_KEY = os.getenv("BINANCE_API_KEY")
 API_SECRET = os.getenv("BINANCE_API_SECRET")
-MODE = os.getenv("MODE", "PAPER")
+DEMO = os.getenv("DEMO", True)
 STRATEGY_ID = os.getenv("STRATEGY_ID")
 STRATEGY_CODE = os.getenv("STRATEGY_CODE")
 SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
@@ -31,13 +31,10 @@ exchange = ccxt.binance({
     'options': {'defaultType': 'future'}
 })
 
-if MODE == "LIVE":
-    print("LIVE MODE")
-else:
+if DEMO:
     exchange.enable_demo_trading(True)
-    print("PAPER MODE")
 
-DB_PREFIX = "live" if MODE == "LIVE" else "paper"
+DB_PREFIX = "live" if DEMO else "demo"
 
 # --- Helper Functions ---
 def get_strategy_state():
@@ -94,7 +91,7 @@ def main():
         print("❌ No Strategy Code found.")
         return
 
-    print(f"🚀 Bot starting | {MODE} FUTURES | Symbol: {SYMBOL} | Leverage: {LEVERAGE}x")
+    print(f"🚀 Bot starting | {DEMO and 'DEMO' or 'LIVE'} FUTURES | Symbol: {SYMBOL} | Leverage: {LEVERAGE}x")
     exchange.load_markets()
 
     try:

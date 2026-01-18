@@ -18,14 +18,12 @@ except Exception:
 class DeployRequest(BaseModel):
     email: str
     strategyId: str
-    mode: str
 
 @router.post("/api/deploy")
 async def deploy(request: DeployRequest):
 
     email = request.email
     strategyId = request.strategyId
-    mode = request.mode
     # 1. Find user and specific strategy in one go
     user = users_collection.find_one({"email": email})
     
@@ -73,6 +71,7 @@ async def deploy(request: DeployRequest):
     binance = user.get("binance", {})
     api_key = binance.get("apiKey")
     api_secret = binance.get("apiSecret")
+    demo = binance.get("demo")
     
     if not api_key or not api_secret:
         raise HTTPException(status_code=403, detail="Binance API keys missing in profile")
@@ -99,7 +98,7 @@ async def deploy(request: DeployRequest):
                 "EMAIL": email,
                 "BINANCE_API_KEY": api_key,
                 "BINANCE_API_SECRET": api_secret,
-                "MODE": mode,
+                "DEMO": demo,
                 "STRATEGY_ID": strategyId,
                 "STRATEGY_CODE": strategy["code"],
                 "SYMBOL": strategy["symbol"],
@@ -116,7 +115,7 @@ async def deploy(request: DeployRequest):
             {"email": email, "strategies.id": strategyId},
             {"$set": {
                 "strategies.$.container_id": container.id,
-                "strategies.$.mode": mode,
+                "strategies.$.mode": demo,
                 "strategies.$.status": "running",
             }}
         )
@@ -191,12 +190,9 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
                 'options': {'defaultType': 'future'}
             })
 
-            is_paper = strategy.get("mode", "PAPER") == "PAPER" 
-            if is_paper:
+            is_demo = strategy.get("mode")
+            if is_demo:
                 exchange.enable_demo_trading(True)
-                print("Closing PAPER positions...")
-            else:
-                print("Closing LIVE positions...")
 
             # Fetch all positions with a balance
             positions = exchange.fetch_positions()
@@ -215,7 +211,6 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
                         amount=abs(size),
                         params={'reduceOnly': True} # Ensure it only closes
                     )
-                    print(f"Squared off {symbol}: {size}")
 
         except Exception as e:
             print(f"Square off error (proceeding to stop container): {e}")
@@ -236,8 +231,8 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
         {"email": email, "strategies.id": strategyId},
         {
             "$set": {"strategies.$.status": "stopped",
-                "strategies.$.paper_pos": 0,    # Reset these!
-                "strategies.$.paper_entry": 0,
+                "strategies.$.demo_pos": 0,    # Reset these!
+                "strategies.$.demo_entry": 0,
                 "strategies.$.live_pos": 0,
                 "strategies.$.live_entry": 0
             },

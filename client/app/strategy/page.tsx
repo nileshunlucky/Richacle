@@ -18,7 +18,6 @@ export default function AlgoTradingLovableUI() {
   const [email, setEmail] = useState("");
   const [input, setInput] = useState("");
   const [mode, setMode] = useState("LIVE");
-  const [showMode, setShowMode] = useState(false);
   const [suggestion, setSuggestion] = useState(""); 
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -155,7 +154,7 @@ export default function AlgoTradingLovableUI() {
     }
   };
 
-  const handleDeploy = async (stratId: string, mode: string) => {
+  const handleDeploy = async (stratId: string) => {
     if (!email){
       toast.error("Not authenticated");
       return;
@@ -172,7 +171,6 @@ export default function AlgoTradingLovableUI() {
       body: JSON.stringify({
         email: email,
         strategyId: stratId,
-        mode: mode,
       }),
     });
 
@@ -347,31 +345,12 @@ export default function AlgoTradingLovableUI() {
   </div>
 ) : (
   <button
-      onClick={() => setShowMode(true)}
+      onClick={() => handleDeploy(strat.id)}
      className="flex w-full items-center gap-3 px-4 py-3 text-xs text-zinc-300 hover:bg-white hover:text-black transition border-t border-zinc-900"
     >
       Deploy
     </button>
 )}
-
-{
-  showMode && (
-<div>
-  <button
-      onClick={() => handleDeploy(strat.id, "LIVE")}
-     className="flex w-full items-center gap-3 px-4 py-3 text-xs text-zinc-300 hover:bg-white hover:text-black transition border-t border-zinc-900"
-    >
-      LIVE
-    </button>
-  <button
-      onClick={() => handleDeploy(strat.id, "PAPER")}
-     className="flex w-full items-center gap-3 px-4 py-3 text-xs text-zinc-300 hover:bg-white hover:text-black transition border-t border-zinc-900"
-    >
-      PAPER
-    </button>
-</div>
-  )
-}
 
                       </div>
                     )}
