@@ -138,6 +138,7 @@ async def predict_trade(
                 "Examples:\n"
                 "Input: 'stop loss 3%' -> Output: 0.03\n"
                 "Input: 'sl at 2.5%' -> Output: 0.025\n"
+                "Default: 0.03"
             )
         },
                     {"role": "user", "content": input},
@@ -162,46 +163,44 @@ async def predict_trade(
         timeframe = timeframeres.output_text.strip()
 
         prompt = f"""
-You are a professional Quant Coder. Generate a Python function for a LONG-ONLY trading strategy.
+You are an expert Quant Systems Architect. Generate a high-performance Python trading strategy.
 
-STRICT RULES:
-1. Output ONLY the function `def run_strategy(df):`. No markdown, no backticks, no comments.
-2. Use 'pd' for pandas and 'np' for numpy.
-3. The function MUST return: `trades` (a list of dicts) and `latest_signal` (a string).
-4. Trade Dictionary Format: 
-   - Each trade MUST be: {{'entry_price': float, 'exit_price': float, 'qty': 1}}
-5. latest_signal: "BUY" (if current candle meets entry), "SELL" (if in trade and exit met), or "HOLD".
+STRICT TECHNICAL REQUIREMENTS:
+1. NO LOOPS. Use vectorized pandas operations for indicators.
+2. CURRENT-STATE FOCUS: The function must decide the 'latest_signal' based ONLY on the last candle (df.iloc[-1]) and previous candle (df.iloc[-2]).
+3. DATA SAFETY: Check for NaN values (e.g., if there aren't enough bars for a 200 EMA) and return "HOLD" if data is insufficient.
+4. ONLY LONG: Return "BUY" to enter, "SELL" to exit, or "HOLD" to maintain state.
 
-ENVIRONMENT:
-- df columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume']
-- All price columns are already floats.
-
-EXAMPLE STRUCTURE:
+FUNCTION SIGNATURE:
 def run_strategy(df):
-    df['ema'] = df['close'].ewm(span=20).mean()
-    trades = []
-    open_trade = None
-    latest_signal = "HOLD"
-    for i in range(len(df)):
-        price = df['close'].iloc[i]
-        if open_trade is None:
-            if price > df['ema'].iloc[i]: # Entry Logic
-                open_trade = {{'entry_price': price, 'qty': 1}}
-                if i == len(df)-1: latest_signal = "BUY"
-        else:
-            if price < df['ema'].iloc[i]: # Exit Logic
-                trades.append({{'entry_price': open_trade['entry_price'], 'exit_price': price, 'qty': 1}})
-                open_trade = None
-                if i == len(df)-1: latest_signal = "SELL"
-    if open_trade:
-        trades.append({{'entry_price': open_trade['entry_price'], 'exit_price': df['close'].iloc[-1], 'qty': 1}})
-    return trades, latest_signal
+    # Returns: trades (list), latest_signal (str)
 
-USER STRATEGY REQUEST:
+LOGIC TEMPLATE TO FOLLOW:
+- Calculate indicators (EMA, RSI, etc.) on the full 'df'.
+- Define 'curr' as df.iloc[-1] and 'prev' as df.iloc[-2].
+- BUY Signal: If not in a position AND logic is met.
+- SELL Signal: If in a position AND (Target reached OR Stop hit OR Trend reversed).
+- 'trades' list: For this bot, return an empty list [] as the Bot Engine handles the trade database.
+
+STRATEGY REQUEST:
 {input}
 
-PREVIOUS CODE CONTEXT:
-{existing_strategy.get("code") if existing_strategy else "None"}
+EXAMPLE OF QUALITY CODE:
+def run_strategy(df):
+    df['ema_200'] = df['close'].ewm(span=200).mean()
+    df['ema_20'] = df['close'].ewm(span=20).mean()
+    if len(df) < 200: return [], "HOLD"
+    
+    curr, prev = df.iloc[-1], df.iloc[-2]
+    latest_signal = "HOLD"
+    
+    # Example logic: Buy dip in uptrend
+    if curr['close'] > curr['ema_200'] and curr['close'] < curr['ema_20'] and curr['close'] > curr['open']:
+        latest_signal = "BUY"
+    elif curr['close'] > curr['ema_20']:
+        latest_signal = "SELL"
+        
+    return [], latest_signal
 """
 
         response = openai_client.responses.create(
