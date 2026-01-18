@@ -117,6 +117,7 @@ useEffect(() => {
     try {
       const res = await fetch(`https://api.richacle.com/user/${email}`);
       const data = await res.json();
+      console.log(data)
        setApiKey(data?.binance?.apiKey);
       setApiSecret(data?.binance?.apiSecret);
       setIsDemo(data?.binance?.demo);
@@ -257,8 +258,8 @@ const handleSquareOFF = async (id: string) => {
       form.append("email", email);
       form.append("apiKey", apiKey);
       form.append("apiSecret", apiSecret);
-      form.append("isDemo", isDemo);
-
+      form.append("isDemo", String(isDemo));
+      
       const res = await fetch("https://api.richacle.com/api/binance", {
         method: "POST",
         body: form,
