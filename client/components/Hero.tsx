@@ -105,10 +105,12 @@ export default function AILandingPage() {
 
   return (
     <div className="min-h-screen  font-sans ">
+
+    
       
 
       {/* Hero Section */}
-      <section className="p-5 relative overflow-hidden flex flex-col items-center">
+      <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5 pb-20">
 
         <div className="max-w-5xl mx-auto text-center z-10">
           <motion.h1 
@@ -158,10 +160,37 @@ export default function AILandingPage() {
           transition={{ delay: 0.3 }}
           className="w-full max-w-4xl px-4"
         >
+{/* Instagram Full Bright Glow with Top (50%) and Bottom (10%) Black Fade */}
+<div className="absolute inset-0 overflow-hidden">
+  
+  {/* 1. The Main Vibrant Layer */}
+  <div 
+    className="absolute inset-0 opacity-100"
+    style={{
+      background: `
+        radial-gradient(circle at 0% 100%, rgba(255, 220, 107, 1) 0%, rgba(253, 29, 29, 0.6) 35%, transparent 70%),
+        radial-gradient(circle at 100% 100%, rgba(225, 48, 108, 0.9) 0%, rgba(131, 58, 180, 0.7) 40%, transparent 80%),
+        radial-gradient(circle at 50% 50%, rgba(64, 93, 230, 0.8) 0%, transparent 100%)
+      `,
+      filter: 'blur(40px)'
+    }}
+  />
+
+  {/* 2. The Black Top Mask (Top 50%) */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-1/2" />
+
+  {/* 3. The Black Bottom Mask (Bottom 10%) */}
+  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent h-[30%]" />
+
+  {/* 4. Global Saturation Boost */}
+  <div className="absolute inset-0 bg-white/5 mix-blend-overlay pointer-events-none" />
+
+</div>
           
 
           <div className="relative group max-w-3xl mx-auto">
             {/* Glow effect behind prompt */}
+            
             
             <div className="relative bg-[#0a0a0a] border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">
               <textarea
@@ -172,8 +201,8 @@ export default function AILandingPage() {
               />
               
               <div className="flex items-center justify-between p-3">
-                <span className="text-xs animate-pulse font-bold text-zinc-500  uppercase">
-                  GPT-5.1
+                <span className="text-xs animate-pulse font-bold text-zinc-500 theseason  uppercase">
+                  RICHACLE
                 </span>
                 
                  <Link href="/dashboard"><button 
@@ -185,20 +214,20 @@ export default function AILandingPage() {
             </div>
           </div>
         </motion.div>
-      </section>
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="flex items-center justify-center gap-3 mb-5 text-xs md:text-xl"
+            className="flex items-center justify-center gap-3 mb-5 text-xs md:text-xl z-50"
           >
             <Link href="/dashboard">
               <Button >Get started</Button>
             </Link>
             <Link href="/strategy">
-              <Button variant="secondary">Create Strategy</Button>
+              <Button variant="outline">Create Strategy</Button>
             </Link>
           </motion.div>
+      </section>
 
           
  {/* --- PREMIUM 3-STEP WORKFLOW --- */}
