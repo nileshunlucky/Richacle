@@ -110,7 +110,7 @@ export default function AILandingPage() {
       
 
       {/* Hero Section */}
-      <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5">
+      <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5 h-screen">
 
         <div className="max-w-5xl mx-auto text-center z-10">
           <motion.h1 
@@ -147,7 +147,7 @@ export default function AILandingPage() {
             transition={{ delay: 0.1 }}
             className="text-zinc-400 mb-10 max-w-2xl mx-auto md:text-lg"
           >
-            Build, backtest, and deploy. <br /> 
+            Build, Backtest, and Deploy. <br /> 
             Create crypto algos by chatting with AI
           </motion.p>
 
@@ -182,7 +182,7 @@ export default function AILandingPage() {
 
 
   {/* 4. Global Saturation Boost */}
-  <div className="absolute inset-0 bg-white/8 mix-blend-overlay pointer-events-none" />
+  <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
 
 </div>
           
@@ -355,7 +355,7 @@ export default function AILandingPage() {
                     </div>
                     <div className="flex justify-between items-center bg-black/50 border border-zinc-800 rounded-lg p-2.5">
                       <span className="text-xs text-zinc-500">Mode</span>
-                      <span className="text-xs text-white font-medium">Paper Trading</span>
+                      <span className="text-xs text-white font-medium">Demo Trading</span>
                     </div>
                   </div>
                 </div>
@@ -368,7 +368,7 @@ export default function AILandingPage() {
               <div className="mt-6 space-y-2">
                 <h3 className="text-lg md:text-xl font-medium text-white">Deploy & Execute</h3>
                 <p className="text-sm text-zinc-500 leading-relaxed">
-                  Go Paper/Live trading with one click. Directly connected to Binance API.
+                  Go Demo/Live trading with one click. Directly connected to Binance API.
                 </p>
               </div>
             </motion.div>

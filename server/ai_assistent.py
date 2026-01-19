@@ -163,43 +163,45 @@ async def predict_trade(
         timeframe = timeframeres.output_text.strip()
 
         prompt = f"""
-You are an expert Quant Systems Architect. Generate a high-performance Python trading strategy.
+You are an expert Quant Architect. Generate a high-performance Python trading strategy.
 
 STRICT TECHNICAL REQUIREMENTS:
-1. NO LOOPS. Use vectorized pandas operations for indicators.
-2. CURRENT-STATE FOCUS: The function must decide the 'latest_signal' based ONLY on the last candle (df.iloc[-1]) and previous candle (df.iloc[-2]).
-3. DATA SAFETY: Check for NaN values (e.g., if there aren't enough bars for a 200 EMA) and return "HOLD" if data is insufficient.
-4. ONLY LONG: Return "BUY" to enter, "SELL" to exit, or "HOLD" to maintain state.
+1. VECTORIZED CALCULATIONS: Use pandas/numpy for all indicators and signal logic. NO 'for' loops or '.apply()'.
+2. THE SIGNAL COLUMN: The function must create a new column 'signal' in the DataFrame 'df'. 
+   - 1 for BUY
+   - -1 for SELL
+   - 0 for HOLD
+3. DUAL-PURPOSE RETURN: 
+   - For Backtesting: The 'signal' column must be populated for the entire history.
+   - For Bot: The 'latest_signal' must be the string representation ("BUY", "SELL", or "HOLD") of the very last row.
+4. DATA SAFETY: If the DataFrame is too short for indicators (e.g., < 200 rows for a 200 EMA), return [], "HOLD".
 
 FUNCTION SIGNATURE:
 def run_strategy(df):
-    # Returns: trades (list), latest_signal (str)
-
-LOGIC TEMPLATE TO FOLLOW:
-- Calculate indicators (EMA, RSI, etc.) on the full 'df'.
-- Define 'curr' as df.iloc[-1] and 'prev' as df.iloc[-2].
-- BUY Signal: If not in a position AND logic is met.
-- SELL Signal: If in a position AND (Target reached OR Stop hit OR Trend reversed).
-- 'trades' list: For this bot, return an empty list [] as the Bot Engine handles the trade database.
+    # logic here...
+    return [], latest_signal
 
 STRATEGY REQUEST:
 {input}
 
-EXAMPLE OF QUALITY CODE:
+EXAMPLE OF DUAL-MODE CODE:
 def run_strategy(df):
+    import numpy as np
+    df = df.copy()
+    # 1. Vectorized Indicators
     df['ema_200'] = df['close'].ewm(span=200).mean()
-    df['ema_20'] = df['close'].ewm(span=20).mean()
+    df['rsi'] = ... # (Vectorized RSI logic)
+    
+    # 2. Vectorized Signal Logic (Fills the whole column for backtesting)
+    df['signal'] = 0
+    df.loc[(df['close'] > df['ema_200']) & (df['rsi'] < 30), 'signal'] = 1
+    df.loc[(df['close'] < df['ema_200']) & (df['rsi'] > 70), 'signal'] = -1
+    
+    # 3. Live Bot Output
     if len(df) < 200: return [], "HOLD"
+    last_val = df['signal'].iloc[-1]
+    latest_signal = "BUY" if last_val == 1 else ("SELL" if last_val == -1 else "HOLD")
     
-    curr, prev = df.iloc[-1], df.iloc[-2]
-    latest_signal = "HOLD"
-    
-    # Example logic: Buy dip in uptrend
-    if curr['close'] > curr['ema_200'] and curr['close'] < curr['ema_20'] and curr['close'] > curr['open']:
-        latest_signal = "BUY"
-    elif curr['close'] > curr['ema_20']:
-        latest_signal = "SELL"
-        
     return [], latest_signal
 """
 

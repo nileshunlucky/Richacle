@@ -350,7 +350,7 @@ const handleSquareOFF = async (id: string) => {
                     onClick={() => setIsModalOpen(true)}
                     className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors"
                   >
-                    <Plus size={14} /> Add Brokerage
+                    <Plus size={14} />Broker
                   </button>
                 </div>
               </div>

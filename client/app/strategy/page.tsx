@@ -228,7 +228,7 @@ export default function AlgoTradingLovableUI() {
   <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-[50%]" />
 
   {/* 3. Global Saturation Boost */}
-  <div className="absolute inset-0 bg-white/5 mix-blend-overlay pointer-events-none" />
+  <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
 
 </div>
 

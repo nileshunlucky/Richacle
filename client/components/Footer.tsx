@@ -13,7 +13,7 @@ export default function Footer() {
 
           {/* Copyright */}
           <p className="text-sm text-zinc-400 text-center">
-            © {year} <span className="theseason">Richacle</span> Inc. All rights reserved.
+            © {year} <span className="theseason">RICHACLE</span> Inc. All rights reserved.
           </p>
 
           {/* Links + Instagram */}
