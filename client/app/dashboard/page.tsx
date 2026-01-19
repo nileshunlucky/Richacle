@@ -337,10 +337,12 @@ const handleSquareOFF = async (id: string) => {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-10 font-sans selection:bg-zinc-500/30">
+    
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header Section (Based on Image Ref) */}
         <div className={`relative overflow-hidden group rounded-xl p-5 ${pnlColor}`}>
+        
           <div className="relative z-10">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
               <div className="flex items-center justify-between w-full">
@@ -418,13 +420,37 @@ const handleSquareOFF = async (id: string) => {
                     key={s.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="group flex flex-col md:flex-row md:items-center justify-between bg-zinc-900/40 border border-zinc-800/60 hover:border-zinc-500/30 rounded-3xl p-4 transition-all duration-300"
+                    className="group flex flex-col md:flex-row md:items-center justify-between bg-zinc-900/40 border border-zinc-800/60 hover:border-zinc-500/30 rounded-3xl p-4 py-7 transition-all duration-300 relative "
                   >
+                  {/* Instagram Full Bright Glow with Top Black Fade */}
+<div className="absolute inset-0 overflow-hidden rounded-3xl">
+  
+  {/* 1. The Main Vibrant Layer */}
+  <div 
+    className="absolute inset-0 opacity-100"
+    style={{
+      background: `
+        radial-gradient(circle at 0% 100%, rgba(255, 220, 107, 1) 0%, rgba(253, 29, 29, 0.6) 35%, transparent 70%),
+        radial-gradient(circle at 100% 100%, rgba(225, 48, 108, 0.9) 0%, rgba(131, 58, 180, 0.7) 40%, transparent 80%),
+        radial-gradient(circle at 50% 50%, rgba(64, 93, 230, 0.8) 0%, transparent 100%)
+      `,
+      filter: 'blur(40px)' // Softens the blend between these intense colors
+    }}
+  />
+
+  {/* 2. The Black Top Mask (Creates the fade from the top) */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-[50%]" />
+
+  {/* 3. Global Saturation Boost */}
+  <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
+
+</div>
                     {/* Left: Info */}
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 z-50">
                       <div className="flex flex-col gap-1">
+                      
                         <h4 className="text-sm font-medium text-zinc-100">{s.name}</h4>
-                        <p className="text-[10px] text-zinc-500 mt-0.5 opacity-70">
+                        <p className="text-[10px] text-zinc-200 mt-0.5 opacity-70">
                           {s.input}
                         </p>
                           {/* Row 2: Error Message (Only shows if status is error) */}
@@ -444,14 +470,14 @@ const handleSquareOFF = async (id: string) => {
                     </div>
 
                     {/* Right: Status & Action */}
-                    <div className="flex items-center justify-between md:justify-end gap-6 mt-4 md:mt-0">
-                      <div className="flex items-center gap-2 px-3 py-1 bg-zinc-950/50 rounded-full">
+                    <div className="flex items-center justify-between md:justify-end gap-6 mt-4 md:mt-0 z-50">
+                      <div className="flex items-center gap-2 px-3 py-1 rounded-full">
                         <div className={`h-1.5 w-1.5 rounded-full ${
                           s.status === "running" 
-                          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" 
+                          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] " 
                           :"bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
                         }`} />
-                        <span className="text-[9px] uppercase tracking-[0.15em] font-bold text-zinc-500">
+                        <span className="text-[9px] uppercase tracking-[0.15em] font-bold text-zinc-200">
                           {s.status}
                         </span>
                       </div>
