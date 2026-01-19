@@ -30,11 +30,11 @@ const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, o
   <div className="flex flex-col gap-3">
     <div className="flex items-center gap-2">
       <div className={`h-1.5 w-1.5 rounded-full ${status ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-zinc-600'}`} />
-      <span className="text-[11px] uppercase tracking-wider text-zinc-500 font-medium">{label}</span>
-      <Info size={12} className="text-zinc-600 cursor-help" />
+      <span className="text-[11px] uppercase tracking-wider  font-medium">{label}</span>
+      <Info size={12} className="text-white cursor-help" />
     </div>
     <div className="flex items-center gap-3">
-      <span className={`text-xs font-medium ${!status ? 'text-zinc-100' : 'text-zinc-500'}`}>Off</span>
+      <span className={`text-xs font-medium ${!status ? 'text-white' : 'text-zinc-300'}`}>Off</span>
       <button 
         onClick={onToggle}
         className={`relative w-11 h-6 rounded-full transition-colors duration-300 ${status ? 'bg-zinc-100' : 'bg-zinc-800'}`}
@@ -44,7 +44,7 @@ const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, o
           className={`absolute top-1 w-4 h-4 rounded-full ${status ? 'bg-zinc-950' : 'bg-zinc-400'}`}
         />
       </button>
-      <span className={`text-xs font-medium ${status ? 'text-zinc-100' : 'text-zinc-500'}`}>On</span>
+      <span className={`text-xs font-medium ${status ? 'text-white' : 'text-zinc-300'}`}>On</span>
     </div>
   </div>
 )
@@ -75,21 +75,6 @@ export default function Dashboard() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
 
   const router = useRouter();
-
-const pnlColor =
-  totalPnl === 0
-    ? ""
-    : totalPnl > 0
-    ? "bg-gradient-to-t from-black via-black to-green-700"
-    : "bg-gradient-to-t from-black via-black to-red-700"
-
-const perfColor =
-  strategiesPerf === 0
-    ? "text-white"
-    : strategiesPerf > 0
-    ? "text-green-500"
-    : "text-red-500"
-
 
 
 useEffect(() => {
@@ -336,94 +321,9 @@ const handleSquareOFF = async (id: string) => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-10 font-sans selection:bg-zinc-500/30">
-    
-      <div className="max-w-6xl mx-auto space-y-6">
-        
-        {/* Header Section (Based on Image Ref) */}
-        <div className={`relative overflow-hidden group rounded-xl p-5 ${pnlColor}`}>
-        
-          <div className="relative z-10">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div className="flex items-center justify-between w-full">
-                <h1 className="md:text-4xl ">{email.split("@")[0]}</h1>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 text-xs text-zinc-400 hover:text-white transition-colors"
-                  >
-                    <Plus size={14} />Broker
-                  </button>
-                </div>
-              </div>
-
-              <div className=" w-full flex items-center justify-center">
-               
-                <h2 className={`text-5xl tracking-tighter `}>
-  $
-  {new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(totalPnl)}
-</h2>
-
-
-              </div>
-
-              <p className={`text-lg text-center w-full font-medium ${perfColor}`}>
-                $
-  {new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(strategiesPerf)}
-                </p>
-            </div>
-
-            <div className="mt-12 pt-8 border-t border-zinc-800/50 grid grid-cols-2 md:grid-cols-4 gap-8">
-              
-              <Toggle label="Terminal" status={terminal} onToggle={() => {
-    if (!terminal) {
-      toast.error("Add Binance API Key or Secret");
-      return;
-    }
-  }}/>
-              <Toggle label="Trading Engine" status={engine} onToggle={() => {
-    if (!terminal) {
-      toast.error("Enable Terminal First");
-      return;
-    }
-    toggleEngine();
-  }} />
-            </div>
-          </div>
-        </div>
-
-      {/* Strategies List - Perfectly aligned with max-w-6xl */}
-        <div className="pt-4">
-          <div className="flex items-center justify-between mb-6 px-1">
-            <h3 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-500">
-              Active Algorithms
-            </h3>
-            <div className="h-[1px] flex-grow mx-4 bg-zinc-800/50" /> {/* Subtle divider line */}
-          </div>
-
-          <div className="gap-2 flex flex-col-reverse">
-            {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
-              <div className="bg-zinc-900/20 border border-zinc-800/40 rounded-2xl py-12 text-center">
-                <p className="text-zinc-600 text-sm font-light">No active execution threads</p>
-              </div>
-            ) : (
-              strategies
-                ?.filter((s) => s.status && s.status.trim() !== "")
-                .map((s) => (
-                  <motion.div
-                    key={s.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="group flex flex-col md:flex-row md:items-center justify-between bg-zinc-900/40 border border-zinc-800/60 hover:border-zinc-500/30 rounded-3xl p-4 py-7 transition-all duration-300 relative "
-                  >
-                  {/* Instagram Full Bright Glow with Top Black Fade */}
-<div className="absolute inset-0 overflow-hidden rounded-3xl">
+    <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
+     {/* Instagram Full Bright Glow with Top Black Fade */}
+<div className="absolute inset-0 overflow-hidden z-0">
   
   {/* 1. The Main Vibrant Layer */}
   <div 
@@ -445,6 +345,91 @@ const handleSquareOFF = async (id: string) => {
   <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
 
 </div>
+      <div className="max-w-6xl mx-auto space-y-6">
+        
+        {/* Header Section (Based on Image Ref) */}
+        <div className={`relative overflow-hidden group rounded-xl p-5 `}>
+        
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div className="flex items-center justify-between w-full">
+                <h1 className="md:text-4xl ">{email.split("@")[0]}</h1>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"
+                  >
+                    <Plus size={14} />Broker
+                  </button>
+                </div>
+              </div>
+
+              <div className=" w-full flex items-center justify-center">
+               
+                <h2 className={`text-5xl tracking-tighter `}>
+  $
+  {new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(totalPnl)}
+</h2>
+
+
+              </div>
+
+              <p className={`text-lg text-center w-full font-medium`}>
+                $
+  {new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(strategiesPerf)}
+                </p>
+            </div>
+
+            <div className="mt-12 pt-8  grid grid-cols-2 md:grid-cols-4 gap-8">
+              
+              <Toggle label="Terminal" status={terminal} onToggle={() => {
+    if (!terminal) {
+      toast.error("Add Binance API Key or Secret");
+      return;
+    }
+  }}/>
+              <Toggle label="Trading Engine" status={engine} onToggle={() => {
+    if (!terminal) {
+      toast.error("Enable Terminal First");
+      return;
+    }
+    toggleEngine();
+  }} />
+            </div>
+          </div>
+        </div>
+
+      {/* Strategies List - Perfectly aligned with max-w-6xl */}
+        <div className="pt-4">
+          <div className="flex items-center justify-between mb-6 px-1">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-100 z-50">
+              Active Algorithms
+            </h3>
+            <div className="h-[1px] flex-grow mx-4 bg-zinc-800/50" /> {/* Subtle divider line */}
+          </div>
+
+          <div className="gap-2 flex flex-col-reverse">
+            {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
+              <div className="bg-zinc-900/20 border border-zinc-800/40 rounded-2xl py-12 text-center">
+                <p className="text-zinc-600 text-sm font-light">No active execution threads</p>
+              </div>
+            ) : (
+              strategies
+                ?.filter((s) => s.status && s.status.trim() !== "")
+                .map((s) => (
+                  <motion.div
+                    key={s.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="group flex flex-col md:flex-row md:items-center justify-between bg-black border border-zinc-800/60 hover:border-zinc-500/30 rounded-3xl p-4 py-7 transition-all duration-300 relative "
+                  >
+                 
                     {/* Left: Info */}
                     <div className="flex items-center gap-4 z-50">
                       <div className="flex flex-col gap-1">

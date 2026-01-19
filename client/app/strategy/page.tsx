@@ -371,7 +371,7 @@ export default function AlgoTradingLovableUI() {
 
             {strategies.length === 0 && (
               <div className="py-20 text-center">
-                <p className="text-zinc-700 text-[10px] uppercase tracking-[0.2em]">No Strategy Yet!</p>
+                <p className=" text-[10px] uppercase tracking-[0.2em]">No Strategy Yet!</p>
               </div>
             )}
           </div>
