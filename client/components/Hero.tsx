@@ -49,7 +49,7 @@ const FeatureCard = ({ icon: Icon, title, description, badge }: any) => (
       </div>
       {badge && <span className="text-[10px] font-bold tracking-widest text-purple-500 uppercase mb-2 block">{badge}</span>}
       <h3 className="text-2xl font-semibold text-white mb-3">{title}</h3>
-      <p className="text-zinc-500 leading-relaxed">{description}</p>
+      <p className=" leading-relaxed">{description}</p>
     </div>
   </motion.div>
 );
@@ -106,8 +106,32 @@ export default function AILandingPage() {
   return (
     <div className="min-h-screen  font-sans ">
 
-    
-      
+    {/* Instagram Full Bright Glow with Top (50%) and Bottom (10%) Black Fade */}
+<div className="fixed top-20 blur-t-[20px] inset-0 overflow-hidden z-0">
+  
+  {/* 1. The Main Vibrant Layer */}
+  <div 
+    className="absolute inset-0 opacity-100"
+    style={{
+      background: `
+        radial-gradient(circle at 0% 100%, rgba(255, 220, 107, 1) 0%, rgba(253, 29, 29, 0.6) 35%, transparent 70%),
+        radial-gradient(circle at 100% 100%, rgba(225, 48, 108, 0.9) 0%, rgba(131, 58, 180, 0.7) 40%, transparent 80%),
+        radial-gradient(circle at 50% 50%, rgba(64, 93, 230, 0.8) 0%, transparent 100%)
+      `,
+      filter: 'blur(40px)'
+    }}
+  />
+
+  {/* 2. The Black Top Mask (Top 50%) */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-1/2" />
+
+
+
+  {/* 4. Global Saturation Boost */}
+  <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
+
+</div>
+      <div className="relative z-50">
 
       {/* Hero Section */}
       <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5 ">
@@ -146,7 +170,7 @@ export default function AILandingPage() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-zinc-400 mb-10 max-w-2xl mx-auto md:text-lg"
+            className="text-zinc-300 mb-10 max-w-2xl mx-auto md:text-lg"
           >
             Build, Backtest, and Deploy. <br /> 
             Create crypto algos by chatting with AI
@@ -161,31 +185,6 @@ export default function AILandingPage() {
           transition={{ delay: 0.3 }}
           className="w-full max-w-4xl px-4"
         >
-{/* Instagram Full Bright Glow with Top (50%) and Bottom (10%) Black Fade */}
-<div className="absolute inset-0 overflow-hidden">
-  
-  {/* 1. The Main Vibrant Layer */}
-  <div 
-    className="absolute inset-0 opacity-100"
-    style={{
-      background: `
-        radial-gradient(circle at 0% 100%, rgba(255, 220, 107, 1) 0%, rgba(253, 29, 29, 0.6) 35%, transparent 70%),
-        radial-gradient(circle at 100% 100%, rgba(225, 48, 108, 0.9) 0%, rgba(131, 58, 180, 0.7) 40%, transparent 80%),
-        radial-gradient(circle at 50% 50%, rgba(64, 93, 230, 0.8) 0%, transparent 100%)
-      `,
-      filter: 'blur(40px)'
-    }}
-  />
-
-  {/* 2. The Black Top Mask (Top 50%) */}
-  <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-1/2" />
-
-
-
-  {/* 4. Global Saturation Boost */}
-  <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
-
-</div>
           
 
           <div className="relative group max-w-3xl mx-auto">
@@ -201,7 +200,7 @@ export default function AILandingPage() {
               />
               
               <div className="flex items-center justify-between p-3">
-                <span className="text-xs animate-pulse font-bold text-zinc-500 theseason  uppercase">
+                <span className="text-xs animate-pulse font-bold  theseason  uppercase">
                   RICHACLE
                 </span>
                 
@@ -231,14 +230,14 @@ export default function AILandingPage() {
 
           
  {/* --- PREMIUM 3-STEP WORKFLOW --- */}
-      <section className="py-24 md:py-32 px-4 md:px-6 bg-black">
+      <section className="py-24 md:py-32 px-4 md:px-6">
         <div className="max-w-6xl mx-auto">
           
           <div className="mb-16 md:mb-24">
             <h2 className="text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-white mb-3">
               Three simple steps
             </h2>
-            <p className="text-zinc-500 text-base md:text-lg">Build, test, deploy — all in 1</p>
+            <p className=" text-base md:text-lg">Build, test, deploy. all in 1</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-6">
@@ -274,7 +273,7 @@ export default function AILandingPage() {
 
               <div className="mt-6 space-y-2">
                 <h3 className="text-lg md:text-xl font-medium text-white">Create with AI</h3>
-                <p className="text-sm text-zinc-500 leading-relaxed">
+                <p className="text-sm  leading-relaxed">
                   Describe your strategy in plain English. GPT-5 builds the logic instantly.
                 </p>
               </div>
@@ -318,7 +317,7 @@ export default function AILandingPage() {
 
               <div className="mt-6 space-y-2">
                 <h3 className="text-lg md:text-xl font-medium text-white">Backtest Results</h3>
-                <p className="text-sm text-zinc-500 leading-relaxed">
+                <p className="text-sm  leading-relaxed">
                   Validate against years of historical data before going live.
                 </p>
               </div>
@@ -351,11 +350,11 @@ export default function AILandingPage() {
                   
                   <div className="space-y-2">
                     <div className="flex justify-between items-center bg-black/50 border border-zinc-800 rounded-lg p-2.5">
-                      <span className="text-xs text-zinc-500">Exchange</span>
+                      <span className="text-xs ">Exchange</span>
                       <span className="text-xs text-white font-medium">Binance</span>
                     </div>
                     <div className="flex justify-between items-center bg-black/50 border border-zinc-800 rounded-lg p-2.5">
-                      <span className="text-xs text-zinc-500">Mode</span>
+                      <span className="text-xs ">Mode</span>
                       <span className="text-xs text-white font-medium">Demo Trading</span>
                     </div>
                   </div>
@@ -368,7 +367,7 @@ export default function AILandingPage() {
 
               <div className="mt-6 space-y-2">
                 <h3 className="text-lg md:text-xl font-medium text-white">Deploy & Execute</h3>
-                <p className="text-sm text-zinc-500 leading-relaxed">
+                <p className="text-sm  leading-relaxed">
                   Go Demo/Live trading with one click. Directly connected to Binance API.
                 </p>
               </div>
@@ -388,10 +387,11 @@ export default function AILandingPage() {
           </h2>
           <div className="flex items-center justify-center gap-3 text-xs md:text-xl">
              <Link href="/dashboard"> <Button >Get Access Now</Button></Link>
-            <Link href="/strategy"> <Button variant="secondary" >Create with Copilot</Button></Link>
+            <Link href="/strategy"> <Button variant="outline" >Create with Copilot</Button></Link>
           </div>
         </div>
       </section>
+    </div>
     </div>
   );
 }

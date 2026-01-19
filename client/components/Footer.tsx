@@ -7,12 +7,12 @@ export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="w-full py-6">
+    <footer className="w-full py-6 z-50 relative">
       <div className="max-w-6xl mx-auto px-4 ">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
 
           {/* Copyright */}
-          <p className="text-sm text-zinc-400 text-center">
+          <p className="text-sm  text-center">
             © {year} <span className="theseason">RICHACLE</span> Inc. All rights reserved.
           </p>
 
@@ -24,7 +24,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/policy"
-                  className="text-sm text-zinc-300 hover:text-white transition"
+                  className="text-sm  hover:text-white transition"
                 >
                   Policy
                 </Link>
@@ -32,7 +32,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/terms"
-                  className="text-sm text-zinc-300 hover:text-white transition"
+                  className="text-sm  hover:text-white transition"
                 >
                   Terms
                 </Link>
@@ -44,7 +44,7 @@ export default function Footer() {
               href="https://instagram.com/richacle"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-zinc-300 hover:text-white transition"
+              className="flex items-center gap-2  hover:text-white transition"
             >
               <Instagram size={20} />
             </a>
