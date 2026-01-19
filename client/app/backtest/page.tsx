@@ -16,7 +16,7 @@ import {
   LineElement, Title, Tooltip, Legend, Filler 
 } from "chart.js";
 import { Line } from "react-chartjs-2";
-import { Activity, Loader2, ChevronRight } from "lucide-react";
+import { Loader2, ChevronRight } from "lucide-react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -28,6 +28,8 @@ interface Strategy {
   input: string;
   code: string;
 }
+
+
 
 function BacktestContent() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
@@ -192,7 +194,32 @@ function BacktestContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-5 md:p-12 font-sans">
+    <div className="min-h-screen bg-black text-white p-5 md:p-12 font-sans relative ">
+    {/* Instagram Full Bright Glow with Top (50%) and Bottom (10%) Black Fade */}
+<div className="absolute inset-0 overflow-hidden z-0">
+  
+  {/* 1. The Main Vibrant Layer */}
+  <div 
+    className="absolute inset-0 opacity-100"
+    style={{
+      background: `
+        radial-gradient(circle at 0% 100%, rgba(255, 220, 107, 1) 0%, rgba(253, 29, 29, 0.6) 35%, transparent 70%),
+        radial-gradient(circle at 100% 100%, rgba(225, 48, 108, 0.9) 0%, rgba(131, 58, 180, 0.7) 40%, transparent 80%),
+        radial-gradient(circle at 50% 50%, rgba(64, 93, 230, 0.8) 0%, transparent 100%)
+      `,
+      filter: 'blur(40px)'
+    }}
+  />
+
+  {/* 2. The Black Top Mask (Top 50%) */}
+  <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-1/2" />
+
+
+
+  {/* 4. Global Saturation Boost */}
+  <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
+
+</div>
       <div className="max-w-4xl mx-auto space-y-10">
         
         <div className="space-y-3">
@@ -225,7 +252,7 @@ function BacktestContent() {
             <Button
               onClick={handleBacktest}
               disabled={loading || !selectedStrat}
-              className="h-14 px-10 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold text-xs uppercase disabled:opacity-20 w-full md:w-[180px]"
+              className="h-14 px-10 bg-white text-black hover:bg-zinc-200 rounded-xl font-bold text-xs uppercase disabled:opacity-20 w-full md:w-[180px] z-50"
             >
               {loading ? <Loader2 className="animate-spin size-4" /> : "Back Test"}
             </Button>
@@ -234,16 +261,17 @@ function BacktestContent() {
 
         <AnimatePresence mode="wait">
           {result ? (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 bg-black">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 ">
                 <Stat label="Net P&L" value={`$${result.total_pnl}`} color={isPositive ? "text-green-500" : "text-red-500"} />
                 <Stat label="Return" value={`${result.return_percent}%`} color={isPositive ? "text-green-500" : "text-red-500"} />
                 <Stat label="Drawdown" value={`${result.max_drawdown}%`} color="text-red-500" />
                 <Stat label="Win Rate" value={`${result.win_rate_percent}%`} color="text-zinc-100" />
               </div>
+              
 
-              <div className=" bg-zinc-950/20 p-3 md:p-8 rounded-2xl">
-                <div className="flex justify-between items-center mb-8 text-[9px] uppercase font-bold text-zinc-600">
+              <div className="relative z-10 space-y-8 bg-black backdrop-blur-md p-6 rounded-3xl border border-white/10">
+                <div className="flex justify-between items-center mb-8 text-[9px] uppercase font-bold text-zinc-600 ">
                   <span>Equity Curve</span>
                   <span className="text-zinc-200 ">{result.total_trades} TRADES</span>
                 </div>
@@ -253,9 +281,8 @@ function BacktestContent() {
               </div>
             </motion.div>
           ) : (
-            <div className="h-48 flex flex-col items-center justify-center text-zinc-800 ">
-              <Activity size={24} className="mb-3 opacity-10" />
-              <span className="uppercase theseason">RICHACLE</span>
+            <div className="h-48 flex flex-col items-center justify-center ">
+              <span className="uppercase theseason z-50 text-white">RICHACLE</span>
             </div>
           )}
         </AnimatePresence>
@@ -279,9 +306,9 @@ export default function BacktestUI() {
 
 function Stat({ label, value, color }: { label: string, value: string, color: string }) {
   return (
-    <div className="space-y-1 py-2 px-1 border-l border-zinc-900 md:border-none">
-      <p className="text-[8px] text-zinc-600 uppercase font-bold ">{label}</p>
-      <p className={`text-2xl md:text-3xl font-medium  ${color}`}>{value}</p>
+    <div className="space-y-1 py-4 px-4 bg-black backdrop-blur-sm rounded-2xl border border-white/5 shadow-xl">
+      <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">{label}</p>
+      <p className={`text-2xl md:text-3xl font-bold ${color}`}>{value}</p>
     </div>
   );
 }

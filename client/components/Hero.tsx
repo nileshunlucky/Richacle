@@ -110,7 +110,8 @@ export default function AILandingPage() {
       
 
       {/* Hero Section */}
-      <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5 h-screen">
+      <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5 ">
+      
 
         <div className="max-w-5xl mx-auto text-center z-10">
           <motion.h1 
