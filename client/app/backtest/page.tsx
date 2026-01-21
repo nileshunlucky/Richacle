@@ -82,14 +82,14 @@ function BacktestContent() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ strategy: selectedStrat.code, email: userEmail }),
       });  
+      const data = await res.json();
 
       if (res.status === 403) {
-          toast.error("Insufficient backtest credits.");
+          toast.error("Insufficient backtest credits, Upgrade your Plan!");
           router.push("/pricing");
           return;
       }
       
-      const data = await res.json();
 
       if (data.status === "success") {
         setResult(data.metrics);

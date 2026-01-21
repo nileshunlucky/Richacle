@@ -5,6 +5,8 @@ import { ArrowUp, Loader2, MoreVertical, Edit2, Play, Trash2, X } from "lucide-r
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label"; // Optional for better UX
 
 interface Strategy {
   id: string;
@@ -24,7 +26,7 @@ export default function AlgoTradingLovableUI() {
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [editingStrat, setEditingStrat] = useState<Strategy | null>(null);
-
+  const [copilotEnabled, setCopilotEnabled] = useState(true);
 
   const router = useRouter();
 
@@ -33,6 +35,8 @@ export default function AlgoTradingLovableUI() {
     // Clear suggestion when user types
     setSuggestion("");
 
+    if (!copilotEnabled) return;
+
     const timer = setTimeout(() => {
       if (input.trim().length > 8 && !loadingSuggestion) {
         fetchSuggestion(input);
@@ -40,7 +44,7 @@ export default function AlgoTradingLovableUI() {
     }, 800); // 800ms is standard for "fast" copilots
 
     return () => clearTimeout(timer);
-  }, [input]);
+  }, [input, copilotEnabled]);
 
   const fetchSuggestion = async (currentInput: string) => {
     try {
@@ -189,7 +193,8 @@ export default function AlgoTradingLovableUI() {
       }
 
       if (res.status === 403 && data.detail.includes("Limit reached.")) {
-        toast.error("Limit reached!");
+        toast.error("Limit reached! Upgrade your Plan");
+         router.push("/pricing");
         return;
       }
 
@@ -200,6 +205,7 @@ export default function AlgoTradingLovableUI() {
       }
 
       toast.success(`Algo deployed`)
+      router.push("/dashboard");
     } catch (e) {
       toast.error("Something went wrong");
       console.error(e)
@@ -262,25 +268,24 @@ export default function AlgoTradingLovableUI() {
 
             {/* GHOST SUGGESTION LAYER */}
 <div 
-  /* We use z-20 to put this ABOVE the textarea */
-  /* We use pointer-events-none so we can still click "through" the empty space into the textarea */
+
   className="absolute inset-0 w-full px-5 py-6 text-sm whitespace-pre-wrap break-words z-20 pointer-events-none"
   style={{ fontFamily: 'inherit', lineHeight: '1.5', letterSpacing: 'normal' }}
 >
   <span className="text-transparent">{input}</span>
 
-  {/* We use pointer-events-auto ONLY on the suggestion so it is clickable */}
-  <span 
-    onClick={() => {
-      if (!suggestion) return;
-      const separator = input.endsWith(" ") ? "" : " ";
-      setInput(input + separator + suggestion);
-      setSuggestion("");
-    }}
-    className="text-zinc-600 italic cursor-pointer pointer-events-auto hover:text-zinc-400 transition-colors"
-  >
-    {suggestion ? ` ${suggestion}` : ""}
-  </span>
+  {copilotEnabled && suggestion && (
+    <span 
+      onClick={() => {
+        const separator = input.endsWith(" ") ? "" : " ";
+        setInput(input + separator + suggestion);
+        setSuggestion("");
+      }}
+      className="text-zinc-600 italic cursor-pointer pointer-events-auto hover:text-zinc-400 transition-colors"
+    >
+      {` ${suggestion}`}
+    </span>
+  )}
 </div>
             
             <textarea
@@ -296,9 +301,16 @@ export default function AlgoTradingLovableUI() {
             />
             
             <div className="flex items-center justify-between px-4 pb-3">
+            <div className="flex items-center gap-2">
               <div className="text-[10px] text-zinc-500 uppercase font-bold">
-                {loadingSuggestion ? <h1 className="animate-pulse"><span className="theseason">RICHACLE</span> Copilot</h1> : suggestion ? "Press Tab to accept" : "RICHACLE Copilot"}
+                {loadingSuggestion ? <h1><span className="theseason">RICHACLE</span> <span className="animate-pulse">COPILOT</span></h1> : suggestion ? "Press Tab to accept" : <h1><span className="theseason">RICHACLE</span> Copilot</h1>}
               </div>
+            <Switch 
+              checked={copilotEnabled} 
+              onCheckedChange={setCopilotEnabled}
+              className="data-[state=checked]:bg-white data-[state=unchecked]:bg-zinc-800"
+            />
+            </div>
 
               <button
                 onClick={sendAI}

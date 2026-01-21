@@ -170,53 +170,52 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Find the strategy in the list
     strategy = next((s for s in user.get("strategies", []) if s["id"] == strategyId), None)
-    
     if not strategy:
         raise HTTPException(status_code=404, detail="Strategy not found")
 
-    # 1. SQUARE OFF LOGIC (CCXT)
+    # Get the specific symbol this strategy was trading
+    target_symbol = strategy.get("symbol", "BTC/USDT") # Ensure this is stored in your DB
+
+    # 1. SQUARE OFF LOGIC
     binance = user.get("binance", {})
     api_key = binance.get("apiKey")
     api_secret = binance.get("apiSecret")
 
     if api_key and api_secret:
         try:
-            # Initialize exchange
             exchange = ccxt.binance({
                 'apiKey': api_key,
                 'secret': api_secret,
+                'enableRateLimit': True,
                 'options': {'defaultType': 'future'}
             })
 
-            is_demo = strategy.get("demo")
-            if is_demo:
+            if strategy.get("demo"):
                 exchange.enable_demo_trading(True)
 
-            # Fetch all positions with a balance
-            positions = exchange.fetch_positions()
+            # --- FIX: Only fetch and close the target symbol ---
+            positions = exchange.fetch_positions([target_symbol])
             
             for pos in positions:
-                symbol = pos['symbol']
-                size = float(pos['contracts']) # 'contracts' is the amount in CCXT
+                # CCXT unified 'contracts' is the size. 
+                # On Binance, positionAmt can be negative (short) or positive (long).
+                size = float(pos['info']['positionAmt']) 
                 
                 if size != 0:
-                    # Opposite side to close
                     side = 'sell' if size > 0 else 'buy'
-                    # Execute Market Order to close
+                    print(f"Closing {size} of {target_symbol}")
+                    
                     exchange.create_market_order(
-                        symbol=symbol,
+                        symbol=target_symbol,
                         side=side,
                         amount=abs(size),
-                        params={'reduceOnly': True} # Ensure it only closes
+                        params={'reduceOnly': True}
                     )
-
         except Exception as e:
-            print(f"Square off error (proceeding to stop container): {e}")
-            # We continue even if square off fails to ensure the container is killed
+            print(f"Square off error: {e}")
 
-    # 2. DOCKER STOP LOGIC
+    # 2. DOCKER STOP LOGIC (unchanged)
     container_id = strategy.get("container_id")
     if container_id:
         try:
@@ -227,21 +226,24 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
             print(f"Docker stop error: {e}")
 
     # 3. DATABASE UPDATE
+    # Dynamically determine which prefix to reset
+    prefix = "live" if not strategy.get("demo") else "demo"
+    
     users_collection.update_one(
         {"email": email, "strategies.id": strategyId},
         {
-            "$set": {"strategies.$.status": "stopped",
-                "strategies.$.demo_pos": 0,    # Reset these!
-                "strategies.$.demo_entry": 0,
-                "strategies.$.live_pos": 0,
-                "strategies.$.live_entry": 0
+            "$set": {
+                "strategies.$.status": "stopped",
+                f"strategies.$.{prefix}_pos": 0,
+                f"strategies.$.{prefix}_entry": 0,
+                "strategies.$.last_update": datetime.now()
             },
             "$unset": {
-            "strategies.$.container_id": "",
-            "strategies.$.error_at": "",
-            "strategies.$.last_error": ""
-        }
+                "strategies.$.container_id": "",
+                "strategies.$.error_at": "",
+                "strategies.$.last_error": ""
+            }
         }
     )
     
-    return {"status": "success", "message": "Position squared off and bot stopped"}
+    return {"status": "success", "message": f"Squared off {target_symbol} and stopped bot."}

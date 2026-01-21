@@ -16,8 +16,8 @@ STRATEGY_ID = os.getenv("STRATEGY_ID")
 STRATEGY_CODE = os.getenv("STRATEGY_CODE")
 SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
 TIMEFRAME = os.getenv("TIMEFRAME", "1h")
-AMOUNT = float(os.getenv("AMOUNT", 25)) 
-LEVERAGE = int(os.getenv("LEVERAGE", 1))
+AMOUNT = float(os.getenv("AMOUNT", 100)) 
+LEVERAGE = int(os.getenv("LEVERAGE", 5))
 
 # Stop Loss / Take Profit
 STOP_LOSS = float(os.getenv("STOP_LOSS", 0.02))
@@ -37,6 +37,31 @@ if DEMO:
 DB_PREFIX = "live" if DEMO else "demo"
 
 # --- Helper Functions ---
+
+def sync_exchange_data():
+    """Fetches the REAL truth from the exchange."""
+    try:
+        # fetch_positions provides real size and entry price
+        positions = exchange.fetch_positions([SYMBOL])
+        # Find our specific symbol
+        raw_symbol = SYMBOL.replace("/", "")
+        symbol_pos = next((p for p in positions if p['symbol'] == raw_symbol), None)
+        
+        if symbol_pos:
+            # positionAmt is positive for long, negative for short
+            signed_pos = float(symbol_pos['info']['positionAmt'])
+            entry_price = float(symbol_pos['entryPrice'] or 0.0)
+            unrealized_pnl = float(symbol_pos['unrealizedPnl'] or 0.0)
+            
+            return {
+                "pos": signed_pos,
+                "entry": entry_price,
+                "unpnl": unrealized_pnl
+            }
+    except Exception as e:
+        print(f"⚠️ Exchange Sync Error: {e}")
+    return None
+
 def get_strategy_state():
     user = users_collection.find_one({"email": EMAIL, "strategies.id": STRATEGY_ID})
     if user:
@@ -49,13 +74,15 @@ def get_strategy_state():
                 }
     return {"pos": 0.0, "entry": 0.0, "total_pnl": 0.0}
 
-def update_strategy_state(pos, entry=0.0, pnl_inc=0.0):
+def update_strategy_state(pos, entry=0.0, pnl_inc=0.0, unpnl=0.0):
+    """Updates DB with both realized (inc) and unrealized (set) PnL."""
     users_collection.update_one(
         {"email": EMAIL, "strategies.id": STRATEGY_ID},
         {
             "$set": {
                 f"strategies.$.{DB_PREFIX}_pos": pos,
                 f"strategies.$.{DB_PREFIX}_entry": entry,
+                f"strategies.$.{DB_PREFIX}_unrealized_pnl": unpnl,
                 "strategies.$.status": "running",
                 "strategies.$.last_update": datetime.now(),
             },
@@ -107,12 +134,22 @@ def main():
 
     while True:
         try:
+            # --- 0. SYNC REAL STATE ---
+            real_exchange = sync_exchange_data()
+            if real_exchange is not None:
+                # Force local state to match exchange truth
+                update_strategy_state(
+                    pos=real_exchange['pos'], 
+                    entry=real_exchange['entry'], 
+                    unpnl=real_exchange['unpnl']
+                )
+
             state = get_strategy_state()
             df = fetch_data()
             current_price = float(df['close'].iloc[-1])
             _, signal = run_strategy(df)
             
-            print(f"🕒 {datetime.now().strftime('%H:%M:%S')} | PnL: ${state['total_pnl']:.2f} | Pos: {state['pos']} | Signal: {signal}")
+            print(f"🕒 {datetime.now().strftime('%H:%M:%S')} | Total PnL: ${state['total_pnl']:.2f} | Real Pos: {state['pos']} | Signal: {signal}")
 
             # --- 1. EXIT LOGIC (SL/TP) ---
             if state['pos'] != 0:
@@ -127,24 +164,25 @@ def main():
                     exit_reason = f"TAKE PROFIT hit at {current_price}"
 
                 if exit_reason:
+                    # Calculate estimated realized PnL for the DB
                     trade_pnl = price_change_pct * (abs(state['pos']) * entry_price)
                     side = "sell" if is_long else "buy"
                     
-                    # Execute Live Order
+                    print(f"🛑 {exit_reason} | Closing Real Pos: {state['pos']}")
                     exchange.create_order(SYMBOL, 'market', side, abs(state['pos']))
                     
-                    update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl)
-                    print(f"🛑 {exit_reason} | PnL: ${trade_pnl:.2f}")
+                    update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl, unpnl=0.0)
                     continue 
 
-            # --- 2. EXECUTION LOGIC (LONG & SHORT) ---
+            # --- 2. EXECUTION LOGIC ---
             # BUY SIGNAL
             if signal == "BUY":
-                if state['pos'] < 0: # Close Short first
+                if state['pos'] < 0: # Close Short
                     trade_pnl = (state['entry'] - current_price) * abs(state['pos'])
                     exchange.create_market_buy_order(SYMBOL, abs(state['pos']))
                     update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl)
                     print(f"🔄 Closed SHORT at {current_price}")
+                    time.sleep(1) # Small delay for exchange processing
                     state = get_strategy_state() 
 
                 if state['pos'] == 0: # Open Long
@@ -156,11 +194,12 @@ def main():
 
             # SELL SIGNAL
             elif signal == "SELL":
-                if state['pos'] > 0: # Close Long first
+                if state['pos'] > 0: # Close Long
                     trade_pnl = (current_price - state['entry']) * state['pos']
                     exchange.create_market_sell_order(SYMBOL, abs(state['pos']))
                     update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl)
                     print(f"🔄 Closed LONG at {current_price}")
+                    time.sleep(1)
                     state = get_strategy_state()
 
                 if state['pos'] == 0: # Open Short

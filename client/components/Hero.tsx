@@ -274,7 +274,7 @@ export default function AILandingPage() {
               <div className="mt-6 space-y-2">
                 <h3 className="text-lg md:text-xl font-medium text-white">Create with AI</h3>
                 <p className="text-sm  leading-relaxed">
-                  Describe your strategy in plain English. GPT-5 builds the logic instantly.
+                  Describe your strategy in plain English. <span className="theseason">RICHACLE</span> builds the logic instantly.
                 </p>
               </div>
             </motion.div>

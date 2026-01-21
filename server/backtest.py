@@ -132,6 +132,9 @@ async def backtest_crypto(req: BacktestRequest):
                 "win_rate_percent": round(win_rate, 2)
             }
         }
+    
+    except HTTPException as he:
+        raise he
 
     except Exception as e:
         raise HTTPException(
