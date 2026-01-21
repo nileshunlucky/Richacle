@@ -111,6 +111,7 @@ useEffect(() => {
         body: form,
       });
       const balData = await balRes.json();
+      console.log("balData", balData)
 
       setTotalPnl(balData.equity);
       setStrategiesPerf(balData.unrealized_pnl);
@@ -395,8 +396,8 @@ const handleSquareOFF = async (id: string) => {
 
           <div className="gap-2 flex flex-col-reverse">
             {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
-              <div className="bg-zinc-900/20 border border-zinc-800/40 rounded-2xl py-12 text-center">
-                <p className="text-zinc-600 text-sm font-light">No active execution threads</p>
+              <div className=" py-12 text-center">
+                <p className="text-white text-sm font-light">No active execution threads</p>
               </div>
             ) : (
               strategies
