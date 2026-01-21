@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Form
 from pydantic import BaseModel
 import ccxt
 from db import users_collection
+from datetime import datetime
 
 router = APIRouter()
 # Initialize docker client once

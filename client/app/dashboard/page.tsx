@@ -113,51 +113,33 @@ useEffect(() => {
   fetchBinance();
 }, [email]);
 
+
 useEffect(() => {
-  if (!strategies || strategies.length === 0) return;
-
-  let total = 0;
-  let runningPerf = 0;
-
-  strategies.forEach(s => {
-    const live = Number(s.live_pnl || 0)
-    const demo = Number(s.demo_pnl || 0)
-
-    const sTotal = live + demo
-    total += sTotal
-
-    if (s.status === "running") {
-      runningPerf += sTotal
-    }
-  });
-
-  setTotalPnl(total)
-  setStrategiesPerf(runningPerf)
-}, [strategies]);
-
-
-
-    useEffect(() => {
   if (!email) return;
 
-  const form = new FormData();
-  form.append("email", email);
   const fetchBalance = async () => {
-  try {
-    const res = await fetch("https://api.richacle.com/api/balance", {
-      method: "POST",
-      body: form,
-    });
+    const form = new FormData();
+    form.append("email", email);
 
-    const data = res.json()
+    try {
+      const res = await fetch("https://api.richacle.com/api/balance", {
+        method: "POST",
+        body: form,
+      });
 
-    console.log("data", data)
-  } catch {
-    console.error("Balance not found");
-  }
-  }
-  fetchBalance()
-  }, [email]);
+      const data = await res.json(); 
+
+      console.log("balance", data)
+      setTotalPnl(data.equity)
+      setStrategiesPerf(data.unrealized_pnl);
+
+    } catch (error) {
+      console.error("Balance fetch error:", error);
+    }
+  };
+
+  fetchBalance();
+}, [email]);
 
     useEffect(() => {
     const getUser = async () => {
