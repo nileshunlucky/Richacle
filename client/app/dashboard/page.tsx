@@ -110,7 +110,7 @@ useEffect(() => {
       toast.error("Failed loading strategies!");
     }
   };
-  fetchBinance();;
+  fetchBinance();
 }, [email]);
 
 useEffect(() => {
@@ -136,6 +136,28 @@ useEffect(() => {
 }, [strategies]);
 
 
+
+    useEffect(() => {
+  if (!email) return;
+
+  const form = new FormData();
+  form.append("email", email);
+  const fetchBalance = async () => {
+  try {
+    const res = await fetch("https://api.richacle.com/api/balance", {
+      method: "POST",
+      body: form,
+    });
+
+    const data = res.json()
+
+    console.log("data", data)
+  } catch {
+    console.error("Balance not found");
+  }
+  }
+  fetchBalance()
+  }, [email]);
 
     useEffect(() => {
     const getUser = async () => {
