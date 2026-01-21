@@ -76,71 +76,6 @@ export default function Dashboard() {
 
   const router = useRouter();
 
-
-useEffect(() => {
-  if (!email) return;
-  const fetchStrategies = async () => {
-    try {
-      const res = await fetch(`https://api.richacle.com/user/${email}`);
-      const data = await res.json();
-
-      setTerminal(data?.terminal);
-       setEngine(data?.engine);
-      setStrategies(data?.strategies);
-    } catch {
-      toast.error("Failed loading strategies!");
-    }
-  };
-  fetchStrategies();
-  const interval = setInterval(fetchStrategies, 10000); // Poll every 10s
-  return () => clearInterval(interval);
-}, [email]);
-
-useEffect(() => {
-  if (!email) return;
-  const fetchBinance = async () => {
-    try {
-      const res = await fetch(`https://api.richacle.com/user/${email}`);
-      const data = await res.json();
-      console.log(data)
-       setApiKey(data?.binance?.apiKey);
-      setApiSecret(data?.binance?.apiSecret);
-      setIsDemo(data?.binance?.demo);
-    } catch {
-      toast.error("Failed loading strategies!");
-    }
-  };
-  fetchBinance();
-}, [email]);
-
-
-useEffect(() => {
-  if (!email) return;
-
-  const fetchBalance = async () => {
-    const form = new FormData();
-    form.append("email", email);
-
-    try {
-      const res = await fetch("https://api.richacle.com/api/balance", {
-        method: "POST",
-        body: form,
-      });
-
-      const data = await res.json(); 
-
-      console.log("balance", data)
-      setTotalPnl(data.equity)
-      setStrategiesPerf(data.unrealized_pnl);
-
-    } catch (error) {
-      console.error("Balance fetch error:", error);
-    }
-  };
-
-  fetchBalance();
-}, [email]);
-
     useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -150,6 +85,46 @@ useEffect(() => {
     getUser();
   }, []);
 
+
+// Combine these into ONE Effect
+useEffect(() => {
+  if (!email) return;
+
+  const fetchData = async () => {
+    try {
+      // 1. Fetch User Data (Strategies + Binance Keys)
+      const userRes = await fetch(`https://api.richacle.com/user/${email}`);
+      const userData = await userRes.json();
+      
+      setTerminal(userData?.terminal);
+      setEngine(userData?.engine);
+      setStrategies(userData?.strategies);
+      setApiKey(userData?.binance?.apiKey);
+      setApiSecret(userData?.binance?.apiSecret);
+      setIsDemo(userData?.binance?.demo);
+
+      // 2. Fetch Balance (Wait until user data is handled)
+      const form = new FormData();
+      form.append("email", email);
+      const balRes = await fetch("https://api.richacle.com/api/balance", {
+        method: "POST",
+        body: form,
+      });
+      const balData = await balRes.json();
+
+      setTotalPnl(balData.equity);
+      setStrategiesPerf(balData.unrealized_pnl);
+
+    } catch (error) {
+      console.error("Poll error:", error);
+    }
+  };
+
+  fetchData(); 
+  const interval = setInterval(fetchData, 1000); 
+  
+  return () => clearInterval(interval);
+}, [email]);
 
 const toggleEngine = async () => {
   if (!email) return;

@@ -15,7 +15,7 @@ DEMO = os.getenv("DEMO", True)
 STRATEGY_ID = os.getenv("STRATEGY_ID")
 STRATEGY_CODE = os.getenv("STRATEGY_CODE")
 SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
-TIMEFRAME = os.getenv("TIMEFRAME", "1h")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
 AMOUNT = float(os.getenv("AMOUNT", 100)) 
 LEVERAGE = int(os.getenv("LEVERAGE", 5))
 

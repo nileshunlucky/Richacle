@@ -155,7 +155,7 @@ async def predict_trade(
               {"role": "system", "content": (
                    "Identify the trading timeframe from user input. "
                    "Valid options: '1m', '5m', '15m', '30m', '1h', '4h', '1d'. "
-                   "If none mentioned, output '1h'. Output ONLY the string."
+                   "If none mentioned, output '1m'. Output ONLY the string."
                )},
               {"role": "user", "content": input},
            ],

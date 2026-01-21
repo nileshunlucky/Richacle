@@ -261,7 +261,7 @@ function BacktestContent() {
 
         <AnimatePresence mode="wait">
           {result ? (
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 bg-black">
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 ">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 ">
                 <Stat label="Net P&L" value={`$${result.total_pnl}`} color={isPositive ? "text-green-500" : "text-red-500"} />
                 <Stat label="Return" value={`${result.return_percent}%`} color={isPositive ? "text-green-500" : "text-red-500"} />
@@ -270,7 +270,7 @@ function BacktestContent() {
               </div>
               
 
-              <div className="relative z-10 space-y-8 bg-black backdrop-blur-md p-6 rounded-3xl border border-white/10">
+              <div className="relative z-10 space-y-8 bg-black p-6 rounded-3xl border border-white/10">
                 <div className="flex justify-between items-center mb-8 text-[9px] uppercase font-bold text-zinc-600 ">
                   <span>Equity Curve</span>
                   <span className="text-zinc-200 ">{result.total_trades} TRADES</span>

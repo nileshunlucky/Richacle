@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label"; // Optional for better UX
 
 interface Strategy {
   id: string;
