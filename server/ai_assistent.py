@@ -163,47 +163,45 @@ async def predict_trade(
         timeframe = timeframeres.output_text.strip()
 
         prompt = f"""
-You are an expert Quant Architect. Generate a high-performance Python trading strategy.
+You are a professional Quant Coder. Generate a Python function for a LONG-ONLY trading strategy.
 
-STRICT TECHNICAL REQUIREMENTS:
-1. VECTORIZED CALCULATIONS: Use pandas/numpy for all indicators and signal logic. NO 'for' loops or '.apply()'.
-2. THE SIGNAL COLUMN: The function must create a new column 'signal' in the DataFrame 'df'. 
-   - 1 for BUY
-   - -1 for SELL
-   - 0 for HOLD
-3. DUAL-PURPOSE RETURN: 
-   - For Backtesting: The 'signal' column must be populated for the entire history.
-   - For Bot: The 'latest_signal' must be the string representation ("BUY", "SELL", or "HOLD") of the very last row.
-4. DATA SAFETY: If the DataFrame is too short for indicators (e.g., < 200 rows for a 200 EMA), return [], "HOLD".
+STRICT RULES:
+1. Output ONLY the function `def run_strategy(df):`. No markdown, no backticks, no comments.
+2. Use 'pd' for pandas and 'np' for numpy.
+3. The function MUST return: `trades` (a list of dicts) and `latest_signal` (a string).
+4. Trade Dictionary Format: 
+   - Each trade MUST be: {{'entry_price': float, 'exit_price': float, 'qty': 1}}
+5. latest_signal: "BUY" (if current candle meets entry), "SELL" (if in trade and exit met), or "HOLD".
 
-FUNCTION SIGNATURE:
+ENVIRONMENT:
+- df columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume']
+- All price columns are already floats.
+
+EXAMPLE STRUCTURE:
 def run_strategy(df):
-    # logic here...
-    return [], latest_signal
+    df['ema'] = df['close'].ewm(span=20).mean()
+    trades = []
+    open_trade = None
+    latest_signal = "HOLD"
+    for i in range(len(df)):
+        price = df['close'].iloc[i]
+        if open_trade is None:
+            if price > df['ema'].iloc[i]: # Entry Logic
+                open_trade = {{'entry_price': price, 'qty': 1}}
+                if i == len(df)-1: latest_signal = "BUY"
+        else:
+            if price < df['ema'].iloc[i]: # Exit Logic
+                trades.append({{'entry_price': open_trade['entry_price'], 'exit_price': price, 'qty': 1}})
+                open_trade = None
+                if i == len(df)-1: latest_signal = "SELL"
+    if open_trade:
+        trades.append({{'entry_price': open_trade['entry_price'], 'exit_price': df['close'].iloc[-1], 'qty': 1}})
+    return trades, latest_signal
 
-STRATEGY REQUEST:
+USER STRATEGY REQUEST:
 {input}
-
-EXAMPLE OF DUAL-MODE CODE:
-def run_strategy(df):
-    import numpy as np
-    df = df.copy()
-    # 1. Vectorized Indicators
-    df['ema_200'] = df['close'].ewm(span=200).mean()
-    df['rsi'] = ... # (Vectorized RSI logic)
-    
-    # 2. Vectorized Signal Logic (Fills the whole column for backtesting)
-    df['signal'] = 0
-    df.loc[(df['close'] > df['ema_200']) & (df['rsi'] < 30), 'signal'] = 1
-    df.loc[(df['close'] < df['ema_200']) & (df['rsi'] > 70), 'signal'] = -1
-    
-    # 3. Live Bot Output
-    if len(df) < 200: return [], "HOLD"
-    last_val = df['signal'].iloc[-1]
-    latest_signal = "BUY" if last_val == 1 else ("SELL" if last_val == -1 else "HOLD")
-    
-    return [], latest_signal
 """
+
 
         response = openai_client.responses.create(
             model="gpt-4o-mini",
