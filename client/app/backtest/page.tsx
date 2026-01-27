@@ -233,7 +233,7 @@ function BacktestContent() {
                 <SelectTrigger className="w-full h-14 bg-zinc-950 border-zinc-800 rounded-xl px-5 p-7 text-sm">
                   <SelectValue placeholder="Select strategy..." />
                 </SelectTrigger>
-                <SelectContent className="bg-zinc-950 border-zinc-800 p-1.5 shadow-2xl">
+                <SelectContent className="bg-zinc-950 border-zinc-800 p-1.5 ">
                   {strategies.map((strat) => (
                     <SelectItem key={strat.id} value={strat.id} className="rounded-lg p-3 my-0.5 cursor-pointer">
                       <div className="flex items-center justify-between w-full min-w-[200px]">
@@ -306,7 +306,7 @@ export default function BacktestUI() {
 
 function Stat({ label, value, color }: { label: string, value: string, color: string }) {
   return (
-    <div className="space-y-1 py-4 px-4 bg-black backdrop-blur-sm rounded-2xl border border-white/5 shadow-xl">
+    <div className="space-y-1 py-4 px-4 bg-black backdrop-blur-sm rounded-2xl border border-white/5">
       <p className="text-[10px] text-zinc-400 uppercase font-bold tracking-wider">{label}</p>
       <p className={`text-2xl md:text-3xl font-bold ${color}`}>{value}</p>
     </div>

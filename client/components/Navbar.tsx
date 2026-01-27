@@ -65,7 +65,7 @@ useEffect(() => {
         <div className="flex z-50 justify-between px-12 py-3 bg-black h-12 items-center">
           {/* Logo */}
           <Link href="/dashboard" className="flex-shrink-0">
-            <img src="/logo.png" alt="Logo" className="h-7 w-7 object-cover rounded-full" />
+            <img src="/logo.png" alt="Logo" className="h-7 w-7 object-cover" />
           </Link>
 
           {/* Desktop nav */}
