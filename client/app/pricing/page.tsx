@@ -113,7 +113,7 @@ const cardVariants = {
 </div>
         {/* Large Background Text */}
         <div className="absolute top-35 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none overflow-hidden w-full">
-          <h1 className="text-[5rem] md:text-[20rem] font-bold text-zinc-200 whitespace-nowrap text-center">
+          <h1 className="text-[5rem] md:text-[20rem] font-bold text-zinc-100 whitespace-nowrap text-center">
             Pricing
           </h1>
         </div>
@@ -152,14 +152,14 @@ const cardVariants = {
               )}
 
               <div className="mb-8">
-                <p className={`text-sm font-medium mb-4 ${plan.featured ? 'text-gray-600' : 'text-gray-400'}`}>
+                <p className={`text-sm font-medium mb-4 ${plan.featured ? 'text-zinc-600' : 'text-zinc-400'}`}>
                   {plan.name}
                 </p>
                 <div className="flex items-baseline gap-2">
                   <span className="text-5xl font-bold">
                     ${plan.price}
                   </span>
-                  <span className={`text-lg ${plan.featured ? 'text-gray-600' : 'text-gray-400'}`}>
+                  <span className={`text-lg ${plan.featured ? 'text-zinc-600' : 'text-zinc-400'}`}>
                     {plan.period}
                   </span>
                 </div>
@@ -176,7 +176,7 @@ const cardVariants = {
                       }`} />
                     </div>
                     <span className={`text-sm ${
-                      plan.featured ? 'text-gray-700' : 'text-gray-300'
+                      plan.featured ? 'text-zinc-700' : 'text-zinc-300'
                     }`}>
                       {feature}
                     </span>

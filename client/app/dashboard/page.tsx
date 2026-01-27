@@ -111,7 +111,6 @@ useEffect(() => {
         body: form,
       });
       const balData = await balRes.json();
-      console.log("balData", balData)
 
       setTotalPnl(balData.equity);
       setStrategiesPerf(balData.unrealized_pnl);

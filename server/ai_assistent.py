@@ -280,34 +280,53 @@ def run_strategy(df):
 async def autocomplete(
     prompt: str = Form(...), 
     email: str = Form(...)
-    ):
+):
     try:
         user = users_collection.find_one({"email": email})
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
+        if not user or user.get("copilot", 0) < 1:
+            raise HTTPException(status_code=403, detail="Credits exhausted or user not found")
 
-        if user.get("copilot", 0) < 1:
-            raise HTTPException(status_code=403, detail="Insufficient copilot")
+        # System prompt with clear "Before/After" logic
+        system_instruction = (
+            "You are a Crypto Trading Algo Autocomplete engine. "
+            "Your task is to COMPLETE the user's sentence. "
+            "IMPORTANT: Do NOT repeat what the user has already typed. "
+            "Provide ONLY the remaining text needed to make a valid strategy. "
+            "Elements to include if missing: Indicator (EMA, SMA, etc.), Symbol (BTC/USDT), "
+            "Leverage (max 100x), Timeframe (5m, 1h), and Amount (min $100). "
+            "If the strategy is already complete, return an empty string."
+        )
 
-        response = openai_client.responses.create(
+        # Few-shot examples to 'prime' the model's behavior
+        messages = [
+            {"role": "system", "content": system_instruction},
+            {"role": "user", "content": "Buy BTC when"},
+            {"role": "assistant", "content": " EMA 20 crosses above EMA 50 on 15m timeframe with 10x leverage and $500 amount."},
+            {"role": "user", "content": "Sell ETH/USDT 20x leverage"},
+            {"role": "assistant", "content": " on 1hr timeframe when RSI is above 70 for $200."},
+            {"role": "user", "content": prompt} # The actual user input
+        ]
+
+        response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
-            input=[
-                {
-                    "role": "system",
-                    "content": "You are a Crypto trading algo completion tool. Complete the user's sentence briefly. Only provide the   completion text. No conversational filler.if not mention this then add, symbol (ex. BTC/USDT, ETH/USDT), Leverage 1 to 100 max, Timeframe (ex.5m, 15min, 30min, 1hr) and amount like min $$100. if all this mention and strtegy logic is complete  then stop (dont reply)"
-                },
-                {"role": "user", "content": prompt},
-            ],
+            messages=messages,
+            temperature=0.2, # Lower temperature for more predictable completions
+            max_tokens=50,
+            presence_penalty=0.0,
+            frequency_penalty=0.0
         )
     
-        suggestion =  response.output_text.strip()
+        suggestion = response.choices[0].message.content.strip()
 
-        users_collection.update_one(
-            {"email": email},
-            {"$inc": {"copilot": -1}}
-        )
+        # Only deduct credit if a suggestion was actually provided
+        if suggestion:
+            users_collection.update_one(
+                {"email": email},
+                {"$inc": {"copilot": -1}}
+            )
+        
         return {"suggestion": suggestion}
 
     except Exception as e:
         print(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Internal Server Error")
