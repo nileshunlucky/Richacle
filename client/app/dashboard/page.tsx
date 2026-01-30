@@ -73,6 +73,7 @@ export default function Dashboard() {
   const [totalPnl, setTotalPnl] = useState(0)
   const [strategiesPerf, setStrategiesPerf] = useState(0)
   const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [showLosses, setShowLosses] = useState(false);
 
   const router = useRouter();
 
@@ -95,13 +96,8 @@ useEffect(() => {
       // 1. Fetch User Data (Strategies + Binance Keys)
       const userRes = await fetch(`https://api.richacle.com/user/${email}`);
       const userData = await userRes.json();
-      
-      setTerminal(userData?.terminal);
-      setEngine(userData?.engine);
+
       setStrategies(userData?.strategies);
-      setApiKey(userData?.binance?.apiKey);
-      setApiSecret(userData?.binance?.apiSecret);
-      setIsDemo(userData?.binance?.demo);
 
       // 2. Fetch Balance (Wait until user data is handled)
       const form = new FormData();
@@ -124,6 +120,29 @@ useEffect(() => {
   const interval = setInterval(fetchData, 1000); 
   
   return () => clearInterval(interval);
+}, [email]);
+
+useEffect(() => {
+  if (!email) return;
+
+  const fetchBinance = async () => {
+    try {
+      // 1. Fetch User Data (Binance Keys)
+      const userRes = await fetch(`https://api.richacle.com/user/${email}`);
+      const userData = await userRes.json();
+      
+      setTerminal(userData?.terminal);
+      setEngine(userData?.engine);
+      setApiKey(userData?.binance?.apiKey);
+      setApiSecret(userData?.binance?.apiSecret);
+      setIsDemo(userData?.binance?.demo);
+
+    } catch (error) {
+      console.error("Poll error:", error);
+    }
+  };
+
+  fetchBinance(); 
 }, [email]);
 
 const toggleEngine = async () => {
@@ -301,29 +320,7 @@ const handleSquareOFF = async (id: string) => {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
-     {/* Instagram Full Bright Glow with Top Black Fade */}
-<div className="absolute inset-0 overflow-hidden z-0">
   
-  {/* 1. The Main Vibrant Layer */}
-  <div 
-    className="absolute inset-0 opacity-100"
-    style={{
-      background: `
-        radial-gradient(circle at 0% 100%, rgba(255, 220, 107, 1) 0%, rgba(253, 29, 29, 0.6) 35%, transparent 70%),
-        radial-gradient(circle at 100% 100%, rgba(225, 48, 108, 0.9) 0%, rgba(131, 58, 180, 0.7) 40%, transparent 80%),
-        radial-gradient(circle at 50% 50%, rgba(64, 93, 230, 0.8) 0%, transparent 100%)
-      `,
-      filter: 'blur(40px)' // Softens the blend between these intense colors
-    }}
-  />
-
-  {/* 2. The Black Top Mask (Creates the fade from the top) */}
-  <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-[50%]" />
-
-  {/* 3. Global Saturation Boost */}
-  <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
-
-</div>
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header Section (Based on Image Ref) */}
@@ -414,6 +411,7 @@ const handleSquareOFF = async (id: string) => {
                       <div className="flex flex-col gap-1">
                       
                         <h4 className="text-sm font-medium text-zinc-100">{s.name}</h4>
+                        
                         <p className="text-[10px] text-zinc-200 mt-0.5 opacity-70">
                           {s.input}
                         </p>
@@ -432,6 +430,63 @@ const handleSquareOFF = async (id: string) => {
   )}
                       </div>
                     </div>
+
+                    {/* 2. Loss Trigger Button */}
+                    {s.loss_reasons?.length && 
+                    
+          <div className="mt-4 md:mt-0 flex items-center gap-3">
+            <button
+              onClick={() => setShowLosses(!showLosses)}
+              className={`text-[11px] px-3 py-1 rounded-full border transition-all ${
+                s.loss_reasons?.length > 0 
+                ? "border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20" 
+                : "border-zinc-700 text-zinc-500 cursor-default"
+              }`}
+            >
+              {s.loss_reasons?.length} {s.loss_reasons?.length === 1 ? "Loss" : "Losses"}
+            </button>
+          </div>
+                    }
+
+                    {/* 3. Single-Item Height Scrollable Loss List */}
+<AnimatePresence>
+  {showLosses && s.loss_reasons?.length > 0 && (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      className="mt-4 px-1"
+    >
+      {/* Container height set to ~100px to show exactly one loss at a time */}
+      <div 
+        className="max-h-[105px] overflow-y-auto pr-2 space-y-2 custom-scrollbar snap-y snap-mandatory"
+      >
+        {s.loss_reasons.map((loss, idx) => (
+          <div 
+            key={idx}
+            className="snap-start p-3 rounded-xl border border-red-500/50 bg-red-500/20 text-red-400 min-h-[90px] flex flex-col justify-center"
+          >
+            <div className="flex justify-between items-start gap-4">
+              <p className="text-xs font-medium leading-tight">
+                {loss.reason}
+              </p>
+              <span className="text-[10px] font-bold whitespace-nowrap bg-red-500/30 px-2 py-0.5 rounded-lg">
+                ${loss.pnl}
+              </span>
+            </div>
+            
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-[9px] opacity-60 flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-red-400 opacity-50"></span>
+                {new Date(loss.timestamp).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
 
                     {/* Right: Status & Action */}
                     <div className="flex items-center justify-between md:justify-end gap-6 mt-4 md:mt-0 z-50">

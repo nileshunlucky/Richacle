@@ -213,29 +213,7 @@ export default function AlgoTradingLovableUI() {
 
   return (
     <div className="relative min-h-screen w-screen overflow-x-hidden bg-black text-white pb-20">
-{/* Instagram Full Bright Glow with Top Black Fade */}
-<div className="absolute inset-0 bg-black overflow-hidden">
-  
-  {/* 1. The Main Vibrant Layer */}
-  <div 
-    className="absolute inset-0 opacity-100"
-    style={{
-      background: `
-        radial-gradient(circle at 0% 100%, rgba(255, 220, 107, 1) 0%, rgba(253, 29, 29, 0.6) 35%, transparent 70%),
-        radial-gradient(circle at 100% 100%, rgba(225, 48, 108, 0.9) 0%, rgba(131, 58, 180, 0.7) 40%, transparent 80%),
-        radial-gradient(circle at 50% 50%, rgba(64, 93, 230, 0.8) 0%, transparent 100%)
-      `,
-      filter: 'blur(40px)' // Softens the blend between these intense colors
-    }}
-  />
 
-  {/* 2. The Black Top Mask (Creates the fade from the top) */}
-  <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-[50%]" />
-
-  {/* 3. Global Saturation Boost */}
-  <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
-
-</div>
 
       <div className="relative z-10 flex h-full flex-col items-center px-4 pt-20">
         <div className="flex flex-col md:flex-row items-center justify-between gap-2">

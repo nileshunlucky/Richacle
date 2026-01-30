@@ -86,31 +86,7 @@ const cardVariants = {
     
       {/* Hero Section */}
       <div className="pt-20 pb-16 px-6 relative min-h-screen">
-      {/* Instagram Full Bright Glow with Top (50%) and Bottom (10%) Black Fade */}
-<div className="absolute inset-0 overflow-hidden">
-  
-  {/* 1. The Main Vibrant Layer */}
-  <div 
-    className="absolute inset-0 opacity-100"
-    style={{
-      background: `
-        radial-gradient(circle at 0% 100%, rgba(255, 220, 107, 1) 0%, rgba(253, 29, 29, 0.6) 35%, transparent 70%),
-        radial-gradient(circle at 100% 100%, rgba(225, 48, 108, 0.9) 0%, rgba(131, 58, 180, 0.7) 40%, transparent 80%),
-        radial-gradient(circle at 50% 50%, rgba(64, 93, 230, 0.8) 0%, transparent 100%)
-      `,
-      filter: 'blur(40px)'
-    }}
-  />
-
-  {/* 2. The Black Top Mask (Top 50%) */}
-  <div className="absolute inset-0 bg-gradient-to-b from-black via-black/60 to-transparent h-1/2" />
-
-
-
-  {/* 4. Global Saturation Boost */}
-  <div className="absolute inset-0 bg-white/9 mix-blend-overlay pointer-events-none" />
-
-</div>
+     
         {/* Large Background Text */}
         <div className="absolute top-35 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none overflow-hidden w-full">
           <h1 className="text-[5rem] md:text-[20rem] font-bold text-zinc-100 whitespace-nowrap text-center">
