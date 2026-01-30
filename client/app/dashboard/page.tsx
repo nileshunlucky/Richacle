@@ -443,15 +443,15 @@ const handleSquareOFF = async (id: string) => {
                     
           <div className="mt-4 md:mt-0 flex items-center gap-3">
             <button
-              onClick={() => setShowLosses(!showLosses)}
-              className={`text-[11px] px-3 py-1 rounded-full border transition-all ${
-                s.loss_reasons?.length > 0 
-                ? "border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20" 
-                : "border-zinc-700 text-zinc-500 cursor-default"
-              }`}
-            >
-              {s.loss_reasons?.length} {s.loss_reasons?.length === 1 ? "Loss" : "Losses"}
-            </button>
+  onClick={() => setShowLosses(showLosses === s.id ? null : s.id)}
+  className={`text-[11px] px-3 py-1 rounded-full border transition-all ${
+    s.loss_reasons && s.loss_reasons.length > 0 
+    ? "border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20" 
+    : "border-zinc-700 text-zinc-500 cursor-default"
+  }`}
+>
+  {s.loss_reasons?.length || 0} {s.loss_reasons?.length === 1 ? "Loss" : "Losses"}
+</button>
 
             
           </div>
@@ -459,7 +459,7 @@ const handleSquareOFF = async (id: string) => {
 
                     {/* 3. Single-Item Height Scrollable Loss List */}
 <AnimatePresence>
-  {showLosses && s.loss_reasons?.length > 0 && (
+  {showLosses === s.id && s.loss_reasons && s.loss_reasons.length > 0 && (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
       animate={{ height: "auto", opacity: 1 }}
