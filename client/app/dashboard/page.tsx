@@ -57,6 +57,13 @@ interface Strategy {
   last_error?: string;
   live_pnl?: number | string;
   demo_pnl?: number | string;
+  loss_reasons?: LossReason[];
+}
+
+interface LossReason {
+  reason: string;
+  pnl: number;
+  timestamp: string;
 }
 
 // --- Main Page ---
@@ -73,7 +80,7 @@ export default function Dashboard() {
   const [totalPnl, setTotalPnl] = useState(0)
   const [strategiesPerf, setStrategiesPerf] = useState(0)
   const [strategies, setStrategies] = useState<Strategy[]>([]);
-  const [showLosses, setShowLosses] = useState(false);
+  const [showLosses, setShowLosses] = useState<string | null>(null);
 
   const router = useRouter();
 
@@ -445,6 +452,8 @@ const handleSquareOFF = async (id: string) => {
             >
               {s.loss_reasons?.length} {s.loss_reasons?.length === 1 ? "Loss" : "Losses"}
             </button>
+
+            
           </div>
                     }
 
