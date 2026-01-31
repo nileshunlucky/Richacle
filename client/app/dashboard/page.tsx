@@ -681,7 +681,7 @@ const handleSquareOFF = async (id: string) => {
             <div className="h-[1px] flex-grow mx-4 bg-zinc-800/50" /> {/* Subtle divider line */}
           </div>
 
-          <div className="flex flex-col ">
+          <div className="flex flex-col-reverse ">
   {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
     <div className="py-12 text-center">
       <p className="text-white text-sm font-light">No active execution trades</p>
