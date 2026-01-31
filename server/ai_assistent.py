@@ -241,6 +241,7 @@ USER STRATEGY REQUEST:
             strategy_doc = {
                 "id": str(uuid4()),
                 "input": input,
+                "llm": "ChatGPT",
                 "code": result_text,
                 "name": name,
                 "symbol": symbol,
@@ -324,6 +325,32 @@ async def autocomplete(
             )
         
         return {"suggestion": suggestion}
+
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.post("/api/update-llm")
+async def llmupdate(
+    email: str = Form(...),
+    strategyId: str = Form(...), 
+    llm: str = Form(...), 
+):
+    try:
+        user = users_collection.find_one({"email": email})
+        if not user:
+            raise HTTPException(status_code=403, detail="user not found")
+
+        users_collection.update_one(
+        {"email": email, "strategies.id": strategyId},
+        {
+            "$set": {
+                "strategies.$.llm": llm,
+            },
+        }
+        )
+        
+        return {"status": "llm updated"}
 
     except Exception as e:
         print(traceback.format_exc())

@@ -14,6 +14,7 @@ import {
   Loader2,
   XCircle,
   X,
+  ChevronUp,
   Copy
 } from "lucide-react"
 import { supabase } from "@/lib/supabaseClient";
@@ -25,6 +26,12 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import {Switch} from "@/components/ui/switch"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, onToggle: () => void }) => (
   <div className="flex flex-col gap-3">
@@ -54,6 +61,7 @@ interface Strategy {
   name: string;
   status: string;
   input?: string;
+  llm?: string;
   last_error?: string;
   live_pnl?: number | string;
   demo_pnl?: number | string;
@@ -81,6 +89,7 @@ export default function Dashboard() {
   const [strategiesPerf, setStrategiesPerf] = useState(0)
   const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [showLosses, setShowLosses] = useState<string | null>(null);
+  const [llms, setLlms] = useState(["ChatGPT", "Claude", "Gemini", "Grok", "Perplexity", "Llama", "DeepSeek", "Qwen"])
 
   const router = useRouter();
 
@@ -175,6 +184,34 @@ setEngine(next);
 
   } catch {
     toast.error("Error toggling engine");
+  }
+};
+
+
+const handleLLMUpdate = async (strategyId: string, newLlm: string) => {
+  // 1. Update local UI state immediately for responsiveness
+  setStrategies(prev => 
+    prev.map(s => s.id === strategyId ? { ...s, llm: newLlm } : s)
+  );
+
+  // 2. Sync with your Backend API
+  try {
+    const form = new FormData();
+    form.append("email", email);
+    form.append("strategyId", strategyId);
+    form.append("llm", newLlm);
+
+    const res = await fetch("https://api.richacle.com/api/update-llm", { // Ensure this endpoint exists
+      method: "POST",
+      body: form,
+    });
+
+    if (!res.ok){
+      toast.error("something went wrong!")
+    }
+  } catch (error) {
+    toast.error("Failed to update LLM on server");
+    console.error(error)
   }
 };
  
@@ -400,7 +437,7 @@ const handleSquareOFF = async (id: string) => {
           <div className="gap-2 flex flex-col-reverse">
             {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
               <div className=" py-12 text-center">
-                <p className="text-white text-sm font-light">No active execution threads</p>
+                <p className="text-white text-sm font-light">No active execution trades</p>
               </div>
             ) : (
               strategies
@@ -417,7 +454,42 @@ const handleSquareOFF = async (id: string) => {
                     <div className="flex items-center gap-4 z-50">
                       <div className="flex flex-col gap-1">
                       
+                        <div className="flex items-center justify-between">                       
                         <h4 className="text-sm font-medium text-zinc-100">{s.name}</h4>
+
+                      {s?.llm &&
+                      <div>
+                      <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <div className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity outline-none">
+        <h4 className="text-sm font-medium text-zinc-100">{s.llm}</h4>
+        <ChevronUp className="w-4 h-4 text-zinc-400" />
+      </div>
+    </DropdownMenuTrigger>
+
+    <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 p-1 min-w-[120px]">
+      <motion.div
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15 }}
+      >
+        {llms.map((model) => (
+          <DropdownMenuItem
+            key={model}
+            onClick={() => handleLLMUpdate(s.id, model)}
+            className="text-zinc-100 focus:bg-zinc-900 focus:text-white cursor-pointer text-sm"
+          >
+            {model}
+          </DropdownMenuItem>
+        ))}
+      </motion.div>
+    </DropdownMenuContent>
+  </DropdownMenu>
+
+                      </div>
+                      }
+                        
+                        </div>
                         
                         <p className="text-[10px] text-zinc-200 mt-0.5 opacity-70">
                           {s.input}
