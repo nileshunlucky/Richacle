@@ -33,6 +33,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const LLM_ICONS: Record<string, string> = {
+  ChatGPT: "https://www.edigitalagency.com.au/wp-content/uploads/new-ChatGPT-icon-white-png-large-size.png",
+  Claude: "https://img.icons8.com/ios11/512/FFFFFF/claude-ai.png",
+  Gemini: "https://img.icons8.com/ios_filled/512/FFFFFF/gemini-ai.png",
+  Grok: "https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/grok.png", 
+  Perplexity: "https://cdn.prod.website-files.com/68428da21ec2311e5b9a79c1/68428da31ec2311e5b9a7abf_afeb44866d2933f38e70eadb99b66a12_integration-section-icon-5.png", 
+  Llama: "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/meta.png", 
+  DeepSeek: "https://img.icons8.com/ios11/512/FFFFFF/deepseek.png", 
+  Qwen: "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/qwen.png", 
+};
+
 const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, onToggle: () => void }) => (
   <div className="flex flex-col gap-3">
     <div className="flex items-center gap-2">
@@ -212,6 +223,40 @@ const handleLLMUpdate = async (strategyId: string, newLlm: string) => {
   } catch (error) {
     toast.error("Failed to update LLM on server");
     console.error(error)
+  }
+};
+
+const handleDuplicate = async (id: string) => {
+  if (!email) return;
+
+  try {
+    const form = new FormData();
+    form.append("email", email);
+    form.append("strategyId", id);
+
+    const res = await fetch("https://api.richacle.com/api/duplicate", {
+      method: "POST",
+      body: form,
+    });
+
+    const data = await res.json();
+
+    if (res.status === 403 && data.detail.includes("FREE plan allows only 1 comparison. Upgrade to PRO for 7 slots!")) {
+        toast.error("FREE plan allows only 1 comparison. Upgrade to PRO for 7 slots!");
+        router.push("/pricing");
+        return;
+      }
+    if (res.status === 403 && data.detail.includes("Maximum of 7 comparison reached for this strategy.")) {
+        toast.error("Maximum of 7 comparison slots reached for this strategy!");
+        return;
+      }
+
+    if (!res.ok){
+      toast.error("Failed to duplicate");
+    }
+  } catch (error) {
+    console.error("Duplicate error:", error);
+    toast.error("Something went wrong");
   }
 };
  
@@ -434,7 +479,11 @@ const handleSquareOFF = async (id: string) => {
             <div className="h-[1px] flex-grow mx-4 bg-zinc-800/50" /> {/* Subtle divider line */}
           </div>
 
-          <div className="gap-2 flex flex-col-reverse">
+          <div className={`gap-2 flex ${
+  strategies?.some(s => s.duplicate) 
+    ? "flex-row overflow-x-auto snap-x snap-mandatory"
+    : "flex-col-reverse"
+}`}>
             {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
               <div className=" py-12 text-center">
                 <p className="text-white text-sm font-light">No active execution trades</p>
@@ -447,8 +496,11 @@ const handleSquareOFF = async (id: string) => {
                     key={s.id}
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="group flex flex-col md:flex-row md:items-center justify-between bg-black border border-zinc-800/60 hover:border-zinc-500/30 rounded-3xl p-4 py-7 transition-all duration-300 relative "
+                    className={`group flex flex-col md:flex-row md:items-center justify-between bg-black border border-zinc-800/60 hover:border-zinc-500/30 rounded-3xl p-4 py-7 transition-all duration-300 relative shrink-0 snap-center
+              ${s.duplicate ? "w-[90%] md:w-[600px]" : "w-full"} 
+            `}
                   >
+                  
                  
                     {/* Left: Info */}
                     <div className="flex items-center gap-4 z-50">
@@ -462,6 +514,7 @@ const handleSquareOFF = async (id: string) => {
                       <DropdownMenu>
     <DropdownMenuTrigger asChild>
       <div className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity outline-none">
+      <img src={LLM_ICONS[s.llm]} className="w-4 h-4 object-contain" alt={s.llm} />
         <h4 className="text-sm font-medium text-zinc-100">{s.llm}</h4>
         <ChevronUp className="w-4 h-4 text-zinc-400" />
       </div>
@@ -477,8 +530,13 @@ const handleSquareOFF = async (id: string) => {
           <DropdownMenuItem
             key={model}
             onClick={() => handleLLMUpdate(s.id, model)}
-            className="text-zinc-100 focus:bg-zinc-900 focus:text-white cursor-pointer text-sm"
+            className="text-zinc-100 flex items-center focus:bg-zinc-900 focus:text-white cursor-pointer text-sm"
           >
+          <img 
+            src={LLM_ICONS[model]} 
+            className="w-4 h-4 object-contain" 
+            alt={model} 
+          />
             {model}
           </DropdownMenuItem>
         ))}
@@ -511,9 +569,10 @@ const handleSquareOFF = async (id: string) => {
                     </div>
 
                     {/* 2. Loss Trigger Button */}
-                    {s.loss_reasons?.length && 
                     
-          <div className="mt-4 md:mt-0 flex items-center gap-3">
+                    
+          <div className="mt-4 md:mt-0 flex justify-between items-center gap-3">
+                    {s.loss_reasons?.length && 
             <button
   onClick={() => setShowLosses(showLosses === s.id ? null : s.id)}
   className={`text-[11px] px-3 py-1 rounded-full border transition-all ${
@@ -524,10 +583,22 @@ const handleSquareOFF = async (id: string) => {
 >
   {s.loss_reasons?.length || 0} {s.loss_reasons?.length === 1 ? "Loss" : "Losses"}
 </button>
-
-            
-          </div>
                     }
+            
+        {
+  !s.duplicate && strategies.filter(strat => strat.duplicate === s.id).length < 7 && (
+    <button
+      onClick={() => handleDuplicate(s.id)}
+      className="p-2 cursor-pointer hover:text-white transition-colors"
+    >
+      <Copy size={14} />
+    </button>
+  )
+}
+        
+          </div>
+
+                    
 
                     {/* 3. Single-Item Height Scrollable Loss List */}
 <AnimatePresence>

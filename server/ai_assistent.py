@@ -355,3 +355,67 @@ async def llmupdate(
     except Exception as e:
         print(traceback.format_exc())
         raise HTTPException(status_code=500, detail="Internal Server Error")
+
+@router.post("/api/duplicate")
+async def duplicate(
+    email: str = Form(...),
+    strategyId: str = Form(...), 
+):
+    try:
+        # 1. Find the user
+        user = users_collection.find_one({"email": email})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        strategies = user.get("strategies", [])
+        user_plan = user.get("plan", "FREE").upper() # Normalize to uppercase
+        
+        # Define limits
+        max_limit = 7 if user_plan == "PRO" else 1
+
+        # 2. Limit Check
+        duplicate_count = sum(1 for s in strategies if s.get("duplicate") == strategyId)
+
+        if duplicate_count >= max_limit:
+            if user_plan == "FREE":
+                raise HTTPException(
+                    status_code=403, 
+                    detail="FREE plan allows only 1 comparison. Upgrade to PRO for 7 slots!"
+                )
+            else:
+                raise HTTPException(
+                    status_code=403, 
+                    detail="Maximum of 7 comparison reached for this strategy."
+                )
+
+        # 3. Extract the original strategy
+        original_strategy = next((s for s in strategies if s.get("id") == strategyId), None)
+        if not original_strategy:
+            raise HTTPException(status_code=404, detail="Strategy not found")
+
+        # 4. Create the clone
+        new_strategy = original_strategy.copy()
+        new_strategy.update({
+            "id": str(uuid.uuid4()),
+            "name": f"{original_strategy.get('name', 'Strategy')}",
+            "status": "stopped",
+            "duplicate": strategyId,
+            "live_pnl": 0,
+            "demo_pnl": 0,
+            "loss_reasons": [],
+            "last_error": ""
+        })
+
+        # 5. Save to Database
+        result = users_collection.update_one(
+            {"email": email},
+            {"$push": {"strategies": new_strategy}}
+        )
+
+        return {"status": "success"}
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail="Internal Server Error")

@@ -1,19 +1,38 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUp, Loader2, MoreVertical, Edit2, Play, Trash2, X } from "lucide-react";
+import { ArrowUp, Loader2, MoreVertical, Edit2, Play, Trash2, X , ChevronUp } from "lucide-react";
+import { motion } from "framer-motion"
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { Switch } from "@/components/ui/switch";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Strategy {
   id: string;
   name: string;
   input: string;
+  llm?: string;
   code: string;
   status: string;
 }
+
+const LLM_ICONS: Record<string, string> = {
+  ChatGPT: "https://www.edigitalagency.com.au/wp-content/uploads/new-ChatGPT-icon-white-png-large-size.png",
+  Claude: "https://img.icons8.com/ios11/512/FFFFFF/claude-ai.png",
+  Gemini: "https://img.icons8.com/ios_filled/512/FFFFFF/gemini-ai.png",
+  Grok: "https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/grok.png", 
+  Perplexity: "https://cdn.prod.website-files.com/68428da21ec2311e5b9a79c1/68428da31ec2311e5b9a7abf_afeb44866d2933f38e70eadb99b66a12_integration-section-icon-5.png", 
+  Llama: "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/meta.png", 
+  DeepSeek: "https://img.icons8.com/ios11/512/FFFFFF/deepseek.png", 
+  Qwen: "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/qwen.png", 
+};
 
 export default function AlgoTradingLovableUI() {
   const [email, setEmail] = useState("");
@@ -26,6 +45,7 @@ export default function AlgoTradingLovableUI() {
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [editingStrat, setEditingStrat] = useState<Strategy | null>(null);
   const [copilotEnabled, setCopilotEnabled] = useState(true);
+  const [llms, setLlms] = useState(["ChatGPT", "Claude", "Gemini", "Grok", "Perplexity", "Llama", "DeepSeek", "Qwen"])
 
   const router = useRouter();
 
@@ -69,6 +89,34 @@ export default function AlgoTradingLovableUI() {
       setLoadingSuggestion(false);
     }
   };
+
+  const handleLLMUpdate = async (strategyId: string, newLlm: string) => {
+  // 1. Update local UI state immediately for responsiveness
+  setStrategies(prev => 
+    prev.map(s => s.id === strategyId ? { ...s, llm: newLlm } : s)
+  );
+
+  // 2. Sync with your Backend API
+  try {
+    const form = new FormData();
+    form.append("email", email);
+    form.append("strategyId", strategyId);
+    form.append("llm", newLlm);
+
+    const res = await fetch("https://api.richacle.com/api/update-llm", { // Ensure this endpoint exists
+      method: "POST",
+      body: form,
+    });
+
+    if (!res.ok){
+      toast.error("something went wrong!")
+    }
+  } catch (error) {
+    toast.error("Failed to update LLM on server");
+    console.error(error)
+  }
+};
+ 
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Accept suggestion on Tab or Right Arrow
@@ -310,9 +358,49 @@ export default function AlgoTradingLovableUI() {
                 key={strat.id} 
                 className={`group relative flex flex-col justify-between rounded-xl border ${editingStrat?.id === strat.id ? 'border-white' : 'border-zinc-800'} p-5 hover:border-zinc-500 transition-all bg-black`}
               >
-                <div className="flex justify-between items-start">
-                  <div className="pr-10">
+                <div className="flex justify-between items-center gap-1">
+                  <div className="">
+                  <div className="flex items-center justify-between gap-1">   
                     <h3 className="font-medium text-white">{strat.name}</h3>
+
+                    {strat?.llm &&
+                      <div>
+                      <DropdownMenu>
+    <DropdownMenuTrigger asChild>
+      <div className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity outline-none">
+      <img src={LLM_ICONS[strat.llm]} className="w-4 h-4 object-contain" alt={strat.llm} />
+        <h4 className="text-sm font-medium text-zinc-100">{strat.llm}</h4>
+        <ChevronUp className="w-4 h-4 text-zinc-400" />
+      </div>
+    </DropdownMenuTrigger>
+
+    <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 p-1 min-w-[120px]">
+      <motion.div
+        initial={{ opacity: 0, y: 5 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.15 }}
+      >
+        {llms.map((model) => (
+          <DropdownMenuItem
+            key={model}
+            onClick={() => handleLLMUpdate(strat.id, model)}
+            className="text-zinc-100 flex items-center focus:bg-zinc-900 focus:text-white cursor-pointer text-sm"
+          >
+          <img 
+            src={LLM_ICONS[model]} 
+            className="w-4 h-4 object-contain" 
+            alt={model} 
+          />
+            {model}
+          </DropdownMenuItem>
+        ))}
+      </motion.div>
+    </DropdownMenuContent>
+  </DropdownMenu>
+
+                      </div>
+                      }
+                  </div>
                     <p className="mt-1 text-xs text-zinc-500 line-clamp-2">{strat.input}</p>
                   </div>
 

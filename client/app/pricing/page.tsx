@@ -19,6 +19,7 @@ export default function Home() {
       features: [
         "One-week Pro trial",
         "Limited Strategy Credits",
+        "Limited Comparison slots",
         "Limited Copilot",
         "Binance Intergration",
       ],
@@ -33,6 +34,7 @@ export default function Home() {
       features: [
         "Everything in Free, Plus",
         "Strategy Credits",
+        "7 Comparison slots",
         "Backtest",
         "Copilot",
         "3 Live/Paper Deployment",
