@@ -73,6 +73,7 @@ interface Strategy {
   status: string;
   input?: string;
   llm?: string;
+  duplicate?: string;
   last_error?: string;
   live_pnl?: number | string;
   demo_pnl?: number | string;
@@ -407,102 +408,15 @@ const handleSquareOFF = async (id: string) => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
-  
-      <div className="max-w-6xl mx-auto space-y-6">
-        
-        {/* Header Section (Based on Image Ref) */}
-        <div className={`relative overflow-hidden group rounded-xl p-5 `}>
-        
-          <div className="relative z-10">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-              <div className="flex items-center justify-between w-full">
-                <h1 className="md:text-4xl ">{email.split("@")[0]}</h1>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"
-                  >
-                    <Plus size={14} />Broker
-                  </button>
-                </div>
-              </div>
-
-              <div className=" w-full flex items-center justify-center">
-               
-                <h2 className={`text-5xl tracking-tighter `}>
-  $
-  {new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(totalPnl)}
-</h2>
-
-
-              </div>
-
-              <p className={`text-lg text-center w-full font-medium`}>
-                $
-  {new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(strategiesPerf)}
-                </p>
-            </div>
-
-            <div className="mt-12 pt-8  grid grid-cols-2 md:grid-cols-4 gap-8">
-              
-              <Toggle label="Terminal" status={terminal} onToggle={() => {
-    if (!terminal) {
-      toast.error("Add Binance API Key or Secret");
-      return;
-    }
-  }}/>
-              <Toggle label="Trading Engine" status={engine} onToggle={() => {
-    if (!terminal) {
-      toast.error("Enable Terminal First");
-      return;
-    }
-    toggleEngine();
-  }} />
-            </div>
-          </div>
-        </div>
-
-      {/* Strategies List - Perfectly aligned with max-w-6xl */}
-        <div className="pt-4">
-          <div className="flex items-center justify-between mb-6 px-1">
-            <h3 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-100 z-50">
-              Active Algorithms
-            </h3>
-            <div className="h-[1px] flex-grow mx-4 bg-zinc-800/50" /> {/* Subtle divider line */}
-          </div>
-
-          <div className={`gap-2 flex ${
-  strategies?.some(s => s.duplicate) 
-    ? "flex-row overflow-x-auto snap-x snap-mandatory"
-    : "flex-col-reverse"
-}`}>
-            {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
-              <div className=" py-12 text-center">
-                <p className="text-white text-sm font-light">No active execution trades</p>
-              </div>
-            ) : (
-              strategies
-                ?.filter((s) => s.status && s.status.trim() !== "")
-                .map((s) => (
-                  <motion.div
-                    key={s.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`group flex flex-col md:flex-row md:items-center justify-between bg-black border border-zinc-800/60 hover:border-zinc-500/30 rounded-3xl p-4 py-7 transition-all duration-300 relative shrink-0 snap-center
-              ${s.duplicate ? "w-[90%] md:w-[600px]" : "w-full"} 
-            `}
-                  >
-                  
-                 
-                    {/* Left: Info */}
+  const renderStrategyCard = (s: Strategy, isDuplicate = false) => (
+  <motion.div
+    key={s.id}
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`group flex flex-col md:flex-row md:items-center justify-between bg-black border rounded-3xl p-4 py-7 transition-all duration-300 relative shrink-0 snap-center w-full
+       hover:border-zinc-500/30`}
+  >
+    {/* Left: Info */}
                     <div className="flex items-center gap-4 z-50">
                       <div className="flex flex-col gap-1">
                       
@@ -581,7 +495,7 @@ const handleSquareOFF = async (id: string) => {
     : "border-zinc-700 text-zinc-500 cursor-default"
   }`}
 >
-  {s.loss_reasons?.length || 0} {s.loss_reasons?.length === 1 ? "Loss" : "Losses"}
+  {s.loss_reasons?.length} {s.loss_reasons?.length === 1 ? "Loss" : "Losses"}
 </button>
                     }
             
@@ -688,15 +602,119 @@ const handleSquareOFF = async (id: string) => {
 </div>
 
                     </div>
-                  </motion.div>
-                ))
-            )}
+             
+        
+    
+  
+  </motion.div>
+);
+
+  return (
+    <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
+  
+      <div className="max-w-6xl mx-auto space-y-6">
+        
+        {/* Header Section (Based on Image Ref) */}
+        <div className={`relative overflow-hidden group rounded-xl p-5 `}>
+        
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div className="flex items-center justify-between w-full">
+                <h1 className="md:text-4xl ">{email.split("@")[0]}</h1>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"
+                  >
+                    <Plus size={14} />Broker
+                  </button>
+                </div>
+              </div>
+
+              <div className=" w-full flex items-center justify-center">
+               
+                <h2 className={`text-5xl tracking-tighter `}>
+  $
+  {new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(totalPnl)}
+</h2>
+
+
+              </div>
+
+              <p className={`text-lg text-center w-full font-medium`}>
+                $
+  {new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(strategiesPerf)}
+                </p>
+            </div>
+
+            <div className="mt-12 pt-8  grid grid-cols-2 md:grid-cols-4 gap-8">
+              
+              <Toggle label="Terminal" status={terminal} onToggle={() => {
+    if (!terminal) {
+      toast.error("Add Binance API Key or Secret");
+      return;
+    }
+  }}/>
+              <Toggle label="Trading Engine" status={engine} onToggle={() => {
+    if (!terminal) {
+      toast.error("Enable Terminal First");
+      return;
+    }
+    toggleEngine();
+  }} />
+            </div>
           </div>
         </div>
 
-       </div>
+      {/* Strategies List - Perfectly aligned with max-w-6xl */}
+        <div className="pt-4">
+          <div className="flex items-center justify-between mb-6 px-1">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-100 z-50">
+              Active Algorithms
+            </h3>
+            <div className="h-[1px] flex-grow mx-4 bg-zinc-800/50" /> {/* Subtle divider line */}
+          </div>
 
-      {/* Binance Modal */}
+          <div className="flex flex-col ">
+  {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
+    <div className="py-12 text-center">
+      <p className="text-white text-sm font-light">No active execution trades</p>
+    </div>
+  ) : (
+    strategies
+      // 1. Only map "Parent" strategies (ones that aren't duplicates themselves)
+      ?.filter((s) => !s.duplicate && s.status && s.status.trim() !== "")
+      .map((parent) => (
+        <div key={parent.id} className="flex flex-col gap-3">
+          
+          {/* 2. Horizontal Scroll Container for Parent + its Duplicates */}
+          <div className="flex flex-row gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
+            
+            {/* The Main Strategy Card */}
+            {renderStrategyCard(parent)}
+
+            {/* Any Duplicates of this specific Parent */}
+            {strategies
+              .filter((d) => d.duplicate === parent.id)
+              .map((duplicate) => renderStrategyCard(duplicate, true))}
+          </div>
+        </div>
+      ))
+  )}
+</div>
+
+              
+          </div>
+        </div>
+
+
+    
       <AnimatePresence>
   {isModalOpen && (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">

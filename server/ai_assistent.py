@@ -402,7 +402,6 @@ async def duplicate(
             "duplicate": strategyId,
             "live_pnl": 0,
             "demo_pnl": 0,
-            "loss_reasons": [],
             "last_error": ""
         })
 
