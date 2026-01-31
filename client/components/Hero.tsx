@@ -103,6 +103,8 @@ export default function AILandingPage() {
     return () => clearTimeout(timeout);
   }, []);
 
+  
+
   return (
     <div className="min-h-screen  font-sans ">
 
@@ -203,6 +205,87 @@ export default function AILandingPage() {
             </Link>
           </motion.div>
       </section>
+
+     {/* --- STEVE JOBS STYLE: PERFECT CENTER ORBIT --- */}
+<section className="relative py-20 bg-black overflow-hidden flex flex-col md:gap-5 items-center justify-center">
+  
+  {/* TOP CENTER HEADER */}
+  <div className="text-center mb-16 z-10">
+    <motion.h2 
+      initial={{ opacity: 0, y: 10 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      className="text-white text-2xl md:text-5xl tracking-tight leading-tight"
+    >
+      The High-Frequency Trade.<br />
+      <span className="text-zinc-500 font-light">8 Powerfull Models, 1 Execution.</span>
+    </motion.h2>
+  </div>
+
+  <div className="relative w-[300px] h-[300px] md:w-[450px] md:h-[450px] flex items-center justify-center">
+    
+    <motion.div 
+      initial={{ scale: 0.9, opacity: 0 }}
+      whileInView={{ scale: 1, opacity: 1 }}
+      className="relative z-50 w-20 h-20 md:w-28 md:h-28 rounded-full bg-black border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)]"
+    >
+      <img src="/logo.png" alt="Richacle" className="w-10 h-10 md:w-14 md:h-14 object-contain" />
+      
+      {/* Visual Orbit Rings */}
+      <div className="absolute inset-[-20px] rounded-full border border-zinc-900/50" />
+      <div className="absolute inset-[-60px] md:inset-[-100px] rounded-full border border-zinc-900/30" />
+    </motion.div>
+
+    {[
+      { name: "ChatGPT", url: "https://www.edigitalagency.com.au/wp-content/uploads/new-ChatGPT-icon-white-png-large-size.png" },
+      { name: "Claude", url: "https://img.icons8.com/ios11/512/FFFFFF/claude-ai.png" },
+      { name: "Gemini", url: "https://img.icons8.com/ios_filled/512/FFFFFF/gemini-ai.png" },
+      { name: "Grok", url: "https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/grok.png" },
+      { name: "Perplexity", url: "https://cdn.prod.website-files.com/68428da21ec2311e5b9a79c1/68428da31ec2311e5b9a7abf_afeb44866d2933f38e70eadb99b66a12_integration-section-icon-5.png" },
+      { name: "Llama", url: "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/meta.png" },
+      { name: "DeepSeek", url: "https://img.icons8.com/ios11/512/FFFFFF/deepseek.png" },
+      { name: "Qwen", url: "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/qwen.png" },
+    ].map((llm, idx) => {
+      // 360 / 8 = 45 degrees apart
+      const angle = idx * 45; 
+      // Distance from center (radius)
+      const radius = typeof window !== 'undefined' && window.innerWidth < 768 ? 120 : 220;
+
+      return (
+        <motion.div
+          key={llm.name}
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          transition={{ delay: idx * 0.1 }}
+          className="absolute"
+          style={{
+            // The math to force perfect centering
+            transform: `rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`
+          }}
+        >
+          <motion.div 
+            whileHover={{ scale: 1.1, borderColor: "white" }}
+            className="group relative flex flex-col items-center gap-2"
+          >
+            {/* Rounded LLM Icon */}
+            <div className="w-12 h-12 md:w-20 md:h-20 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center backdrop-blur-sm transition-all duration-500 group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+              <img 
+                src={llm.url} 
+                alt={llm.name} 
+                className="w-6 h-6 md:w-12 md:h-12 object-contain transition-opacity" 
+              />
+            </div>
+            
+            {/* Minimal Label */}
+            <span className="absolute -bottom-6 text-[8px] md:text-[9px] text-zinc-300 font-bold tracking-widest opacity-100 transition-all">
+              {llm.name}
+            </span>
+          </motion.div>
+        </motion.div>
+      );
+    })}
+
+  </div>
+</section>
 
           
  {/* --- PREMIUM 3-STEP WORKFLOW --- */}

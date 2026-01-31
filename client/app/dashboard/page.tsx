@@ -407,8 +407,13 @@ const handleSquareOFF = async (id: string) => {
       console.log(e)
     }
   };
+  
 
-  const renderStrategyCard = (s: Strategy, isDuplicate = false) => (
+
+  const renderStrategyCard = (s: Strategy, isDuplicate = false) => {
+    const groupId = s.duplicate || s.id;
+
+    return(
   <motion.div
     key={s.id}
     initial={{ opacity: 0, y: 10 }}
@@ -488,7 +493,7 @@ const handleSquareOFF = async (id: string) => {
           <div className="mt-4 md:mt-0 flex justify-between items-center gap-3">
                     {s.loss_reasons?.length && 
             <button
-  onClick={() => setShowLosses(showLosses === s.id ? null : s.id)}
+  onClick={() => setShowLosses(showLosses === groupId ? null : groupId)}
   className={`text-[11px] px-3 py-1 rounded-full border transition-all ${
     s.loss_reasons && s.loss_reasons.length > 0 
     ? "border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20" 
@@ -516,7 +521,7 @@ const handleSquareOFF = async (id: string) => {
 
                     {/* 3. Single-Item Height Scrollable Loss List */}
 <AnimatePresence>
-  {showLosses === s.id && s.loss_reasons && s.loss_reasons.length > 0 && (
+  {showLosses === groupId && s.loss_reasons && s.loss_reasons.length > 0 && (
     <motion.div
       initial={{ height: 0, opacity: 0 }}
       animate={{ height: "auto", opacity: 1 }}
@@ -607,7 +612,8 @@ const handleSquareOFF = async (id: string) => {
     
   
   </motion.div>
-);
+  );
+  }
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
