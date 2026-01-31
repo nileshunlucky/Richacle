@@ -396,7 +396,7 @@ async def duplicate(
         # 4. Create the clone
         new_strategy = original_strategy.copy()
         new_strategy.update({
-            "id": str(uuid.uuid4()),
+            "id": str(uuid4()),
             "name": f"{original_strategy.get('name', 'Strategy')}",
             "status": "stopped",
             "duplicate": strategyId,
