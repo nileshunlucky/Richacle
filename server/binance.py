@@ -4,13 +4,8 @@ import pandas as pd
 import ccxt
 import traceback
 from db import users_collection
-import os
-from cryptography.fernet import Fernet
 
 router = APIRouter()
-
-MASTER_KEY = os.getenv("MASTER_KEY")
-fernet = Fernet(MASTER_KEY)
 
 @router.post("/api/balance")
 async def get_balance(email: str = Form(...)):
@@ -22,13 +17,10 @@ async def get_balance(email: str = Form(...)):
     if not binance_creds or not binance_creds.get("apiKey"):
         raise HTTPException(status_code=400, detail="Binance API keys not configured")
 
-    apiSecret = binance_creds.get("apiSecret")
-    decrypted_secret = fernet.decrypt(apiSecret.encode()).decode()
-
     try:
         exchange = ccxt.binance({
             'apiKey': binance_creds.get("apiKey"),
-            'secret': decrypted_secret,
+            'secret': binance_creds.get("apiSecret"),
             'enableRateLimit': True,
             'options': {'defaultType': 'future'},
         })
@@ -101,8 +93,6 @@ async def autocomplete(
         user = users_collection.find_one({"email": email})
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
-        
-        encrypted_secret = fernet.encrypt(apiSecret.encode()).decode()
 
         users_collection.update_one(
             {"email": email},
@@ -110,7 +100,7 @@ async def autocomplete(
                 "$set": {
                     "binance": {
                         "apiKey": apiKey, 
-                        "apiSecret": encrypted_secret,
+                        "apiSecret": apiSecret,
                         "demo": isDemo
                     },
                     "terminal": True
