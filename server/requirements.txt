@@ -11,3 +11,4 @@ requests
 uvicorn
 python-multipart
 docker
+cryptography
