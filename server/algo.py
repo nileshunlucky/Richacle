@@ -77,7 +77,7 @@ async def deploy(request: DeployRequest):
     binance = user.get("binance", {})
     api_key = binance.get("apiKey")
     api_secret = binance.get("apiSecret")
-    decrypted_secret = fernet.decrypt(apiSecret.encode()).decode()
+    decrypted_secret = fernet.decrypt(api_secret.encode()).decode()
     demo = binance.get("demo")
     
     if not api_key or not api_secret:
@@ -188,7 +188,7 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
     binance = user.get("binance", {})
     api_key = binance.get("apiKey")
     api_secret = binance.get("apiSecret")
-    decrypted_secret = fernet.decrypt(apiSecret.encode()).decode()
+    decrypted_secret = fernet.decrypt(api_secret.encode()).decode()
 
     if api_key and api_secret:
         try:
