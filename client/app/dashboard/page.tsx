@@ -121,23 +121,28 @@ useEffect(() => {
 
   const fetchData = async () => {
     try {
-      // 1. Fetch User Data (Strategies + Binance Keys)
+      // 1. Fetch User Data (Always safe to do)
       const userRes = await fetch(`https://api.richacle.com/user/${email}`);
       const userData = await userRes.json();
-
       setStrategies(userData?.strategies);
 
-      // 2. Fetch Balance (Wait until user data is handled)
-      const form = new FormData();
-      form.append("email", email);
-      const balRes = await fetch("https://api.richacle.com/api/balance", {
-        method: "POST",
-        body: form,
-      });
-      const balData = await balRes.json();
+      // 2. ONLY Fetch Balance if we actually have keys in state
+      if (apiKey && apiSecret) {
+        const form = new FormData();
+        form.append("email", email);
+        const balRes = await fetch("https://api.richacle.com/api/balance", {
+          method: "POST",
+          body: form,
+        });
+        const balData = await balRes.json();
 
-      setTotalPnl(balData.equity);
-      setStrategiesPerf(balData.unrealized_pnl);
+        setTotalPnl(balData?.equity);
+        setStrategiesPerf(balData?.unrealized_pnl);
+      } else {
+        // Optional: clear PNL if keys aren't present
+        setTotalPnl(0);
+        setStrategiesPerf(0);
+      }
 
     } catch (error) {
       console.error("Poll error:", error);
@@ -148,7 +153,7 @@ useEffect(() => {
   const interval = setInterval(fetchData, 1000); 
   
   return () => clearInterval(interval);
-}, [email]);
+}, [email, apiKey, apiSecret]);
 
 useEffect(() => {
   if (!email) return;

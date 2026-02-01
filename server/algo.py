@@ -6,15 +6,19 @@ from pydantic import BaseModel
 import ccxt
 from db import users_collection
 from datetime import datetime
-
+import os
+from cryptography.fernet import Fernet
 
 router = APIRouter()
+
+MASTER_KEY = os.getenv("MASTER_KEY")
+fernet = Fernet(MASTER_KEY)
+
 # Initialize docker client once
 try:
     client = docker.from_env()
 except Exception:
     client = None # Fallback for local dev environments without Docker
-
 
 # 1. Define the schema
 class DeployRequest(BaseModel):
@@ -73,6 +77,7 @@ async def deploy(request: DeployRequest):
     binance = user.get("binance", {})
     api_key = binance.get("apiKey")
     api_secret = binance.get("apiSecret")
+    decrypted_secret = fernet.decrypt(apiSecret.encode()).decode()
     demo = binance.get("demo")
     
     if not api_key or not api_secret:
@@ -99,7 +104,7 @@ async def deploy(request: DeployRequest):
                 "PYTHONUNBUFFERED": "1",
                 "EMAIL": email,
                 "BINANCE_API_KEY": api_key,
-                "BINANCE_API_SECRET": api_secret,
+                "BINANCE_API_SECRET": decrypted_secret,
                 "DEMO": demo,
                 "STRATEGY_ID": strategyId,
                 "STRATEGY_CODE": strategy["code"],
@@ -183,12 +188,13 @@ async def stop_and_square_off(email: str = Form(...), strategyId: str = Form(...
     binance = user.get("binance", {})
     api_key = binance.get("apiKey")
     api_secret = binance.get("apiSecret")
+    decrypted_secret = fernet.decrypt(apiSecret.encode()).decode()
 
     if api_key and api_secret:
         try:
             exchange = ccxt.binance({
                 'apiKey': api_key,
-                'secret': api_secret,
+                'secret': decrypted_secret,
                 'enableRateLimit': True,
                 'options': {'defaultType': 'future'}
             })
