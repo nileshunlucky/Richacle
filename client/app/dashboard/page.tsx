@@ -426,6 +426,7 @@ const handleSquareOFF = async (id: string) => {
     className={`group flex flex-col md:flex-row md:items-center justify-between bg-black border rounded-3xl p-4 py-7 transition-all duration-300 relative shrink-0 snap-center w-full
        hover:border-zinc-500/30`}
   >
+  
     {/* Left: Info */}
                     <div className="flex items-center gap-4 z-50">
                       <div className="flex flex-col gap-1">
@@ -621,7 +622,22 @@ const handleSquareOFF = async (id: string) => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-zinc-100 p-4 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
+    <div className="min-h-screen bg-black text-zinc-100 p-4 pt-12 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
+    {/* Absolute Purple Gradient Background */}
+      <div 
+        className="absolute top-0 left-0 right-0 h-[500px] pointer-events-none z-0"
+        style={{
+          background: `radial-gradient(circle at 50% -20%, rgba(120, 80, 220, 0.15) 0%, rgba(0, 0, 0, 0) 70%)`
+        }}
+      />
+      
+      {/* Secondary Glow for Depth (Optional, adds that "Wallet" feel) */}
+      <div 
+        className="absolute top-[-10%] left-[10%] w-[80%] h-[40%] rounded-[100%] blur-[120px] pointer-events-none z-0 opacity-50"
+        style={{
+          background: 'linear-gradient(180deg, #5b21b6 0%, transparent 100%)',
+        }}
+      />
   
       <div className="max-w-6xl mx-auto space-y-6">
         

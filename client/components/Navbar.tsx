@@ -25,30 +25,28 @@ export default function Navbar() {
     getUser();
   }, []);
 
+  useEffect(() => {
+    if (!email) return;
 
-useEffect(() => {
-  if (!email) return;
+    const addUserToBackend = async () => {
+      try {
+        const form = new FormData();
+        form.append("email", email);
 
-  const addUserToBackend = async () => {
-    try {
-      const form = new FormData();
-      form.append("email", email);
+        const res = await fetch("https://api.richacle.com/add-user", {
+          method: "POST",
+          body: form,
+        });
 
-      const res = await fetch("https://api.richacle.com/add-user", {
-        method: "POST",
-        body: form,
-      });
+        const data = await res.json();
+        console.log(data);
+      } catch (err) {
+        console.error("Failed to add user:", err);
+      }
+    };
 
-      const data = await res.json();
-      console.log(data);
-    } catch (err) {
-      console.error("Failed to add user:", err);
-    }
-  };
-
-  addUserToBackend();
-}, [email]);
-
+    addUserToBackend();
+  }, [email]);
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard" },
@@ -60,9 +58,11 @@ useEffect(() => {
   if (!showNavbar) return null;
 
   return (
-    <nav >
+    // Set to absolute and top-0 so it doesn't push the Dashboard content down
+    <nav className="absolute top-0 left-0 w-full z-[100]">
       <div>
-        <div className="flex z-50 justify-between px-12 py-3 bg-black h-12 items-center">
+        {/* Changed bg-black to bg-transparent */}
+        <div className={`flex justify-between px-12 py-3 h-12 items-center ${mobileOpen ? "bg-black" : "bg-transparent"}`}>
           {/* Logo */}
           <Link href="/dashboard" className="flex-shrink-0">
             <img src="/logo.png" alt="Logo" className="h-7 w-7 object-cover" />
@@ -92,7 +92,7 @@ useEffect(() => {
 
       {/* Mobile menu */}
       {mobileOpen && (
-        <div className="md:hidden bg-black/90">
+        <div className="md:hidden bg-black">
           <div className="px-4 pt-2 pb-4 space-y-2 flex flex-col">
             {navLinks.map((link) => (
               <Link
