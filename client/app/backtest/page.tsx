@@ -194,7 +194,7 @@ function BacktestContent() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-5 md:p-12 font-sans relative ">
+    <div className="min-h-screen bg-black text-white p-5 md:p-12 pt-12 font-sans relative ">
 
       <div className="max-w-4xl mx-auto space-y-10">
         
