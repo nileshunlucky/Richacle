@@ -671,7 +671,13 @@ const handleSquareOFF = async (id: string) => {
 
               </div>
 
-              <p className={`text-lg text-center w-full font-medium`}>
+              <p className={`text-lg text-center w-full font-medium ${
+    strategiesPerf > 0 
+      ? "text-green-500" 
+      : strategiesPerf < 0 
+        ? "text-red-500" 
+        : "text-white"
+  }`}>
                 $
   {new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
