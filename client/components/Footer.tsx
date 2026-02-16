@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Instagram } from "lucide-react";
+import { Instagram, Twitter } from "lucide-react";
 import Link from "next/link";
 
 export default function Footer() {
@@ -47,6 +47,15 @@ export default function Footer() {
               className="flex items-center gap-2  hover:text-white transition"
             >
               <Instagram size={20} />
+            </a>
+            {/* X */}
+            <a
+              href="https://X.com/richacleai"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2  hover:text-white transition"
+            >
+              <Twitter  size={20} />
             </a>
 
           </div>

@@ -215,63 +215,7 @@ export default function AILandingPage() {
           </motion.div>
       </section>
 
-     <section className="relative py-24 bg-black overflow-hidden flex flex-col items-center justify-center">
-      
-      {/* HEADER */}
-      <div className="text-center mb-16 z-10 px-4">
-        <motion.h2 
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          className="text-white text-[22px] md:text-6xl font-bold tracking-tight leading-tight"
-        >
-          The High-Frequency Trade.<br />
-          <span>8 Powerful Models, 1 Execution.</span>
-        </motion.h2>
-      </div>
-
-      {/* ORBIT CONTAINER */}
-      {/* Using a CSS variable --radius for responsive distance */}
-      <div className="relative w-[300px] h-[300px] md:w-[500px] md:h-[500px] flex items-center justify-center [--radius:120px] md:[--radius:220px]">
-        
-        {/* CENTRAL LOGO */}
-        <motion.div 
-          initial={{ scale: 0.9, opacity: 0 }}
-          whileInView={{ scale: 1, opacity: 1 }}
-          className="relative z-50 w-20 h-20 md:w-28 md:h-28 rounded-full bg-black border border-white/10 flex items-center justify-center shadow-[0_0_40px_rgba(255,255,255,0.1)]"
-        >
-          <img src="/logo.png" alt="Richacle" className="w-10 h-10 md:w-14 md:h-14 object-contain" />
-          <div className="absolute inset-[-20px] rounded-full border border-zinc-900/50" />
-          <div className="absolute inset-[-60px] md:inset-[-100px] rounded-full border border-zinc-900/30" />
-        </motion.div>
-
-        {/* ORBITING LLMS */}
-        {models.map((llm, idx) => {
-          const angle = idx * 45; 
-          return (
-            <motion.div
-              key={llm.name}
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              transition={{ delay: idx * 0.1 }}
-              className="absolute"
-              style={{
-                // No JS window checks here = No Hydration Error
-                transform: `rotate(${angle}deg) translateY(calc(-1 * var(--radius))) rotate(-${angle}deg)`
-              }}
-            >
-              <div className="group relative flex flex-col items-center gap-1">
-                <div className="w-12 h-12 md:w-20 md:h-20 rounded-full bg-zinc-950 border border-zinc-800 flex items-center justify-center backdrop-blur-sm transition-all duration-500 group-hover:border-white group-hover:shadow-[0_0_20px_rgba(255,255,255,0.1)]">
-                  <img src={llm.url} alt={llm.name} className="w-6 h-6 md:w-12 md:h-12 object-contain" />
-                </div>
-                <span className="absolute -bottom-8 text-[9px] md:text-[11px] text-zinc-300 font-bold tracking-widest opacity-100 transition-all">
-                  {llm.name}
-                </span>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-    </section>
+     
 
           
  {/* --- PREMIUM 3-STEP WORKFLOW --- */}

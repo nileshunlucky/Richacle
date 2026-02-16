@@ -25,8 +25,6 @@ LEVERAGE = int(os.getenv("LEVERAGE", 5))
 STOP_LOSS = float(os.getenv("STOP_LOSS", 0.02))
 TAKE_PROFIT = float(os.getenv("TAKE_PROFIT", 0.05))
 
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 # --- Exchange Initialization (Live Futures) ---
 exchange = ccxt.binance({
     'apiKey': API_KEY,
@@ -40,127 +38,6 @@ if DEMO:
 
 DB_PREFIX = "live" if DEMO else "demo"
 
-# --- Helper Functions ---
-
-def analyze_and_optimize_loss(trade_data, strategy_df):
-    """
-    Analyzes the loss using gpt-4o-mini and updates the strategy in the DB.
-    Triggered only on trade completion if result is a loss.
-    """
-    try:
-        user = users_collection.find_one({"email": EMAIL})
-        if user.get("credits", 0) < 1:
-            log_error_to_db("Insufficient credits")
-            return
-
-        # Prepare a small data snapshot for context (last 10 candles)
-        recent_market_context = strategy_df.tail(10).to_dict(orient='records')
-        
-        prompt = f"""
-        Analyze this losing trade and optimize the FULL strategy including risk parameters (if needed).
-
-        Current Parameters:
-        - Leverage: {LEVERAGE}x
-        - Stop Loss: {STOP_LOSS*100}%
-        - Take Profit: {TAKE_PROFIT*100}%
-        - Symbol: {SYMBOL} | Timeframe: {TIMEFRAME}
-        
-        Trade Details:
-        - Side: {trade_data['side']}
-        - Entry: {trade_data['entry']} | Exit: {trade_data['exit']}
-        - Calculated PnL: {trade_data['pnl']}
-        - Market Snapshot: {json.dumps(recent_market_context)}
-
-        Current Strategy Code:
-        {STRATEGY_CODE}
-
-        STRICT RULES:
-        1. Output ONLY the function `def run_strategy(df):`. No markdown, no backticks, no comments.
-        2. Use 'pd' for pandas and 'np' for numpy.
-        3. The function MUST return: `trades` (a list of dicts) and `latest_signal` (a string).
-        4. Trade Dictionary Format: 
-        - Each trade MUST be: {{'entry_price': float, 'exit_price': float, 'qty': 1}}
-        5. latest_signal: "BUY" (if current candle meets entry), "SELL" (if in trade and exit met), or "HOLD".
-
-        ENVIRONMENT:
-        - df columns: ['timestamp', 'open', 'high', 'low', 'close', 'volume']
-        - All price columns are already floats.
-
-        EXAMPLE STRUCTURE:
-        def run_strategy(df):
-            df['ema'] = df['close'].ewm(span=20).mean()
-            trades = []
-            open_trade = None
-            latest_signal = "HOLD"
-            for i in range(len(df)):
-                price = df['close'].iloc[i]
-                if open_trade is None:
-                    if price > df['ema'].iloc[i]: # Entry Logic
-                        open_trade = {{'entry_price': price, 'qty': 1}}
-                        if i == len(df)-1: latest_signal = "BUY"
-                else:
-                    if price < df['ema'].iloc[i]: # Exit Logic
-                        trades.append({{'entry_price': open_trade['entry_price'], 'exit_price': price, 'qty': 1}})
-                        open_trade = None
-                        if i == len(df)-1: latest_signal = "SELL"
-            if open_trade:
-                trades.append({{'entry_price': open_trade['entry_price'], 'exit_price': df['close'].iloc[-1], 'qty': 1}})
-            return trades, latest_signal
-
-                Instructions:
-                1. Identify the likely reason for the loss in one short sentence.
-                2. Rewrite the 'def run_strategy(df)' function to be more robust against this specific scenario.
-                3. Suggest better Stop Loss ex. (0.02, 0.05), Take Profit ex. (0.05, 0.10), and Leverage values ex. (1, 125).
-                NOTE: strategy will be apply in binance using ccxt.
-
-                Respond ONLY with a JSON object in this format:
-                {{
-                "reason": "short explanation",
-                "optimized_code": "full updated STRATEGY_CODE here",
-                "new_stop_loss": float, 
-                "new_take_profit": float,
-                "new_leverage": int
-                }}
-                """
-
-        response = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a quantitative trading auditor."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"}
-        )
-        
-        analysis = json.loads(response.choices[0].message.content)
-
-        users_collection.update_one(
-            {"email": EMAIL},
-            {"$inc": {"credits": -1}}
-        )
-        
-        # Save loss reason to array and update strategy code in DB
-        users_collection.update_one(
-            {"email": EMAIL, "strategies.id": STRATEGY_ID},
-            {
-                "$push": {
-                    "strategies.$.loss_reasons": {
-                        "reason": analysis.get("reason"),
-                        "pnl": trade_data['pnl'],
-                        "timestamp": datetime.now()
-                    }
-                },
-                "$set": {
-                    "strategies.$.strategy_code": analysis.get("optimized_code"),
-                    "strategies.$.last_optimization": datetime.now()
-                }
-            }
-        )
-        print(f"✅ AI Analysis: {analysis.get('reason')}")
-        print("🛠️ Strategy code updated in DB to prevent recurring loss.")
-        
-    except Exception as e:
-        print(f"⚠️ GPT Optimization Error: {e}")
 
 def sync_exchange_data():
     """Fetches the REAL truth from the exchange."""
@@ -304,7 +181,6 @@ def main():
                             "exit": current_price,
                             "pnl": trade_pnl
                         }
-                        analyze_and_optimize_loss(trade_summary, df)
                     
                     continue 
 

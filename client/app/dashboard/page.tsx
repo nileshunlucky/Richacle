@@ -33,16 +33,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const LLM_ICONS: Record<string, string> = {
-  ChatGPT: "https://www.edigitalagency.com.au/wp-content/uploads/new-ChatGPT-icon-white-png-large-size.png",
-  Claude: "https://img.icons8.com/ios11/512/FFFFFF/claude-ai.png",
-  Gemini: "https://img.icons8.com/ios_filled/512/FFFFFF/gemini-ai.png",
-  Grok: "https://registry.npmmirror.com/@lobehub/icons-static-png/latest/files/dark/grok.png", 
-  Perplexity: "https://cdn.prod.website-files.com/68428da21ec2311e5b9a79c1/68428da31ec2311e5b9a7abf_afeb44866d2933f38e70eadb99b66a12_integration-section-icon-5.png", 
-  Llama: "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/meta.png", 
-  DeepSeek: "https://img.icons8.com/ios11/512/FFFFFF/deepseek.png", 
-  Qwen: "https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/dark/qwen.png", 
-};
 
 const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, onToggle: () => void }) => (
   <div className="flex flex-col gap-3">
@@ -93,6 +83,7 @@ export default function Dashboard() {
   const [terminal, setTerminal] = useState(false)
   const [engine, setEngine] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [algoLoading, setAlgoLoading] = useState(false)
   const [isDemo, setIsDemo] = useState(false)
   const [apiKey, setApiKey] = useState("")
   const [apiSecret, setApiSecret] = useState("")
@@ -205,71 +196,14 @@ setEngine(next);
 };
 
 
-const handleLLMUpdate = async (strategyId: string, newLlm: string) => {
-  // 1. Update local UI state immediately for responsiveness
-  setStrategies(prev => 
-    prev.map(s => s.id === strategyId ? { ...s, llm: newLlm } : s)
-  );
 
-  // 2. Sync with your Backend API
-  try {
-    const form = new FormData();
-    form.append("email", email);
-    form.append("strategyId", strategyId);
-    form.append("llm", newLlm);
 
-    const res = await fetch("https://api.richacle.com/api/update-llm", { // Ensure this endpoint exists
-      method: "POST",
-      body: form,
-    });
-
-    if (!res.ok){
-      toast.error("something went wrong!")
-    }
-  } catch (error) {
-    toast.error("Failed to update LLM on server");
-    console.error(error)
-  }
-};
-
-const handleDuplicate = async (id: string) => {
-  if (!email) return;
-
-  try {
-    const form = new FormData();
-    form.append("email", email);
-    form.append("strategyId", id);
-
-    const res = await fetch("https://api.richacle.com/api/duplicate", {
-      method: "POST",
-      body: form,
-    });
-
-    const data = await res.json();
-
-    if (res.status === 403 && data.detail.includes("FREE plan allows only 1 comparison. Upgrade to PRO for 7 slots!")) {
-        toast.error("FREE plan allows only 1 comparison. Upgrade to PRO for 7 slots!");
-        router.push("/pricing");
-        return;
-      }
-    if (res.status === 403 && data.detail.includes("Maximum of 7 comparison reached for this strategy.")) {
-        toast.error("Maximum of 7 comparison slots reached for this strategy!");
-        return;
-      }
-
-    if (!res.ok){
-      toast.error("Failed to duplicate");
-    }
-  } catch (error) {
-    console.error("Duplicate error:", error);
-    toast.error("Something went wrong");
-  }
-};
  
 
 const handleStop = async (id: string) => {
   if (!email) return; 
   try {
+    setAlgoLoading(true)
     const form = new FormData();
     form.append("email", email);
     form.append("strategyId", id);
@@ -289,12 +223,15 @@ const handleStop = async (id: string) => {
     }
   } catch {
     toast.error("Error stopping");
+  } finally {
+    setAlgoLoading(false)
   }
 };
 
 const handleSquareOFF = async (id: string) => {
   if (!email) return; 
   try {
+    setAlgoLoading(true)
     const form = new FormData();
     form.append("email", email);
     form.append("strategyId", id);
@@ -314,6 +251,8 @@ const handleSquareOFF = async (id: string) => {
     }
   } catch {
     toast.error("Error Square OFF");
+  } finally {
+    setAlgoLoading(false)
   }
 };
 
@@ -364,7 +303,7 @@ const handleSquareOFF = async (id: string) => {
     }
 
     try {
-
+    setAlgoLoading(true)
       const res = await fetch("https://api.richacle.com/api/deploy", {
       method: "POST",
       headers: {
@@ -410,6 +349,8 @@ const handleSquareOFF = async (id: string) => {
     } catch (e) {
       toast.error("Something went wrong");
       console.log(e)
+    } finally {
+    setAlgoLoading(false)
     }
   };
   
@@ -434,43 +375,7 @@ const handleSquareOFF = async (id: string) => {
                         <div className="flex items-center justify-between">                       
                         <h4 className="text-sm font-medium text-zinc-100">{s.name}</h4>
 
-                      {s?.llm &&
-                      <div>
-                      <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <div className="flex items-center gap-1 cursor-pointer hover:opacity-80 transition-opacity outline-none">
-      <img src={LLM_ICONS[s.llm]} className="w-4 h-4 object-contain" alt={s.llm} />
-        <h4 className="text-sm font-medium text-zinc-100">{s.llm}</h4>
-        <ChevronUp className="w-4 h-4 text-zinc-400" />
-      </div>
-    </DropdownMenuTrigger>
-
-    <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800 p-1 min-w-[120px]">
-      <motion.div
-        initial={{ opacity: 0, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.15 }}
-      >
-        {llms.map((model) => (
-          <DropdownMenuItem
-            key={model}
-            onClick={() => handleLLMUpdate(s.id, model)}
-            className="text-zinc-100 flex items-center focus:bg-zinc-900 focus:text-white cursor-pointer text-sm"
-          >
-          <img 
-            src={LLM_ICONS[model]} 
-            className="w-4 h-4 object-contain" 
-            alt={model} 
-          />
-            {model}
-          </DropdownMenuItem>
-        ))}
-      </motion.div>
-    </DropdownMenuContent>
-  </DropdownMenu>
-
-                      </div>
-                      }
+                      
                         
                         </div>
                         
@@ -496,32 +401,7 @@ const handleSquareOFF = async (id: string) => {
                     {/* 2. Loss Trigger Button */}
                     
                     
-          <div className="mt-4 md:mt-0 flex justify-between items-center gap-3">
-                    {s.loss_reasons?.length && 
-            <button
-  onClick={() => setShowLosses(showLosses === groupId ? null : groupId)}
-  className={`text-[11px] px-3 py-1 rounded-full border transition-all ${
-    s.loss_reasons && s.loss_reasons.length > 0 
-    ? "border-red-500/50 bg-red-500/10 text-red-400 hover:bg-red-500/20" 
-    : "border-zinc-700 text-zinc-500 cursor-default"
-  }`}
->
-  {s.loss_reasons?.length} {s.loss_reasons?.length === 1 ? "Loss" : "Losses"}
-</button>
-                    }
-            
-        {
-  !s.duplicate && strategies.filter(strat => strat.duplicate === s.id).length < 7 && (
-    <button
-      onClick={() => handleDuplicate(s.id)}
-      className="p-2 cursor-pointer hover:text-white transition-colors"
-    >
-      <Copy size={14} />
-    </button>
-  )
-}
         
-          </div>
 
                     
 
@@ -587,24 +467,32 @@ const handleSquareOFF = async (id: string) => {
     <button
       onClick={() => handleStop(s.id)}
       className="bg-zinc-100 flex items-center gap-1.5 hover:bg-white text-zinc-950 px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+      disabled={algoLoading}
     >
       <Power size={12} />
-      STOP
+              {algoLoading ? <Loader2 size={16} className="animate-spin" /> : "STOP"}
+
     </button>
     <button
       onClick={() => handleSquareOFF(s.id)}
       className="bg-zinc-100 flex items-center gap-1.5 hover:bg-white text-zinc-950 px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+      disabled={algoLoading}
     >
       <XCircle size={12} />
-      SQUARE OFF
+      
+              {algoLoading ? <Loader2 size={16} className="animate-spin" /> : "SQUARE OFF"}
+
     </button>
   </>
 ) : (
   <button
     onClick={() => handleDeploy(s.id)} // Set this strategy as the one being deployed
     className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+    disabled={algoLoading}
   >
-    DEPLOY
+    
+              {algoLoading ? <Loader2 size={16} className="animate-spin" /> : "DEPLOY"}
+
   </button>
 )}
   </div>
@@ -623,21 +511,7 @@ const handleSquareOFF = async (id: string) => {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 p-4 pt-12 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
-    {/* Absolute Purple Gradient Background */}
-      <div 
-        className="absolute top-0 left-0 right-0 h-[500px] pointer-events-none z-0"
-        style={{
-          background: `radial-gradient(circle at 50% -20%, rgba(120, 80, 220, 0.15) 0%, rgba(0, 0, 0, 0) 70%)`
-        }}
-      />
-      
-      {/* Secondary Glow for Depth (Optional, adds that "Wallet" feel) */}
-      <div 
-        className="absolute top-[-10%] left-[10%] w-[80%] h-[40%] rounded-[100%] blur-[120px] pointer-events-none z-0 opacity-50"
-        style={{
-          background: 'linear-gradient(180deg, #5b21b6 0%, transparent 100%)',
-        }}
-      />
+    
   
       <div className="max-w-6xl mx-auto space-y-6">
         
