@@ -104,8 +104,8 @@ useEffect(() => {
  
 
 
-  const renderStrategyCard = (s: Strategy, isDuplicate = false) => {
-    const groupId = s.duplicate || s.id;
+  const renderStrategyCard = () => {
+    
 
     return(
   <motion.div
