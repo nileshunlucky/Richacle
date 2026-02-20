@@ -61,12 +61,15 @@ interface Strategy {
   id: string;
   name: string;
   status: string;
+  symbol: string;
   input?: string;
   llm?: string;
   duplicate?: string;
   last_error?: string;
   live_pnl?: number | string;
   demo_pnl?: number | string;
+  demo_unrealized_pnl?: number | string;
+  live_unrealized_pnl?: number | string;
   loss_reasons?: LossReason[];
 }
 
@@ -375,11 +378,21 @@ const handleSquareOFF = async (id: string) => {
                         <div className="flex items-center justify-between w-full gap-3">                       
                         <div className="flex gap-3 items-center">
                         <img className="h-12 w-12 rounded-full" src={`https://api.elbstream.com/logos/symbol/${s.symbol.replace('/USDT', "")}`} />
-                        <h4 className="text-sm font-medium text-zinc-100">{s.name}</h4>
+ <h4 className="text-sm font-medium text-zinc-100">{s.symbol}</h4>
+                       
                         </div>
-                        <h4 className="text-sm font-medium text-zinc-100">${s.amount}</h4>
                       
-                        
+                        <div className="flex flex-col  items-center">
+                        <h4 className="text-sm font-medium text-zinc-100">${s.amount}</h4>
+                        <h4 className="text-sm font-medium text-zinc-100">
+ 
+ {isDemo 
+  ? (s.demo_unrealized_pnl ? `$${Number(s.demo_unrealized_pnl).toFixed(2)}` : "") 
+  : (s.live_unrealized_pnl ? `$${Number(s.live_unrealized_pnl).toFixed(2)}` : "")
+}
+
+</h4>
+                        </div>
                         </div>
                         
                     
@@ -449,7 +462,7 @@ const handleSquareOFF = async (id: string) => {
                     {/* Right: Status & Action */}
                     <div className="flex items-center justify-between md:justify-end gap-6 mt-4 w-full md:mt-0 z-50">
                       
-
+ <h4 className="text-sm font-medium text-zinc-100">{s.name}</h4>
 
                       <div className="flex flex-col items-end gap-2">
   {/* Row 1: Action Buttons */}
