@@ -71,7 +71,6 @@ export default function Dashboard() {
   const [email, setEmail] = useState("")
   const [totalPnl, setTotalPnl] = useState(0)
   const [strategiesPerf, setStrategiesPerf] = useState(0)
-  const [strategies, setStrategies] = useState<Strategy[]>([]);
   const [showLosses, setShowLosses] = useState<string | null>(null);
 
   const [liveTotal, setLiveTotal] = useState(100500.50);
