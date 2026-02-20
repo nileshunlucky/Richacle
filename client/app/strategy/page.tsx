@@ -17,6 +17,8 @@ import {
 interface Strategy {
   id: string;
   name: string;
+  amount: string;
+  symbol: string;
   input: string;
   llm?: string;
   code: string;
@@ -324,13 +326,23 @@ export default function AlgoTradingLovableUI() {
                 className={`group relative flex flex-col justify-between rounded-xl border ${editingStrat?.id === strat.id ? 'border-white' : 'border-zinc-800'} p-5 hover:border-zinc-500 transition-all bg-black`}
               >
                 <div className="flex justify-between items-center gap-1">
-                  <div className="">
+                  <div className="w-full">
                   <div className="flex items-center justify-between gap-1">   
-                    <h3 className="font-medium text-white">{strat.name}</h3>
+                  
+                  <div className="flex items-center gap-3">
+                  
+                  <img className="h-12 w-12 rounded-full" src={`https://api.elbstream.com/logos/crypto/${strat.symbol.replace('/USDT', "")}`} />
+                  <div className="flex flex-col">
+                   <h3 className="font-medium text-white">{strat.name}</h3>
+                   <h3 className="font-medium text-zinc-500 text-xs">{strat.symbol}</h3>
+                  </div>
+                  </div>
+                    <h3 className="font-medium text-white">${strat.amount}</h3>
+                   
 
                     
                   </div>
-                    <p className="mt-1 text-xs text-zinc-500 line-clamp-2">{strat.input}</p>
+                   
                   </div>
 
                   <div className="relative">

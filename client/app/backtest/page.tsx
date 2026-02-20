@@ -213,9 +213,14 @@ function BacktestContent() {
                   {strategies.map((strat) => (
                     <SelectItem key={strat.id} value={strat.id} className="rounded-lg p-3 my-0.5 cursor-pointer">
                       <div className="flex items-center justify-between w-full min-w-[200px]">
-                        <div>
+                        <div className="flex items-center gap-3">
+                        <img className="h-12 w-12 rounded-full" src={`https://api.elbstream.com/logos/crypto/${strat.symbol.replace('/USDT', "")}`} />
+                        <div className="flex flex-col">
+                        
                           <h3 className="text-xs font-bold uppercase">{strat.name}</h3>
-                          <p className="text-[9px] opacity-50 mt-0.5 font-mono">{strat.input}</p>
+                          <h3 className="text-xs text-zinc-500 text-start">{strat.symbol}</h3>
+                        </div>
+                 
                         </div>
                         <ChevronRight size={12} className="ml-4 opacity-20" />
                       </div>

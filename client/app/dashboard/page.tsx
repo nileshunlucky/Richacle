@@ -372,13 +372,14 @@ const handleSquareOFF = async (id: string) => {
        hover:border-zinc-500/30`}
   >
   
+  
     {/* Left: Info */}
                     <div className="flex items-center w-full gap-4 z-50">
                       <div className="flex flex-col gap-1 w-full">
                       
                         <div className="flex items-center justify-between w-full gap-3">                       
                         <div className="flex gap-3 items-center">
-                        <img className="h-12 w-12 rounded-full" src={`https://api.elbstream.com/logos/symbol/${s.symbol.replace('/USDT', "")}`} />
+                        <img className="h-12 w-12 rounded-full" src={`https://api.elbstream.com/logos/crypto/${s.symbol.replace('/USDT', "")}`} />
  <h4 className="text-sm font-medium text-zinc-100">{s.symbol}</h4>
                        
                         </div>
@@ -517,7 +518,23 @@ const handleSquareOFF = async (id: string) => {
 
   return (
     <div className="min-h-screen bg-black text-zinc-100 p-4 pt-12 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
-    
+    {/* Primary Full-Width Purple Wash */}
+<div 
+  className="absolute top-0 left-0 w-full h-[350px] pointer-events-none z-0"
+  style={{
+    background: 'linear-gradient(180deg, rgba(147, 51, 234, 0.4) 0%, rgba(107, 33, 168, 0.15) 50%, transparent 100%)',
+  }}
+/>
+
+{/* High-Intensity Top Edge - This adds the "Bright" pop */}
+<div 
+  className="absolute top-0 left-0 w-full h-[2px] bg-purple-500 shadow-[0px_0px_100px_40px_rgba(168,85,247,0.6)] pointer-events-none z-0"
+/>
+
+{/* Soft Ambient Spread - Extra blur to prevent harsh lines */}
+<div 
+  className="absolute top-[-100px] left-0 w-full h-[400px] bg-purple-600/20 blur-[120px] pointer-events-none z-0"
+/>
   
       <div className="max-w-6xl mx-auto space-y-6">
         
@@ -566,7 +583,7 @@ const handleSquareOFF = async (id: string) => {
                 </p>
             </div>
 
-            <div className="mt-12 pt-8  grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="mt-12 pt-8  grid grid-cols-2 md:grid-cols-4 ">
               
               <Toggle label="Terminal" status={terminal} onToggle={() => {
     if (!terminal) {
