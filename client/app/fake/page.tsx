@@ -109,7 +109,7 @@ useEffect(() => {
 
     return(
   <motion.div
-    key={s.id}
+  
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
     className={`group flex flex-col md:flex-row md:items-center justify-between bg-black border rounded-3xl p-3 transition-all duration-300 relative shrink-0 snap-center w-full
