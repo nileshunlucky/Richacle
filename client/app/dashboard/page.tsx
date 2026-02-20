@@ -63,6 +63,7 @@ interface Strategy {
   status: string;
   symbol: string;
   input?: string;
+  amount?: string;
   llm?: string;
   duplicate?: string;
   last_error?: string;
