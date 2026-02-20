@@ -263,7 +263,6 @@ STOP
       toast.error("Enable Terminal First");
       return;
     }
-    toggleEngine();
   }} />
             </div>
           </div>
