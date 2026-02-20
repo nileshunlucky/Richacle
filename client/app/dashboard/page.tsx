@@ -364,24 +364,25 @@ const handleSquareOFF = async (id: string) => {
     key={s.id}
     initial={{ opacity: 0, y: 10 }}
     animate={{ opacity: 1, y: 0 }}
-    className={`group flex flex-col md:flex-row md:items-center justify-between bg-black border rounded-3xl p-4 py-7 transition-all duration-300 relative shrink-0 snap-center w-full
+    className={`group flex flex-col md:flex-row md:items-center justify-between bg-black border rounded-3xl p-3 transition-all duration-300 relative shrink-0 snap-center w-full
        hover:border-zinc-500/30`}
   >
   
     {/* Left: Info */}
-                    <div className="flex items-center gap-4 z-50">
-                      <div className="flex flex-col gap-1">
+                    <div className="flex items-center w-full gap-4 z-50">
+                      <div className="flex flex-col gap-1 w-full">
                       
-                        <div className="flex items-center justify-between">                       
+                        <div className="flex items-center justify-between w-full gap-3">                       
+                        <div className="flex gap-3 items-center">
+                        <img className="h-12 w-12 rounded-full" src={`https://api.elbstream.com/logos/symbol/${s.symbol.replace('/USDT', "")}`} />
                         <h4 className="text-sm font-medium text-zinc-100">{s.name}</h4>
-
+                        </div>
+                        <h4 className="text-sm font-medium text-zinc-100">${s.amount}</h4>
                       
                         
                         </div>
                         
-                        <p className="text-[10px] text-zinc-200 mt-0.5 opacity-70">
-                          {s.input}
-                        </p>
+                    
                           {/* Row 2: Error Message (Only shows if status is error) */}
   {s.status === "error" && s.last_error && (
     <motion.div 
@@ -446,17 +447,8 @@ const handleSquareOFF = async (id: string) => {
 </AnimatePresence>
 
                     {/* Right: Status & Action */}
-                    <div className="flex items-center justify-between md:justify-end gap-6 mt-4 md:mt-0 z-50">
-                      <div className="flex items-center gap-2 px-3 py-1 rounded-full">
-                        <div className={`h-1.5 w-1.5 rounded-full ${
-                          s.status === "running" 
-                          ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] " 
-                          :"bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"
-                        }`} />
-                        <span className="text-[9px] uppercase tracking-[0.15em] font-bold text-zinc-200">
-                          {s.status}
-                        </span>
-                      </div>
+                    <div className="flex items-center justify-between md:justify-end gap-6 mt-4 w-full md:mt-0 z-50">
+                      
 
 
                       <div className="flex flex-col items-end gap-2">

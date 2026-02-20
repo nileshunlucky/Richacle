@@ -35,8 +35,9 @@ exchange = ccxt.binance({
 
 if DEMO:
     exchange.enable_demo_trading(True)
-
-DB_PREFIX = "live" if DEMO else "demo"
+    DB_PREFIX = "demo"
+else:
+DB_PREFIX = "live"
 
 
 def sync_exchange_data():
