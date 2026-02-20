@@ -12,7 +12,7 @@ export default function Navbar() {
   const [email, setEmail] = useState("");
 
   // Only show navbar on specific pages
-  const showNavbar = ["/dashboard", "/strategy", "/backtest", "/pricing"].some((path) =>
+  const showNavbar = ["/dashboard", "/strategy", "/backtest", "/pricing", "/fake"].some((path) =>
     pathname.startsWith(path)
   );
 

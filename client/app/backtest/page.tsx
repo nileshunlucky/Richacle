@@ -27,6 +27,7 @@ interface Strategy {
   name: string;
   input: string;
   code: string;
+  symbol: string;
 }
 
 

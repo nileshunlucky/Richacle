@@ -388,10 +388,23 @@ const handleSquareOFF = async (id: string) => {
                         <h4 className="text-sm font-medium text-zinc-100">${s.amount}</h4>
                         <h4 className="text-sm font-medium text-zinc-100">
  
- {isDemo 
-  ? (s.demo_unrealized_pnl ? `$${Number(s.demo_unrealized_pnl).toFixed(2)}` : "") 
-  : (s.live_unrealized_pnl ? `$${Number(s.live_unrealized_pnl).toFixed(2)}` : "")
-}
+{(() => {
+  // 1. Get the raw numeric value based on the mode
+  const rawValue = isDemo ? s.demo_unrealized_pnl : s.live_unrealized_pnl;
+  const numValue = Number(rawValue || 0);
+
+  // 2. Determine the color class
+  let colorClass = "text-white"; // Default for 0
+  if (numValue > 0) colorClass = "text-green-500";
+  if (numValue < 0) colorClass = "text-red-500";
+
+  // 3. Render the formatted string
+  return (
+    <span className={`${colorClass} font-medium`}>
+      {rawValue ? `$${numValue.toFixed(2)}` : ""}
+    </span>
+  );
+})()}
 
 </h4>
                         </div>
