@@ -30,6 +30,7 @@ async def get_balance(email: str = Form(...)):
             'apiKey': binance_creds.get("apiKey"),
             'secret': decrypted_secret,
             'enableRateLimit': True,
+            'options': {'defaultType': 'future'},
         })
 
         if binance_creds.get("demo"):
@@ -79,6 +80,7 @@ async def autocomplete(
         'apiKey': apiKey,
         'secret': apiSecret,
         'enableRateLimit': True,
+        'options': {'defaultType': 'future'},
     })
 
     if isDemo:

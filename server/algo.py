@@ -71,8 +71,8 @@ async def deploy(request: DeployRequest):
     if strategy.get("status") == "running":
         raise HTTPException(status_code=400, detail="This strategy is already running.")
 
-    if not strategy:
-        raise HTTPException(status_code=400, detail="Strategy not found")
+    if not strategy or not strategy.get("code"):
+        raise HTTPException(status_code=400, detail="Strategy not found or code is empty")
 
     binance = user.get("binance", {})
     api_key = binance.get("apiKey")
@@ -107,13 +107,13 @@ async def deploy(request: DeployRequest):
                 "BINANCE_API_SECRET": decrypted_secret,
                 "DEMO": demo,
                 "STRATEGY_ID": strategyId,
+                "STRATEGY_CODE": strategy["code"],
                 "SYMBOL": strategy["symbol"],
                 "AMOUNT": strategy["amount"],
-                "INVESTMENT": strategy["investment"],
-                "UPPERPRICE": strategy["upperprice"],
-                "LOWERPRICE": strategy["lowerprice"],
-                "GRIDLEVELS": strategy["gridlevels"],
-                "INTERVAL": strategy["interval"],
+                "LEVERAGE": strategy["leverage"],
+                "STOP_LOSS": strategy["stop_loss"],
+                "TAKE_PROFIT": strategy["take_profit"],
+                "TIMEFRAME": strategy["timeframe"],
             }
         )
 

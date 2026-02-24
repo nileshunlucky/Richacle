@@ -2,177 +2,229 @@ import os
 import time
 import traceback
 import ccxt
+import pandas as pd
 import numpy as np
+import json
 from datetime import datetime
 from db import users_collection
+from openai import OpenAI
 
 # --- Configuration ---
 EMAIL = os.getenv("EMAIL")
 API_KEY = os.getenv("BINANCE_API_KEY")
 API_SECRET = os.getenv("BINANCE_API_SECRET")
-DEMO = os.getenv("DEMO") == "True"
+DEMO = os.getenv("DEMO", True)
 STRATEGY_ID = os.getenv("STRATEGY_ID")
-SYMBOL = os.getenv("SYMBOL")
-AMOUNT = float(os.getenv("AMOUNT", 0)) 
-UPPERPRICE = float(os.getenv("UPPERPRICE", 0)) 
-LOWERPRICE = float(os.getenv("LOWERPRICE", 0)) 
-GRIDLEVELS = int(float(os.getenv("GRIDLEVELS", 5))) 
+STRATEGY_CODE = os.getenv("STRATEGY_CODE")
+SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
+TIMEFRAME = os.getenv("TIMEFRAME", "1m")
+AMOUNT = float(os.getenv("AMOUNT", 100)) 
+LEVERAGE = int(os.getenv("LEVERAGE", 5))
 
-# --- Exchange Initialization ---
+# Stop Loss / Take Profit
+STOP_LOSS = float(os.getenv("STOP_LOSS", 0.02))
+TAKE_PROFIT = float(os.getenv("TAKE_PROFIT", 0.05))z
+
+# --- Exchange Initialization (Live Futures) ---
 exchange = ccxt.binance({
     'apiKey': API_KEY,
     'secret': API_SECRET,
     'enableRateLimit': True,
-    'options': {'defaultType': 'spot'} 
+    'options': {'defaultType': 'future'}
 })
 
 if DEMO:
     exchange.enable_demo_trading(True)
+    DB_PREFIX = "demo"
 else:
-    exchange.load_markets()
+DB_PREFIX = "live"
 
-class PnLTracker:
-    def __init__(self):
-        self.initial_value_usdt = None
-        self.total_realized_pnl = 0.0
 
-    def initialize_balance(self, state, current_price):
-        if self.initial_value_usdt is None:
-            self.initial_value_usdt = (state['free_base'] * current_price) + state['free_quote']
-            print(f"📊 Initial Portfolio Value: {self.initial_value_usdt:.2f} USDT")
-
-    def calculate_pnl(self, state, current_price):
-        current_total_value = (state['free_base'] * current_price) + state['free_quote']
-        total_pnl = current_total_value - self.initial_value_usdt
-        return {
-            "total_pnl": round(total_pnl, 4),
-            "unrealized_pnl": round(total_pnl - self.total_realized_pnl, 4),
-            "realized_pnl": round(self.total_realized_pnl, 4),
-            "current_value": round(current_total_value, 2)
-        }
-
-pnl_tracker = PnLTracker()
-
-def get_grid_levels():
-    return np.linspace(LOWERPRICE, UPPERPRICE, GRIDLEVELS).tolist()
-
-def sync_spot_balance():
+def sync_exchange_data():
+    """Fetches the REAL truth from the exchange."""
     try:
-        balance = exchange.fetch_balance()
-        base_asset = SYMBOL.split('/')[0]
-        quote_asset = SYMBOL.split('/')[1]
-        # Include both free and used (locked in orders) balance for PnL accuracy
-        return {
-            "free_base": balance.get(base_asset, {}).get('total', 0.0),
-            "free_quote": balance.get(quote_asset, {}).get('total', 0.0),
-            "open_orders": exchange.fetch_open_orders(SYMBOL)
-        }
+        positions = exchange.fetch_positions([SYMBOL])
+        raw_symbol = SYMBOL.replace("/", "")
+        symbol_pos = next((p for p in positions if p['symbol'] == raw_symbol), None)
+        
+        if symbol_pos:
+            signed_pos = float(symbol_pos['info']['positionAmt'])
+            entry_price = float(symbol_pos['entryPrice'] or 0.0)
+            unrealized_pnl = float(symbol_pos['unrealizedPnl'] or 0.0)
+            
+            return {
+                "pos": signed_pos,
+                "entry": entry_price,
+                "unpnl": unrealized_pnl
+            }
     except Exception as e:
-        print(f"⚠️ Balance Sync Error: {e}")
-        return None
+        print(f"⚠️ Exchange Sync Error: {e}")
+    return None
 
-def update_db(open_orders_count, pnl_data=None):
-    try:
-        update_fields = {
-            "strategies.$.status": "running",
-            "strategies.$.open_orders": open_orders_count,
-            "strategies.$.last_update": datetime.now(),
+def get_strategy_state():
+    user = users_collection.find_one({"email": EMAIL, "strategies.id": STRATEGY_ID})
+    if user:
+        for strat in user.get('strategies', []):
+            if strat['id'] == STRATEGY_ID:
+                return {
+                    "pos": float(strat.get(f'{DB_PREFIX}_pos', 0.0)),
+                    "entry": float(strat.get(f'{DB_PREFIX}_entry', 0.0)),
+                    "total_pnl": float(strat.get(f'{DB_PREFIX}_pnl', 0.0))
+                }
+    return {"pos": 0.0, "entry": 0.0, "total_pnl": 0.0}
+
+def update_strategy_state(pos, entry=0.0, pnl_inc=0.0, unpnl=0.0):
+    """Updates DB with both realized (inc) and unrealized (set) PnL."""
+    users_collection.update_one(
+        {"email": EMAIL, "strategies.id": STRATEGY_ID},
+        {
+            "$set": {
+                f"strategies.$.{DB_PREFIX}_pos": pos,
+                f"strategies.$.{DB_PREFIX}_entry": entry,
+                f"strategies.$.{DB_PREFIX}_unrealized_pnl": unpnl,
+                "strategies.$.status": "running",
+                "strategies.$.last_update": datetime.now(),
+            },
+            "$inc": {f"strategies.$.{DB_PREFIX}_pnl": pnl_inc}
         }
-        if pnl_data:
-            update_fields.update({
-                "strategies.$.realized_pnl": pnl_data['realized_pnl'],
-                "strategies.$.unrealized_pnl": pnl_data['unrealized_pnl'],
-                "strategies.$.total_pnl": pnl_data['total_pnl'],
-                "strategies.$.current_value": pnl_data['current_value']
-            })
+    )
+
+def calculate_dynamic_qty(price):
+    try:
+        raw_qty = (AMOUNT * LEVERAGE) / price
+        return float(exchange.amount_to_precision(SYMBOL, raw_qty))
+    except Exception as e:
+        print(f"⚠️ Qty Calculation Error: {e}")
+        return 0.0
+
+def fetch_data():
+    bars = exchange.fetch_ohlcv(SYMBOL, TIMEFRAME)
+    df = pd.DataFrame(bars, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+    df[["open", "high", "low", "close", "volume"]] = df[["open", "high", "low", "close", "volume"]].astype(float)
+    return df
+
+def log_error_to_db(error_msg):
+    try:
         users_collection.update_one(
             {"email": EMAIL, "strategies.id": STRATEGY_ID},
-            {"$set": update_fields}
+            { "$set": {"strategies.$.status": "error", "strategies.$.last_error": str(error_msg), "strategies.$.error_at": datetime.now()}}
         )
-    except: pass
-
-def refresh_grid():
-    print(f"🔄 Grid Refresh Engine | Range: {LOWERPRICE}-{UPPERPRICE}")
-    try:
-        # 1. FIXED: Resilient Order Cancellation
-        try:
-            current_orders = exchange.fetch_open_orders(SYMBOL)
-            if len(current_orders) > 0:
-                exchange.cancel_all_orders(SYMBOL)
-                print(f"   Cleared {len(current_orders)} old orders.")
-        except Exception as e:
-            if "-2011" in str(e):
-                print("   No orders to cancel. Continuing...")
-            else:
-                print(f"   ⚠️ Cancel Note: {e}")
-
-        # 2. Market and Seeding
-        ticker = exchange.fetch_ticker(SYMBOL)
-        current_price = ticker['last']
-        grid_prices = get_grid_levels()
-        base_asset = SYMBOL.split('/')[0]
-        
-        sell_levels = [p for p in grid_prices if p > current_price]
-        needed_base = len(sell_levels) * AMOUNT
-        
-        balance = exchange.fetch_balance()
-        current_base = balance.get(base_asset, {}).get('free', 0.0)
-
-        if current_base < (needed_base * 0.99):
-            buy_qty = needed_base - current_base
-            print(f"🛒 SEEDING: Buying {buy_qty:.4f} {base_asset} at market to enable SELL orders...")
-            exchange.create_market_buy_order(SYMBOL, buy_qty)
-            time.sleep(2) 
-
-        # 3. Placement
-        for price in grid_prices:
-            p = float(exchange.price_to_precision(SYMBOL, price))
-            qty = float(exchange.amount_to_precision(SYMBOL, AMOUNT))
-            
-            if abs(p - current_price) / current_price < 0.0001: 
-                continue
-
-            if p < current_price:
-                exchange.create_limit_buy_order(SYMBOL, qty, p)
-                print(f"   ✅ [BUY]  at {p}")
-            else:
-                exchange.create_limit_sell_order(SYMBOL, qty, p)
-                print(f"   ✅ [SELL] at {p}")
-                
-    except Exception as e:
-        print(f"❌ Grid Setup Error: {e}")
+    except Exception as db_e:
+        print(f"🔥 Database Error: {db_e}")
 
 def main():
-    print(f"🚀 Engine Started | Symbol: {SYMBOL}")
-    exchange.load_markets()
-    
-    ticker = exchange.fetch_ticker(SYMBOL)
-    state = sync_spot_balance()
-    pnl_tracker.initialize_balance(state, ticker['last'])
+    if not STRATEGY_CODE: 
+        print("❌ No Strategy Code found.")
+        return
 
-    refresh_grid()
+    print(f"🚀 Bot starting | {DEMO and 'DEMO' or 'LIVE'} FUTURES | Symbol: {SYMBOL} | Leverage: {LEVERAGE}x")
+    exchange.load_markets()
+
+    try:
+        exchange.set_leverage(LEVERAGE, SYMBOL)
+        exchange.set_margin_mode('ISOLATED', SYMBOL)
+    except Exception as e:
+        print(f"⚠️ Leverage Config Warning: {e}")
+
+    # Inject strategy code
+    local_env = {"pd": pd, "np": np}
+    exec(STRATEGY_CODE, local_env)
+    run_strategy = local_env.get("run_strategy")
 
     while True:
         try:
-            ticker = exchange.fetch_ticker(SYMBOL)
-            state = sync_spot_balance()
-            if not state: 
-                time.sleep(10); continue
+            # --- 0. SYNC REAL STATE ---
+            real_exchange = sync_exchange_data()
+            if real_exchange is not None:
+                update_strategy_state(
+                    pos=real_exchange['pos'], 
+                    entry=real_exchange['entry'], 
+                    unpnl=real_exchange['unpnl']
+                )
 
-            pnl_stats = pnl_tracker.calculate_pnl(state, ticker['last'])
-            num_orders = len(state['open_orders'])
-            update_db(num_orders, pnl_stats)
+            state = get_strategy_state()
+            df = fetch_data()
+            current_price = float(df['close'].iloc[-1])
+            _, signal = run_strategy(df)
+            
+            print(f"🕒 {datetime.now().strftime('%H:%M:%S')} | Total PnL: ${state['total_pnl']:.2f} | Real Pos: {state['pos']} | Signal: {signal}")
 
-            print(f"🕒 {datetime.now().strftime('%H:%M:%S')} | Orders: {num_orders} | Total PnL: {pnl_stats['total_pnl']} USDT")
+            # --- 1. EXIT LOGIC (SL/TP) ---
+            if state['pos'] != 0:
+                entry_price = state['entry']
+                is_long = state['pos'] > 0
+                price_change_pct = (current_price - entry_price) / entry_price if is_long else (entry_price - current_price) / entry_price
+                
+                exit_reason = ""
+                trade_status = "" # Track if it's a loss or profit
+                
+                if price_change_pct <= -STOP_LOSS:
+                    exit_reason = f"STOP LOSS hit at {current_price}"
+                    trade_status = "loss"
+                elif price_change_pct >= TAKE_PROFIT:
+                    exit_reason = f"TAKE PROFIT hit at {current_price}"
+                    trade_status = "profit"
 
-            if num_orders < (GRIDLEVELS - 1):
-                print(f"🔔 Fill detected. Re-gridding...")
-                refresh_grid()
+                if exit_reason:
+                    trade_pnl = price_change_pct * (abs(state['pos']) * entry_price)
+                    side = "sell" if is_long else "buy"
+                    
+                    print(f"🛑 {exit_reason} | Closing Real Pos: {state['pos']}")
+                    exchange.create_order(SYMBOL, 'market', side, abs(state['pos']))
+                    update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl, unpnl=0.0)
+                    
+                    # TRIGGER GPT LOGIC ONLY ON LOSS
+                    if trade_status == "loss":
+                        print("📉 Trade lost. Analyzing with AI...")
+                        trade_summary = {
+                            "side": "LONG" if is_long else "SHORT",
+                            "entry": entry_price,
+                            "exit": current_price,
+                            "pnl": trade_pnl
+                        }
+                    
+                    continue 
 
-            time.sleep(30)
+            # --- 2. EXECUTION LOGIC ---
+            if signal == "BUY":
+                if state['pos'] < 0: # Close Short
+                    trade_pnl = (state['entry'] - current_price) * abs(state['pos'])
+                    exchange.create_market_buy_order(SYMBOL, abs(state['pos']))
+                    update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl)
+                    print(f"🔄 Closed SHORT at {current_price}")
+                    time.sleep(1)
+                    state = get_strategy_state() 
+
+                if state['pos'] == 0: # Open Long
+                    qty = calculate_dynamic_qty(current_price)
+                    if qty > 0:
+                        exchange.create_market_buy_order(SYMBOL, qty)
+                        update_strategy_state(pos=qty, entry=current_price)
+                        print(f"📈 Opened LIVE LONG: {qty} at {current_price}")
+
+            elif signal == "SELL":
+                if state['pos'] > 0: # Close Long
+                    trade_pnl = (current_price - state['entry']) * state['pos']
+                    exchange.create_market_sell_order(SYMBOL, abs(state['pos']))
+                    update_strategy_state(pos=0.0, entry=0.0, pnl_inc=trade_pnl)
+                    print(f"🔄 Closed LONG at {current_price}")
+                    time.sleep(1)
+                    state = get_strategy_state()
+
+                if state['pos'] == 0: # Open Short
+                    qty = calculate_dynamic_qty(current_price)
+                    if qty > 0:
+                        exchange.create_market_sell_order(SYMBOL, qty)
+                        update_strategy_state(pos=-qty, entry=current_price) 
+                        print(f"📉 Opened LIVE SHORT: {qty} at {current_price}")
+
+            time.sleep(60)
+
         except Exception as e:
             print(f"❌ Loop Error: {e}")
-            time.sleep(20)
+            traceback.print_exc()
+            log_error_to_db(e)
+            time.sleep(15)
 
 if __name__ == "__main__":
     main()
