@@ -17,21 +17,13 @@ import {
   ChevronUp,
   Copy
 } from "lucide-react"
-import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import {Switch} from "@/components/ui/switch"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+
 
 
 const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, onToggle: () => void }) => (
@@ -99,7 +91,6 @@ useEffect(() => {
   return () => clearInterval(interval);
 }, []);
 
-  const router = useRouter();
 
  
 
