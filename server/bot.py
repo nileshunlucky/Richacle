@@ -15,7 +15,6 @@ DEMO = os.getenv("DEMO") == "True"
 STRATEGY_ID = os.getenv("STRATEGY_ID")
 SYMBOL = os.getenv("SYMBOL")
 AMOUNT = float(os.getenv("AMOUNT", 0)) 
-INVESTMENT = float(os.getenv("INVESTMENT", 0)) 
 UPPERPRICE = float(os.getenv("UPPERPRICE", 0)) 
 LOWERPRICE = float(os.getenv("LOWERPRICE", 0)) 
 GRIDLEVELS = int(float(os.getenv("GRIDLEVELS", 5))) 
@@ -30,7 +29,7 @@ exchange = ccxt.binance({
 })
 
 if DEMO:
-    exchange.set_sandbox_mode(True)
+    exchange.enable_demo_trading(True)
     DB_PREFIX = "demo"
 else:
     DB_PREFIX = "live"
