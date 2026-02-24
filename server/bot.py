@@ -71,27 +71,44 @@ def refresh_grid():
     """Cancels and replaces grid orders based on current market price."""
     print("🔄 Refreshing Spot Grid...")
     try:
-        exchange.cancel_all_orders(SYMBOL)
+        # 1. Check if there are orders to cancel first
+        open_orders = exchange.fetch_open_orders(SYMBOL)
+        if len(open_orders) > 0:
+            try:
+                exchange.cancel_all_orders(SYMBOL)
+                print(f"   Successfully cleared {len(open_orders)} old orders.")
+            except Exception as e:
+                # Ignore -2011 errors during cancellation
+                if "-2011" in str(e):
+                    print("   Note: No orders to cancel or already filled.")
+                else:
+                    raise e
+        
+        # 2. Re-calculate and place new orders
         ticker = exchange.fetch_ticker(SYMBOL)
         current_price = ticker['last']
         grid_prices = get_grid_levels()
         
         for price in grid_prices:
-            # Ensure price/amount fit exchange rules
             p = float(exchange.price_to_precision(SYMBOL, price))
             qty = float(exchange.amount_to_precision(SYMBOL, AMOUNT))
             
-            if p < current_price:
-                # Place Buy Limit
-                exchange.create_limit_buy_order(SYMBOL, qty, p)
-                print(f"   BUY Limit set at {p}")
-            elif p > current_price:
-                # Place Sell Limit (Requires you to own the asset)
-                exchange.create_limit_sell_order(SYMBOL, qty, p)
-                print(f"   SELL Limit set at {p}")
+            # Simple check to avoid placing orders exactly at current price
+            if abs(p - current_price) / current_price < 0.0001:
+                continue
+
+            try:
+                if p < current_price:
+                    exchange.create_limit_buy_order(SYMBOL, qty, p)
+                    print(f"   [BUY] Limit set at {p}")
+                elif p > current_price:
+                    exchange.create_limit_sell_order(SYMBOL, qty, p)
+                    print(f"   [SELL] Limit set at {p}")
+            except Exception as order_e:
+                print(f"   ⚠️ Could not place order at {p}: {order_e}")
                 
     except Exception as e:
-        print(f"⚠️ Grid Placement Error: {e}")
+        print(f"❌ Grid Refresh Error: {e}")
 
 def main():
     print(f"🚀 Spot Grid Bot | Symbol: {SYMBOL} | Levels: {GRIDLEVELS}")
