@@ -37,21 +37,13 @@ class PnLTracker:
         self.total_realized_pnl = 0.0
 
     def initialize_balance(self, state, current_price):
-        """Captures the total account value at the exact moment the bot starts."""
         if self.initial_value_usdt is None:
             self.initial_value_usdt = (state['free_base'] * current_price) + state['free_quote']
             print(f"📊 Initial Portfolio Value: {self.initial_value_usdt:.2f} USDT")
 
     def calculate_pnl(self, state, current_price):
-        """
-        Realized PnL: Profit from closed buy/sell grid pairs.
-        Unrealized PnL: Current value of held assets vs their value at start.
-        """
         current_total_value = (state['free_base'] * current_price) + state['free_quote']
         total_pnl = current_total_value - self.initial_value_usdt
-        
-        # In Spot Grid, Total PnL is the most reliable metric. 
-        # We derive unrealized by subtracting any tracked realized gains.
         return {
             "total_pnl": round(total_pnl, 4),
             "unrealized_pnl": round(total_pnl - self.total_realized_pnl, 4),
@@ -69,9 +61,10 @@ def sync_spot_balance():
         balance = exchange.fetch_balance()
         base_asset = SYMBOL.split('/')[0]
         quote_asset = SYMBOL.split('/')[1]
+        # Include both free and used (locked in orders) balance for PnL accuracy
         return {
-            "free_base": balance.get(base_asset, {}).get('free', 0.0) + balance.get(base_asset, {}).get('used', 0.0),
-            "free_quote": balance.get(quote_asset, {}).get('free', 0.0) + balance.get(quote_asset, {}).get('used', 0.0),
+            "free_base": balance.get(base_asset, {}).get('total', 0.0),
+            "free_quote": balance.get(quote_asset, {}).get('total', 0.0),
             "open_orders": exchange.fetch_open_orders(SYMBOL)
         }
     except Exception as e:
@@ -92,56 +85,71 @@ def update_db(open_orders_count, pnl_data=None):
                 "strategies.$.total_pnl": pnl_data['total_pnl'],
                 "strategies.$.current_value": pnl_data['current_value']
             })
-
         users_collection.update_one(
             {"email": EMAIL, "strategies.id": STRATEGY_ID},
             {"$set": update_fields}
         )
-    except Exception as e:
-        print(f"⚠️ DB Update Error: {e}")
+    except: pass
 
 def refresh_grid():
-    print(f"🔄 Refreshing Grid Engine... Step Size: {(UPPERPRICE-LOWERPRICE)/(GRIDLEVELS-1):.2f}")
+    print(f"🔄 Grid Refresh Engine | Range: {LOWERPRICE}-{UPPERPRICE}")
     try:
-        exchange.cancel_all_orders(SYMBOL)
+        # 1. FIXED: Resilient Order Cancellation
+        try:
+            current_orders = exchange.fetch_open_orders(SYMBOL)
+            if len(current_orders) > 0:
+                exchange.cancel_all_orders(SYMBOL)
+                print(f"   Cleared {len(current_orders)} old orders.")
+        except Exception as e:
+            if "-2011" in str(e):
+                print("   No orders to cancel. Continuing...")
+            else:
+                print(f"   ⚠️ Cancel Note: {e}")
+
+        # 2. Market and Seeding
         ticker = exchange.fetch_ticker(SYMBOL)
         current_price = ticker['last']
         grid_prices = get_grid_levels()
         base_asset = SYMBOL.split('/')[0]
         
-        # First Principles: Inventory Seeding
         sell_levels = [p for p in grid_prices if p > current_price]
         needed_base = len(sell_levels) * AMOUNT
         
-        state = sync_spot_balance()
-        if state['free_base'] < (needed_base * 0.99):
-            buy_qty = needed_base - state['free_base']
-            print(f"🛒 SEEDING: Buying {buy_qty:.4f} {base_asset} to enable SELL levels...")
+        balance = exchange.fetch_balance()
+        current_base = balance.get(base_asset, {}).get('free', 0.0)
+
+        if current_base < (needed_base * 0.99):
+            buy_qty = needed_base - current_base
+            print(f"🛒 SEEDING: Buying {buy_qty:.4f} {base_asset} at market to enable SELL orders...")
             exchange.create_market_buy_order(SYMBOL, buy_qty)
             time.sleep(2) 
-        
+
+        # 3. Placement
         for price in grid_prices:
             p = float(exchange.price_to_precision(SYMBOL, price))
             qty = float(exchange.amount_to_precision(SYMBOL, AMOUNT))
-            if abs(p - current_price) / current_price < 0.0001: continue
+            
+            if abs(p - current_price) / current_price < 0.0001: 
+                continue
 
             if p < current_price:
                 exchange.create_limit_buy_order(SYMBOL, qty, p)
+                print(f"   ✅ [BUY]  at {p}")
             else:
                 exchange.create_limit_sell_order(SYMBOL, qty, p)
+                print(f"   ✅ [SELL] at {p}")
                 
     except Exception as e:
-        print(f"❌ Engine Error: {e}")
+        print(f"❌ Grid Setup Error: {e}")
 
 def main():
-    print(f"🚀 Spot Grid Engine Live | Symbol: {SYMBOL}")
+    print(f"🚀 Engine Started | Symbol: {SYMBOL}")
+    exchange.load_markets()
     
-    # 1. Initial State Sync
     ticker = exchange.fetch_ticker(SYMBOL)
     state = sync_spot_balance()
     pnl_tracker.initialize_balance(state, ticker['last'])
 
-    # 2. Start Grid
     refresh_grid()
 
     while True:
@@ -149,26 +157,19 @@ def main():
             ticker = exchange.fetch_ticker(SYMBOL)
             state = sync_spot_balance()
             if not state: 
-                time.sleep(10)
-                continue
+                time.sleep(10); continue
 
-            # 3. PnL Calculation
             pnl_stats = pnl_tracker.calculate_pnl(state, ticker['last'])
             num_orders = len(state['open_orders'])
-            
-            # 4. Update Database
             update_db(num_orders, pnl_stats)
 
-            print(f"🕒 {datetime.now().strftime('%H:%M:%S')} | PnL: {pnl_stats['total_pnl']} USDT | Orders: {num_orders}")
+            print(f"🕒 {datetime.now().strftime('%H:%M:%S')} | Orders: {num_orders} | Total PnL: {pnl_stats['total_pnl']} USDT")
 
-            # 5. Check for Fills
             if num_orders < (GRIDLEVELS - 1):
-                print(f"🔔 Fill detected! Re-balancing...")
-                # Note: In a production bot, we'd track specific fills to update 'realized_pnl' precisely
+                print(f"🔔 Fill detected. Re-gridding...")
                 refresh_grid()
 
             time.sleep(30)
-
         except Exception as e:
             print(f"❌ Loop Error: {e}")
             time.sleep(20)
