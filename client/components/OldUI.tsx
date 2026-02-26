@@ -1,0 +1,768 @@
+"use client"
+
+import React, { useState, useEffect } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { 
+  Plus, 
+  ArrowUpRight, 
+  ShieldCheck, 
+  Settings2, 
+  Info, 
+  ChevronLeft, 
+  ChevronRight,
+  Power,
+  Loader2,
+  XCircle,
+  X,
+  ChevronUp,
+  Copy
+} from "lucide-react"
+import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
+import {Switch} from "@/components/ui/switch"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+
+const Toggle = ({ label, status, onToggle }: { label: string, status: boolean, onToggle: () => void }) => (
+  <div className="flex flex-col gap-3">
+    <div className="flex items-center gap-2">
+      <div className={`h-1.5 w-1.5 rounded-full ${status ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]' : 'bg-zinc-600'}`} />
+      <span className="text-[11px] uppercase tracking-wider  font-medium">{label}</span>
+      <Info size={12} className="text-white cursor-help" />
+    </div>
+    <div className="flex items-center gap-3">
+      <span className={`text-xs font-medium ${!status ? 'text-white' : 'text-zinc-300'}`}>Off</span>
+      <button 
+        onClick={onToggle}
+        className={`relative w-11 h-6 rounded-full transition-colors duration-300 ${status ? 'bg-zinc-100' : 'bg-zinc-800'}`}
+      >
+        <motion.div 
+          animate={{ x: status ? 22 : 4 }}
+          className={`absolute top-1 w-4 h-4 rounded-full ${status ? 'bg-zinc-950' : 'bg-zinc-400'}`}
+        />
+      </button>
+      <span className={`text-xs font-medium ${status ? 'text-white' : 'text-zinc-300'}`}>On</span>
+    </div>
+  </div>
+)
+
+interface Strategy {
+  id: string;
+  name: string;
+  status: string;
+  symbol: string;
+  input?: string;
+  amount?: string;
+  llm?: string;
+  duplicate?: string;
+  last_error?: string;
+  live_pnl?: number | string;
+  demo_pnl?: number | string;
+  demo_unrealized_pnl?: number | string;
+  live_unrealized_pnl?: number | string;
+  loss_reasons?: LossReason[];
+}
+
+interface LossReason {
+  reason: string;
+  pnl: number;
+  timestamp: string;
+}
+
+// --- Main Page ---
+
+export default function Dashboard() {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [terminal, setTerminal] = useState(false)
+  const [engine, setEngine] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [algoLoading, setAlgoLoading] = useState(false)
+  const [isDemo, setIsDemo] = useState(false)
+  const [apiKey, setApiKey] = useState("")
+  const [apiSecret, setApiSecret] = useState("")
+  const [email, setEmail] = useState("")
+  const [totalPnl, setTotalPnl] = useState(0)
+  const [strategiesPerf, setStrategiesPerf] = useState(0)
+  const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [showLosses, setShowLosses] = useState<string | null>(null);
+  const [llms, setLlms] = useState(["ChatGPT", "Claude", "Gemini", "Grok", "Perplexity", "Llama", "DeepSeek", "Qwen"])
+
+  const router = useRouter();
+
+    useEffect(() => {
+    const getUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const userEmail = session?.user?.email || "";
+      setEmail(userEmail);
+    };
+    getUser();
+  }, []);
+
+
+// Combine these into ONE Effect
+useEffect(() => {
+  if (!email) return;
+
+  const fetchData = async () => {
+    try {
+      // 1. Fetch User Data (Always safe to do)
+      const userRes = await fetch(`https://api.richacle.com/user/${email}`);
+      const userData = await userRes.json();
+      setStrategies(userData?.strategies);
+
+      // 2. ONLY Fetch Balance if we actually have keys in state
+      if (apiKey && apiSecret) {
+        const form = new FormData();
+        form.append("email", email);
+        const balRes = await fetch("https://api.richacle.com/api/balance", {
+          method: "POST",
+          body: form,
+        });
+        const balData = await balRes.json();
+
+        setTotalPnl(balData?.equity);
+        setStrategiesPerf(balData?.unrealized_pnl);
+      } else {
+        // Optional: clear PNL if keys aren't present
+        setTotalPnl(0);
+        setStrategiesPerf(0);
+      }
+
+    } catch (error) {
+      console.error("Poll error:", error);
+    }
+  };
+
+  fetchData(); 
+  const interval = setInterval(fetchData, 1000); 
+  
+  return () => clearInterval(interval);
+}, [email, apiKey, apiSecret]);
+
+useEffect(() => {
+  if (!email) return;
+
+  const fetchBinance = async () => {
+    try {
+      // 1. Fetch User Data (Binance Keys)
+      const userRes = await fetch(`https://api.richacle.com/user/${email}`);
+      const userData = await userRes.json();
+      
+      setTerminal(userData?.terminal);
+      setEngine(userData?.engine);
+      setApiKey(userData?.binance?.apiKey);
+      setApiSecret(userData?.binance?.apiSecret);
+      setIsDemo(userData?.binance?.demo);
+
+    } catch (error) {
+      console.error("Poll error:", error);
+    }
+  };
+
+  fetchBinance(); 
+}, [email]);
+
+const toggleEngine = async () => {
+  if (!email) return;
+  const next = !engine;
+
+  const form = new FormData();
+  form.append("email", email);
+  form.append("toggle", String(next));
+
+  try {
+    const res = await fetch("https://api.richacle.com/api/engine", {
+      method: "POST",
+      body: form,
+    });
+
+    if (res.status === 403) {
+      toast.error("Terminal must be ON before engine");
+      return;
+    }
+
+setEngine(next);
+
+  } catch {
+    toast.error("Error toggling engine");
+  }
+};
+
+
+
+
+ 
+
+const handleStop = async (id: string) => {
+  if (!email) return; 
+  try {
+    setAlgoLoading(true)
+    const form = new FormData();
+    form.append("email", email);
+    form.append("strategyId", id);
+
+    const res = await fetch(`https://api.richacle.com/api/stop`, {
+      method: "POST",
+      body: form,
+    });
+
+    console.log("res", res)
+    const data = res.json()
+    console.log("data", data)
+
+    if (res.ok) {
+      toast.success("Algo Stopped!");
+      setStrategies(prev => prev.map(s => s.id === id ? { ...s, status: "stopped" } : s));
+    }
+  } catch {
+    toast.error("Error stopping");
+  } finally {
+    setAlgoLoading(false)
+  }
+};
+
+const handleSquareOFF = async (id: string) => {
+  if (!email) return; 
+  try {
+    setAlgoLoading(true)
+    const form = new FormData();
+    form.append("email", email);
+    form.append("strategyId", id);
+
+    const res = await fetch(`https://api.richacle.com/api/squareoff`, {
+      method: "POST",
+      body: form,
+    });
+
+    console.log("res", res)
+    const data = res.json()
+    console.log("data", data)
+
+    if (res.ok) {
+      toast.success("Algo Square OFF!");
+      setStrategies(prev => prev.map(s => s.id === id ? { ...s, status: "stopped" } : s));
+    }
+  } catch {
+    toast.error("Error Square OFF");
+  } finally {
+    setAlgoLoading(false)
+  }
+};
+
+
+  
+  const handleBinance = async () => {
+    if (!email){
+      toast.error("Not authenticated");
+      return;
+    }
+
+    if (!apiKey || !apiSecret){
+      toast.error("Missing Something");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const form = new FormData();
+      form.append("email", email);
+      form.append("apiKey", apiKey);
+      form.append("apiSecret", apiSecret);
+      form.append("isDemo", String(isDemo));
+      
+      const res = await fetch("https://api.richacle.com/api/binance", {
+        method: "POST",
+        body: form,
+      });
+
+      if(res.ok){
+        toast.success("Binance Connected")
+        setIsModalOpen(false)
+      } else if (res.status === 401) {
+   
+    toast.error("Invalid Binance API Key or Secret");
+  }
+    } catch (e) {
+      toast.error("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeploy = async (id: string) => {
+    if (!email){
+      toast.error("Not Authenticated");
+      return;
+    }
+
+    try {
+    setAlgoLoading(true)
+      const res = await fetch("https://api.richacle.com/api/deploy", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json", 
+      },
+      body: JSON.stringify({
+        email: email,
+        strategyId: id,
+      }),
+    });
+
+      const data = await res.json()
+
+      if (res.status === 403 && data.detail.includes("FREE plan")) {
+        toast.error("Deployment not allowed on FREE plan. Please upgrade!");
+        router.push("/pricing");
+        return;
+      }
+
+      if (res.status === 403 && data.detail.includes("Engine is OFF")) {
+        toast.error("Engine is OFF!");
+        router.push("/dashboard");
+        return;
+      }
+
+      if (res.status === 403 && data.detail.includes("Limit reached.")) {
+        toast.error("Limit reached!");
+        return;
+      }
+
+      if (res.status === 403 && data.detail.includes("Binance")) {
+        toast.error("Binance API keys missing!.");
+        router.push("/dashboard");
+        return;
+      }
+
+      if(!res.ok){
+        console.error("data", data)
+      }
+
+      toast.success(`Algo deployed`)
+      setStrategies(prev => prev.map(s => s.id === id ? { ...s, status: "running" } : s));
+    } catch (e) {
+      toast.error("Something went wrong");
+      console.log(e)
+    } finally {
+    setAlgoLoading(false)
+    }
+  };
+  
+
+
+  const renderStrategyCard = (s: Strategy, isDuplicate = false) => {
+    const groupId = s.duplicate || s.id;
+
+    return(
+  <motion.div
+    key={s.id}
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    className={`group flex flex-col md:flex-row md:items-center justify-between bg-black border rounded-3xl p-3 transition-all duration-300 relative shrink-0 snap-center w-full
+       hover:border-zinc-500/30`}
+  >
+  
+  
+    {/* Left: Info */}
+                    <div className="flex items-center w-full gap-4 z-50">
+                      <div className="flex flex-col gap-1 w-full">
+                      
+                        <div className="flex items-center justify-between w-full gap-3">                       
+                        <div className="flex gap-3 items-center">
+                        <img className="h-12 w-12 rounded-full" src={`https://api.elbstream.com/logos/crypto/${s.symbol.replace('/USDT', "")}`} />
+ <h4 className="text-sm font-medium text-zinc-100">{s.symbol}</h4>
+                       
+                        </div>
+                      
+                        <div className="flex flex-col  items-center">
+                        <h4 className="text-sm font-medium text-zinc-100">${s.amount}</h4>
+                        <h4 className="text-sm font-medium text-zinc-100">
+ 
+{(() => {
+  // 1. Get the raw numeric value based on the mode
+  const rawValue = isDemo ? s.demo_unrealized_pnl : s.live_unrealized_pnl;
+  const numValue = Number(rawValue || 0);
+
+  // 2. Determine the color class
+  let colorClass = "text-white"; // Default for 0
+  if (numValue > 0) colorClass = "text-green-500";
+  if (numValue < 0) colorClass = "text-red-500";
+
+  // 3. Render the formatted string
+  return (
+    <span className={`${colorClass} font-medium`}>
+      {rawValue ? `$${numValue.toFixed(2)}` : ""}
+    </span>
+  );
+})()}
+
+</h4>
+                        </div>
+                        </div>
+                        
+                    
+                          {/* Row 2: Error Message (Only shows if status is error) */}
+  {s.status === "error" && s.last_error && (
+    <motion.div 
+      initial={{ opacity: 0, y: -5 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="flex items-center gap-1.5 text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-lg"
+    >
+      <Info size={10} />
+      <span className="text-xs">
+        {s.last_error}
+      </span>
+    </motion.div>
+  )}
+                      </div>
+                    </div>
+
+                    {/* 2. Loss Trigger Button */}
+                    
+                    
+        
+
+                    
+
+                    {/* 3. Single-Item Height Scrollable Loss List */}
+<AnimatePresence>
+  {showLosses === groupId && s.loss_reasons && s.loss_reasons.length > 0 && (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      className="mt-4 px-1"
+    >
+      {/* Container height set to ~100px to show exactly one loss at a time */}
+      <div 
+        className="max-h-[105px] overflow-y-auto pr-2 space-y-2 custom-scrollbar snap-y snap-mandatory"
+      >
+        {s.loss_reasons.map((loss, idx) => (
+          <div 
+            key={idx}
+            className="snap-start p-3 rounded-xl border border-red-500/50 bg-red-500/20 text-red-400 min-h-[90px] flex flex-col justify-center"
+          >
+            <div className="flex justify-between items-start gap-4">
+              <p className="text-xs font-medium leading-tight">
+                {loss.reason}
+              </p>
+              <span className="text-[10px] font-bold whitespace-nowrap bg-red-500/30 px-2 py-0.5 rounded-lg">
+                ${loss.pnl}
+              </span>
+            </div>
+            
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-[9px] opacity-60 flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-red-400 opacity-50"></span>
+                {new Date(loss.timestamp).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  )}
+</AnimatePresence>
+
+                    {/* Right: Status & Action */}
+                    <div className="flex items-center justify-between md:justify-end gap-6 mt-4 w-full md:mt-0 z-50">
+                      
+ <h4 className="text-sm font-medium text-zinc-100">{s.name}</h4>
+
+                      <div className="flex flex-col items-end gap-2">
+  {/* Row 1: Action Buttons */}
+  <div className="flex gap-2">
+   {s.status === "running" || s.status === "error" ? (
+  <>
+    <button
+      onClick={() => handleStop(s.id)}
+      className="bg-zinc-100 flex items-center gap-1.5 hover:bg-white text-zinc-950 px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+      disabled={algoLoading}
+    >
+      <Power size={12} />
+              {algoLoading ? <Loader2 size={16} className="animate-spin" /> : "STOP"}
+
+    </button>
+    <button
+      onClick={() => handleSquareOFF(s.id)}
+      className="bg-zinc-100 flex items-center gap-1.5 hover:bg-white text-zinc-950 px-4 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+      disabled={algoLoading}
+    >
+      <XCircle size={12} />
+      
+              {algoLoading ? <Loader2 size={16} className="animate-spin" /> : "SQUARE OFF"}
+
+    </button>
+  </>
+) : (
+  <button
+    onClick={() => handleDeploy(s.id)} // Set this strategy as the one being deployed
+    className="bg-zinc-100 hover:bg-white text-zinc-950 px-6 py-2 rounded-xl text-[10px] font-bold transition-all active:scale-95 cursor-pointer"
+    disabled={algoLoading}
+  >
+    
+              {algoLoading ? <Loader2 size={16} className="animate-spin" /> : "DEPLOY"}
+
+  </button>
+)}
+  </div>
+
+
+</div>
+
+                    </div>
+             
+        
+    
+  
+  </motion.div>
+  );
+  }
+
+  return (
+    <div className="min-h-screen bg-black text-zinc-100 p-4 pt-12 md:p-10 font-sans selection:bg-zinc-500/30 relative z-50">
+    {/* Primary Full-Width Purple Wash */}
+<div 
+  className="absolute top-0 left-0 w-full h-[350px] pointer-events-none z-0"
+  style={{
+    background: 'linear-gradient(180deg, rgba(147, 51, 234, 0.4) 0%, rgba(107, 33, 168, 0.15) 50%, transparent 100%)',
+  }}
+/>
+
+{/* High-Intensity Top Edge - This adds the "Bright" pop */}
+<div 
+  className="absolute top-0 left-0 w-full h-[2px] bg-purple-500 shadow-[0px_0px_100px_40px_rgba(168,85,247,0.6)] pointer-events-none z-0"
+/>
+
+{/* Soft Ambient Spread - Extra blur to prevent harsh lines */}
+<div 
+  className="absolute top-[-100px] left-0 w-full h-[400px] bg-purple-600/20 blur-[120px] pointer-events-none z-0"
+/>
+  
+      <div className="max-w-6xl mx-auto space-y-6">
+        
+        {/* Header Section (Based on Image Ref) */}
+        <div className={`relative overflow-hidden group rounded-xl p-5 `}>
+        
+          <div className="relative z-10">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+              <div className="flex items-center justify-between w-full">
+                <h1 className="md:text-4xl ">{email.split("@")[0]}</h1>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="flex items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"
+                  >
+                    <Plus size={14} />Broker
+                  </button>
+                </div>
+              </div>
+
+              <div className=" w-full flex items-center justify-center">
+               
+                <h2 className={`text-5xl tracking-tighter `}>
+  $
+  {new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(totalPnl)}
+</h2>
+
+
+              </div>
+
+              <p className={`text-lg text-center w-full font-medium ${
+    strategiesPerf > 0 
+      ? "text-green-500" 
+      : strategiesPerf < 0 
+        ? "text-red-500" 
+        : "text-white"
+  }`}>
+                $
+  {new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(strategiesPerf)}
+                </p>
+            </div>
+
+            <div className="mt-12 pt-8  grid grid-cols-2 md:grid-cols-4 ">
+              
+              <Toggle label="Terminal" status={terminal} onToggle={() => {
+    if (!terminal) {
+      toast.error("Add Binance API Key or Secret");
+      return;
+    }
+  }}/>
+              <Toggle label="Trading Engine" status={engine} onToggle={() => {
+    if (!terminal) {
+      toast.error("Enable Terminal First");
+      return;
+    }
+    toggleEngine();
+  }} />
+            </div>
+          </div>
+        </div>
+
+      {/* Strategies List - Perfectly aligned with max-w-6xl */}
+        <div className="pt-4">
+          <div className="flex items-center justify-between mb-6 px-1">
+            <h3 className="text-[10px] uppercase tracking-[0.2em] font-semibold text-zinc-100 z-50">
+              Active Algorithms
+            </h3>
+            <div className="h-[1px] flex-grow mx-4 bg-zinc-800/50" /> {/* Subtle divider line */}
+          </div>
+
+          <div className="flex flex-col-reverse ">
+  {strategies?.filter((s) => s.status && s.status.trim() !== "").length === 0 ? (
+    <div className="py-12 text-center">
+      <p className="text-white text-sm font-light">No active execution trades</p>
+    </div>
+  ) : (
+    strategies
+      // 1. Only map "Parent" strategies (ones that aren't duplicates themselves)
+      ?.filter((s) => !s.duplicate && s.status && s.status.trim() !== "")
+      .map((parent) => (
+        <div key={parent.id} className="flex flex-col gap-3">
+          
+          {/* 2. Horizontal Scroll Container for Parent + its Duplicates */}
+          <div className="flex flex-row gap-4 overflow-x-auto pb-4 no-scrollbar snap-x">
+            
+            {/* The Main Strategy Card */}
+            {renderStrategyCard(parent)}
+
+            {/* Any Duplicates of this specific Parent */}
+            {strategies
+              .filter((d) => d.duplicate === parent.id)
+              .map((duplicate) => renderStrategyCard(duplicate, true))}
+          </div>
+        </div>
+      ))
+  )}
+</div>
+
+              
+          </div>
+        </div>
+
+
+    
+      <AnimatePresence>
+  {isModalOpen && (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setIsModalOpen(false)}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+      />
+      <motion.div 
+        initial={{ scale: 0.95, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.95, opacity: 0, y: 20 }}
+        className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl p-8 shadow-2xl text-white"
+      >
+        {/* Header with Switch */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-zinc-900 rounded-xl flex items-center justify-center">
+              <ShieldCheck size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">Binance API</h2>
+              <p className="text-sm text-zinc-500">{isDemo ? 'Demo Trading' : 'Live Trading'}</p>
+            </div>
+          </div>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-[9px] uppercase tracking-tighter text-zinc-500 font-bold">Demo</span>
+            <Switch 
+              checked={isDemo} 
+              onCheckedChange={setIsDemo} 
+            />
+          </div>
+        </div>
+
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1">API Key</label>
+            <input 
+              type="text" 
+              value={apiKey}
+              onChange={(e)=> setApiKey(e.target.value)}
+              placeholder="Enter your API Key"
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1">Secret Key</label>
+            <input 
+              value={apiSecret}
+              onChange={(e)=> setApiSecret(e.target.value)}
+              type="password" 
+              placeholder="Enter your API Secret"
+              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
+            />
+          </div>
+
+          {/* IP Address - HIDDEN IF DEMO */}
+          {!isDemo && (
+            <div className="space-y-2">
+              <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1 flex items-center gap-2">
+                Public IPv4 address
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="outline-none">
+                      <Info size={13} className="text-zinc-600 hover:text-zinc-300 transition-colors" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Copy this IP to Binance's IP restriction setting.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </label>
+              <div 
+                onClick={()=> navigator.clipboard.writeText("43.204.237.247")} 
+                className="w-full flex justify-between items-center bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm cursor-pointer hover:border-zinc-700 transition-colors"
+              >
+                <span className="text-zinc-400">43.204.237.247</span>
+                <Copy size={16} className="text-zinc-500" />
+              </div>
+            </div>
+          )}
+
+          <div className="pt-4 flex gap-3">
+            <button 
+              onClick={() => setIsModalOpen(false)}
+              className="flex-1 px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleBinance}
+              disabled={loading}
+              className="flex-1 flex items-center justify-center bg-zinc-100 text-zinc-950 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-white transition-all active:scale-95"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : "Connect"}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  )}
+</AnimatePresence>
+    </div>
+  )
+}
