@@ -88,7 +88,7 @@ export default function Dashboard() {
           key={totalPnl} // Animation triggers on value change
           className="space-y-1"
         >
-          <h1 className="text-6xl font-normal tracking-tighter text-[#e8e8e3] animate-pulse">
+          <h1 className="text-6xl font-normal tracking-tighter text-[#e8e8e3] ">
             ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2 }).format(totalPnl)}
           </h1>
           
@@ -107,12 +107,12 @@ export default function Dashboard() {
       <div className="w-full max-w-2xl mx-auto p-6 pb-12">
         <div className="relative bg-[#202222] rounded-[32px] p-4 shadow-2xl transition-all">
           <textarea
-            ref={textareaRef}
-            placeholder="Search Crypto to Trade"
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            className="w-full  resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 py-2 px-3 text-[17px] text-[#e8e8e3] placeholder:text-[#8a8a88]"
-          />
+  ref={textareaRef}
+  placeholder="Search Crypto to Trade"
+  value={prompt}
+  onChange={(e) => setPrompt(e.target.value)}
+  className="w-full resize-none bg-transparent border-none outline-none focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 py-2 px-3 text-[17px] text-[#e8e8e3] placeholder:text-[#8a8a88]"
+/>
 
           <div className="flex items-center justify-end mt-2">
             
