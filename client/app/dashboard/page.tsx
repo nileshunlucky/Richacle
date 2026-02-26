@@ -22,7 +22,7 @@ const TradingViewWidget = memo(function TradingViewWidget() {
       script.type = "text/javascript";
       script.async = true;
       script.innerHTML = JSON.stringify({
-        symbols: [["Ethereum", "BINANCE:ETHUSDT|1M"]],
+        symbols: [["Bitcoin", "BINANCE:BTCUSDT|1M"]],
         chartOnly: false,
         width: "100%",
         height: "300",
@@ -56,6 +56,8 @@ const TradingViewWidget = memo(function TradingViewWidget() {
     </div>
   );
 });
+
+
 
 export default function Dashboard() {
   const [email, setEmail] = useState("");
@@ -271,7 +273,11 @@ export default function Dashboard() {
             </div>
             <div className="flex items-center justify-between">
             <p>78% Confident</p>
+
+             <div className="flex items-center gap-1">
+             <img className="w-5 h-5" src="/logo.png" alt="logo"/>
             <h1 className="theseason">RICHACLE</h1>
+            </div>
             </div>
               <AnimatePresence>
                 {showChart && (
