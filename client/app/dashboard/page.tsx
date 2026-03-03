@@ -304,7 +304,7 @@ export default function Dashboard() {
     <span className="font-bold text-[#39fbff]">BUY</span>
   </button>
 
-  <button className="flex flex-col items-center p-2 rounded-[22px] bg-red-600/20 border border-red-600 active:scale-95 transition-transform">
+  <button className="flex flex-col items-center p-2 rounded-[22px] bg-red-600/20 border border-red-600 active:scale-95 transition-transform"> 
     <span className="text-xs font-bold text-red-500 mb-1">Stop Loss</span>
     <span className=" font-semibold">92220</span>
   </button>
