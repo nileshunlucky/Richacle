@@ -49,14 +49,9 @@ def save_referral(email: str = Form(...)):
     if user:
         return {"message": "User already exists"}
 
-    # 3. If user doesn't exist, insert as new user and give 3 aura
+    # 3. If user doesn't exist, insert as new user
     user_data = {
         "email": email,
-        "credits": 3,
-        "backtest": 10,
-        "copilot": 100,
-        "plan": "FREE",
-        "active": False,
     }
 
     users_collection.insert_one(user_data)
