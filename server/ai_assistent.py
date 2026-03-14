@@ -6,11 +6,15 @@ from openai import OpenAI
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from db import users_collection
+from cryptography.fernet import Fernet
 
 load_dotenv()
 
 router = APIRouter()
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+MASTER_KEY = os.getenv("MASTER_KEY")
+fernet = Fernet(MASTER_KEY)
 
 # Initialize Binance via CCXT
 exchange = ccxt.binance()
@@ -53,7 +57,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
     try:
         # STEP 1: AI Symbol Extraction (Handles typos like "btcoin" -> "BTC/USDT")
         extraction_msg = [
-            {"role": "system", "content": "Extract the crypto trading pair from the user prompt. Return ONLY the symbol in BASE/USDT format. Example: 'BTC/USDT'. If mention of a coin is vague, default to 'BTC/USDT'."},
+            {"role": "system", "content": "Extract the crypto trading pair from the user prompt. Return ONLY the symbol in BASE/USDT format. Example: 'BTC/USDT'. If mention of a coin is vague, default to 'BTC/USDT' and its 1min timeframe remember give accurate tp and sl."},
             {"role": "user", "content": prompt}
         ]
         
@@ -111,3 +115,100 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         print(traceback.format_exc())
         # Generic error handling
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/api/execute-trade")
+async def execute_trade(
+    email: str = Form(...),
+    symbol: str = Form(...),
+    side: str = Form(...), 
+    leverage: int = Form(...),
+    amount: float = Form(...), 
+    tp: float = Form(...),
+    sl: float = Form(...),
+):
+    # 1. Get Keys from DB
+    user = users_collection.find_one({"email": email})
+    if not user: raise HTTPException(status_code=404, detail="User not found")
+
+    binance_data = user.get("binance", {})
+    api_key = binance_data.get("apiKey")
+    encrypted_secret = binance_data.get("apiSecret")
+    is_demo = binance_data.get("demo", False)
+
+    if not api_key or not encrypted_secret:
+        raise HTTPException(status_code=400, detail="Binance API keys missing.")
+
+    # Decrypt the secret
+    try:
+        decrypted_secret = fernet.decrypt(encrypted_secret.encode()).decode()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to decrypt API secret.")
+
+    # 2. Initialize Private Exchange
+    client = ccxt.binance({
+        'apiKey': api_key,
+        'secret': decrypted_secret, # Use the decrypted variable!
+        'options': {'defaultType': 'future'}
+    })
+    
+    if is_demo:
+        client.set_sandbox_mode(True)
+
+    try:
+        # Load markets to get precision rules (CRITICAL for Binance)
+        await client.load_markets()
+        
+        # 3. Setup Leverage
+        formatted_symbol = symbol.upper() # Ensure it's BTC/USDT
+        await client.set_leverage(leverage, formatted_symbol)
+
+        # 4. Calculate Quantity with Correct Precision
+        price = await get_live_price(symbol)
+        if not price: raise Exception("Could not fetch live price for calculation")
+        
+        raw_quantity = (amount * leverage) / price
+        # Use CCXT helper to round to the exchange's required decimal places
+        quantity = float(client.amount_to_precision(formatted_symbol, raw_quantity))
+        
+        # 5. Execute Market Order (Side MUST be lowercase)
+        order_side = 'buy' if side.upper() == "BUY" else 'sell'
+        main_order = await client.create_market_order(formatted_symbol, order_side, quantity)
+
+        # 6. Set Take Profit & Stop Loss (Exit sides are opposite)
+        exit_side = 'sell' if order_side == 'buy' else 'buy'
+        
+        # Round TP/SL to correct price precision
+        tp_price = float(client.price_to_precision(formatted_symbol, tp))
+        sl_price = float(client.price_to_precision(formatted_symbol, sl))
+
+        # Take Profit
+        tp_order = await client.create_order(
+            symbol=formatted_symbol,
+            type='TAKE_PROFIT_MARKET',
+            side=exit_side,
+            amount=quantity,
+            params={'stopPrice': tp_price, 'reduceOnly': True}
+        )
+
+        # Stop Loss
+        sl_order = await client.create_order(
+            symbol=formatted_symbol,
+            type='STOP_MARKET',
+            side=exit_side,
+            amount=quantity,
+            params={'stopPrice': sl_price, 'reduceOnly': True}
+        )
+
+        return {
+            "status": "success",
+            "message": f"Trade executed on {'Demo' if is_demo else 'Real'} Account",
+            "orderId": main_order['id'],
+            "tpId": tp_order['id'],
+            "slId": sl_order['id']
+        }
+
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=400, detail=f"Binance Error: {str(e)}")
+    finally:
+        await client.close() # Clean up connection
