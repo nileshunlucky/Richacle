@@ -58,6 +58,10 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
             "status": "success",
             "data": prediction_data.dict()
         }
+    
+    # ADD THIS: Catch the 403 specifically so it doesn't hit the generic Exception block
+    except HTTPException as he:
+        raise he
 
     except Exception as e:
         print(traceback.format_exc())

@@ -171,13 +171,13 @@ observer.observe(container.current);
 /**
  * INTERACTIVE TRADE WIDGET COMPONENT (Exact UI preserved)
  */
-const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onPriceChange, price }) {
-  const [side, setSide] = useState("BUY"); 
-  const [amount, setAmount] = useState("1");
-  const [symbol, setSymbol] = useState("BTC/USDT");
-  const [leverage, setLeverage] = useState("1");
-  const [tp, setTp] = useState("71271.43");
-  const [sl, setSl] = useState("71270.43");
+const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onPriceChange, price , initialData}) {
+  const [side, setSide] = useState(initialData?.side || "buy"); 
+  const [amount, setAmount] = useState("100");
+  const [symbol, setSymbol] = useState(initialData?.symbol || "BTC/USDT");
+  const [leverage, setLeverage] = useState(initialData?.leverage?.toString() || "10");
+  const [tp, setTp] = useState(initialData?.take_profit?.toString() || "");
+  const [sl, setSl] = useState(initialData?.stop_loss?.toString() || "");
   const [fixedPrice, setFixedPrice] = useState(null);
   
 
@@ -384,35 +384,45 @@ export default function VibeTradingUI() {
   }, [messages, isSearching]);
 
 const handleSend = async () => {
-  if (!prompt.trim() || isSearching) return;
+  if (!prompt.trim() || isSearching || !email) return;
 
   const currentPrompt = prompt;
-
-  // 1. Add User Message to UI
   setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
   setPrompt("");
   setIsSearching(true);
 
   try {
-    // 2. Prepare FormData
     const formData = new FormData();
     formData.append("email", email);
     formData.append("prompt", currentPrompt);
 
-    // 3. Fetch from API
-    const response = await fetch("/api/search", {
+    const response = await fetch("https://api.richacle.com/api/search", {
       method: "POST",
       body: formData,
     });
 
-    if (!response.ok) {
-      toast.error("Failed to fetch prediction");
+    // 1. Handle Credits Exhausted
+    if (response.status === 403) {
+      setIsSearching(false);
+      setIsPricingOpen(true); // Open pricing component
+      setMessages(prev => [...prev, { 
+        role: "ai", 
+        content: "You've run out of credits. Please upgrade your plan to continue trading." 
+      }]);
+      return;
     }
 
-    const result = await response.json();
-    const aiData = result.data; // This matches your FastAPI return { "data": ... }
+    // 2. Handle Other Server Errors (404, 500, etc.)
+    if (!response.ok) {
+      setIsSearching(false);
+      toast.error("Failed to fetch prediction");
+      return; // STOP execution here
+    }
 
-    // 4. Update UI with AI Response
+    // 3. Process Successful Response
+    const result = await response.json();
+    const aiData = result.data; 
+
     setIsSearching(false);
     setMessages((prev) => [
       ...prev,
@@ -421,18 +431,24 @@ const handleSend = async () => {
         content: (
           <div className="space-y-2">
             <div className="p-3.5 text-zinc-200 border-l-2 border-blue-500/50 bg-blue-500/5">
-              {aiData.research_summary}
+              {aiData?.research_summary}
             </div>
           </div>
         ),
       },
+      {
+        role: "ai",
+        content: (
+          <TradeWidget
+            initialData={aiData}
+            onPriceChange={setActiveLines}
+            onReset={handleReset}
+            onAccept={handleAccept}
+          />
+        ),
+      },
     ]);
 
-    setSymbol(aiData.symbol)
-    setSide(aiData.side)
-    setLeverage(aiData.leverage)
-    setTp(aiData.take_profit)
-    setSl(aiData.stop_loss)
   } catch (error) {
     console.error("Error:", error);
     setIsSearching(false);
