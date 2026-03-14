@@ -386,9 +386,9 @@ const handleAccept = async (tradeParams) => {
             <div className="text-sm text-green-400 font-bold flex items-center gap-2">
               <Check size={16}/> ORDER PLACED SUCCESSFULLY
             </div>
-            <button onClick={handleReset} className=" text-left text-sm text-zinc-300 hover:opacity-100">
+            <button className=" text-left text-sm text-zinc-300 hover:opacity-100">
               Order ID: {result.orderId.substring(0,10)}... <br/> 
-              Click here to <span className="underline text-zinc-100 cursor-pointer">clear chat.</span>
+              Click here to <span onClick={() => handleCloseOrder(tradeParams.symbol)} className="underline text-zinc-100 cursor-pointer">close position now.</span>
             </button>
           </motion.div>
         )
@@ -411,6 +411,54 @@ const handleAccept = async (tradeParams) => {
     setIsExecuted(false);
     setActiveLines(null);
   };
+
+  // Inside VibeTradingUI component
+const handleCloseOrder = async (symbol) => {
+  setIsTrading(true); // Re-use the trading loading state
+  
+  try {
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("symbol", symbol);
+
+    const response = await fetch("https://api.richacle.com/api/close-position", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "Failed to close position");
+    }
+
+    toast.success(`Position closed: ${symbol}`);
+    
+    // Add a "Closed" message to the chat
+    setMessages(prev => [
+      ...prev,
+      {
+        role: "ai",
+        content: (
+          <div className="p-4 text-xs text-zinc-500 italic">
+            Position for {symbol} has been liquidated/closed.
+          </div>
+        )
+      }
+    ]);
+
+    // Cleanup: Reset UI states so user can search again
+    setTimeout(() => {
+      handleReset();
+    }, 2000);
+
+  } catch (error) {
+    console.error("Close Error:", error);
+    toast.error(error.message);
+  } finally {
+    setIsTrading(false);
+  }
+};
 
   useEffect(() => {
     if (textareaRef.current) {

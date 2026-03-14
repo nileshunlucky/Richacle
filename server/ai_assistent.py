@@ -217,3 +217,69 @@ async def execute_trade(
         raise HTTPException(status_code=400, detail=f"Binance Error: {str(e)}")
     finally:
         await client.close() # Clean up connection
+
+@router.post("/api/close-position")
+async def close_position(email: str = Form(...), symbol: str = Form(...)):
+    # 1. Get User Keys
+    user = users_collection.find_one({"email": email})
+    if not user: raise HTTPException(status_code=404, detail="User not found")
+
+    binance_data = user.get("binance", {})
+    api_key = binance_data.get("apiKey")
+    encrypted_secret = binance_data.get("apiSecret")
+    is_demo = binance_data.get("demo", False)
+
+    # Decrypt the secret
+    decrypted_secret = fernet.decrypt(encrypted_secret.encode()).decode()
+
+    # 2. Initialize Client
+    client = ccxt.binance({
+        'apiKey': api_key,
+        'secret': decrypted_secret,
+        'options': {'defaultType': 'future'}
+    })
+    if is_demo: client.enable_demo_trading(True)
+
+    try:
+        formatted_symbol = symbol.upper()
+        
+        # 3. Fetch current position to see how much we hold
+        # This returns an array of all positions; we filter for our symbol
+        balance = await client.fetch_balance()
+        positions = balance['info']['positions']
+        
+        # Binance internal symbol doesn't have the slash (BTC/USDT -> BTCUSDT)
+        binance_symbol = formatted_symbol.replace("/", "")
+        active_pos = next((p for p in positions if p['symbol'] == binance_symbol), None)
+
+        if not active_pos or float(active_pos['positionAmt']) == 0:
+            return {"status": "error", "message": f"No active position found for {formatted_symbol}"}
+
+        # Determine amount and direction
+        pos_amount = float(active_pos['positionAmt'])
+        side = 'sell' if pos_amount > 0 else 'buy'
+        abs_amount = abs(pos_amount)
+
+        # 4. CANCEL ALL OPEN ORDERS FIRST (TP/SL)
+        # Prevents "ghost" orders from triggering after the position is closed
+        await client.cancel_all_orders(formatted_symbol)
+
+        # 5. EXECUTE CLOSE ORDER
+        close_order = await client.create_market_order(
+            symbol=formatted_symbol,
+            side=side,
+            amount=abs_amount,
+            params={'reduceOnly': True}
+        )
+
+        return {
+            "status": "success",
+            "message": f"Closed {formatted_symbol} position of {abs_amount}",
+            "orderId": close_order['id']
+        }
+
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=400, detail=f"Close Error: {str(e)}")
+    finally:
+        await client.close()
