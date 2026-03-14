@@ -135,9 +135,6 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
   };
 
   fetchData(); 
-  const interval = setInterval(fetchData, 1000); 
-  
-  return () => clearInterval(interval);
 }, [email, apiKey, apiSecret]);
 
 

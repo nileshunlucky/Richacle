@@ -304,7 +304,14 @@ useEffect(() => {
           <button 
             onClick={() => {
     setFixedPrice(price); // Snapshots the live price right now
-    onAccept();           // Tells the parent to start the "Trading" state
+    onAccept({
+      symbol,
+      side,
+      leverage,
+      amount,
+      tp,
+      sl
+    });
   }}
             className="flex-1 flex items-center justify-center gap-2 p-2 bg-green-700 hover:bg-green-600 transition-colors text-white text-xs rounded-l cursor-pointer"
           >
@@ -343,26 +350,59 @@ export default function VibeTradingUI() {
     getUser();
   }, []);
 
-  const handleAccept = () => {
-    setIsTrading(true);
+  // Inside VibeTradingUI component
+const handleAccept = async (tradeParams) => {
+  setIsTrading(true);
+  
+  try {
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("symbol", tradeParams.symbol);
+    formData.append("side", tradeParams.side);
+    formData.append("leverage", tradeParams.leverage);
+    formData.append("amount", tradeParams.amount);
+    formData.append("tp", tradeParams.tp);
+    formData.append("sl", tradeParams.sl);
+
+    const response = await fetch("https://api.richacle.com/api/execute-trade", {
+      method: "POST",
+      body: formData,
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.detail || "Trade execution failed");
+    }
+
+    // Success state
     setIsExecuted(true);
-    setTimeout(() => {
-      setIsTrading(false);
-      setMessages(prev => [
-        ...prev,
-        {
-          role: "ai",
-          content: (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 flex flex-col gap-2">
-              <button onClick={handleReset} className=" text-left text-sm text-zinc-300 hover:opacity-100">
-                Your trade has been executed successfully, <br/> Click here to <span className="underline text-zinc-100 cursor-pointer">close order.</span>
-              </button>
-            </motion.div>
-          )
-        }
-      ]);
-    }, 2000);
-  };
+    setMessages(prev => [
+      ...prev,
+      {
+        role: "ai",
+        content: (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 flex flex-col gap-2">
+            <div className="text-sm text-green-400 font-bold flex items-center gap-2">
+              <Check size={16}/> ORDER PLACED SUCCESSFULLY
+            </div>
+            <button onClick={handleReset} className=" text-left text-sm text-zinc-300 hover:opacity-100">
+              Order ID: {result.orderId.substring(0,10)}... <br/> 
+              Click here to <span className="underline text-zinc-100 cursor-pointer">clear chat.</span>
+            </button>
+          </motion.div>
+        )
+      }
+    ]);
+  } catch (error) {
+    console.error("Trade Error:", error);
+    toast.error(error.message);
+    // Re-enable the widget so they can try again if it failed
+    setIsExecuted(false);
+  } finally {
+    setIsTrading(false);
+  }
+};
 
   const handleReset = () => {
     setMessages([]);

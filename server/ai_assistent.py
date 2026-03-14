@@ -1,6 +1,6 @@
 import os
 import traceback
-import ccxt
+import ccxt.async_support as ccxt
 from fastapi import APIRouter, Form, HTTPException
 from openai import OpenAI
 from pydantic import BaseModel, Field
@@ -31,7 +31,7 @@ async def get_live_price(symbol: str):
     """Fetches real-time price from Binance using CCXT."""
     try:
         # Clean symbol for CCXT (e.g., BTC/USDT)
-        ticker = exchange.fetch_ticker(symbol)
+        ticker = await exchange.fetch_ticker(symbol)
         return ticker['last']
     except Exception as e:
         print(f"CCXT Error fetching price for {symbol}: {e}")
