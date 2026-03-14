@@ -113,7 +113,6 @@ async def autocomplete(
                         "apiSecret": encrypted_secret,
                         "demo": isDemo
                     },
-                    "terminal": True
                 }
             }
         )

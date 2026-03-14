@@ -2,320 +2,552 @@
 
 import React, { useState, useEffect, useRef, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, ChevronLeft } from "lucide-react";
+import { 
+  ArrowUp, 
+  Terminal, 
+  Zap, 
+  Info, 
+  ChevronDown, 
+  Repeat2,
+  TrendingUp,
+  Check,
+} from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
-import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-// Bitcoin-only TradingView Symbol Overview Widget
-const TradingViewWidget = memo(function TradingViewWidget() {
-  const container = useRef<HTMLDivElement>(null);
+/**
+ * UTILITY: Conditional Classnames
+ */
+const cn = (...classes) => classes.filter(Boolean).join(" ");
+
+/**
+ * ADVANCED CHART: UI Kept Exactly Same, Updated with Real Binance Data
+ */
+const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate }) {
+  const container = useRef(null);
+  const chartInstance = useRef(null);
+  const seriesRef = useRef(null);
+  const wsRef = useRef(null); // Added for live updates
+  const activeLinesRef = useRef([]);
+  const tpFillRef = useRef(null);
+  const slFillRef = useRef(null);
+
+  const updateVisuals = (lines) => {
+    if (!seriesRef.current || !chartInstance.current || !window.LightweightCharts) return;
+
+    activeLinesRef.current.forEach(line => seriesRef.current.removePriceLine(line));
+    activeLinesRef.current = [];
+    if (tpFillRef.current) { chartInstance.current.removeSeries(tpFillRef.current); tpFillRef.current = null; }
+    if (slFillRef.current) { chartInstance.current.removeSeries(slFillRef.current); slFillRef.current = null; }
+
+    if (!lines) return;
+
+    const { entry, tp, sl, side } = lines;
+    const currentTime = Math.floor(Date.now() / 1000);
+
+    tpFillRef.current = chartInstance.current.addSeries(window.LightweightCharts.BaselineSeries, {
+      baseValue: { type: 'price', price: entry },
+      topFillColor1: 'rgba(0, 230, 118, 0.25)',
+      topFillColor2: 'rgba(0, 230, 118, 0.02)',
+      topLineColor: 'rgba(0, 230, 118, 0.4)',
+      bottomFillColor1: 'rgba(0,0,0,0)', bottomFillColor2: 'rgba(0,0,0,0)',
+      bottomLineColor: 'rgba(0,0,0,0)',
+      priceLineVisible: false, lastValueVisible: false,
+    });
+
+    slFillRef.current = chartInstance.current.addSeries(window.LightweightCharts.BaselineSeries, {
+      baseValue: { type: 'price', price: entry },
+      topFillColor1: 'rgba(0,0,0,0)', topFillColor2: 'rgba(0,0,0,0)',
+      topLineColor: 'rgba(0,0,0,0)',
+      bottomFillColor1: 'rgba(255, 23, 68, 0.25)',
+      bottomFillColor2: 'rgba(255, 23, 68, 0.02)',
+      bottomLineColor: 'rgba(255, 23, 68, 0.4)',
+      priceLineVisible: false, lastValueVisible: false,
+    });
+
+    const dataPoints = [{ time: currentTime - 100000, value: tp }, { time: currentTime + 100000, value: tp }];
+    const slDataPoints = [{ time: currentTime - 100000, value: sl }, { time: currentTime + 100000, value: sl }];
+
+    tpFillRef.current.setData(dataPoints);
+    slFillRef.current.setData(slDataPoints);
+
+    const eLine = seriesRef.current.createPriceLine({ 
+      price: entry, color: side === 'BUY' ? '#3b82f6' : '#FF1744', 
+      lineWidth: 2, lineStyle: 0, title: side.toUpperCase() 
+    });
+    const tLine = seriesRef.current.createPriceLine({ price: tp, color: '#00E676', lineWidth: 2, lineStyle: 0, title: 'TAKE PROFIT' });
+    const sLine = seriesRef.current.createPriceLine({ price: sl, color: '#FF1744', lineWidth: 2, lineStyle: 0, title: 'STOP LOSS' });
+
+    activeLinesRef.current = [eLine, tLine, sLine];
+  };
 
   useEffect(() => {
-    // 1. Use a timeout to ensure React has finished rendering the div to the DOM
-    const timeoutId = setTimeout(() => {
-      if (!container.current) return;
+    updateVisuals(tradeLines);
+  }, [tradeLines]);
 
-      container.current.innerHTML = ""; // Clear any old versions
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = "https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js";
+    script.async = true;
+    script.onload = () => {
+      if (!container.current || !window.LightweightCharts) return;
+      
+      const { createChart, CandlestickSeries } = window.LightweightCharts;
 
-      const script = document.createElement("script");
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js";
-      script.type = "text/javascript";
-      script.async = true;
-      script.innerHTML = JSON.stringify({
-        symbols: [["Bitcoin", "BINANCE:BTCUSDT|1M"]],
-        chartOnly: false,
-        width: "100%",
-        height: "300",
-        locale: "en",
-        colorTheme: "dark",
-        autosize: false,
-        showVolume: false,
-        hideDateRanges: false,
-        scalePosition: "right",
-        scaleMode: "Normal",
-        fontFamily: "-apple-system, BlinkMacSystemFont, Trebuchet MS, Roboto, Ubuntu, sans-serif",
-        fontSize: "10",
-        headerFontSize: "medium",
-        backgroundColor: "#191a1a",
-        widgetFontColor: "#DBDBDB",
-        lineWidth: 2,
-        lineType: 0,
-        isTransparent: true,
+      const chart = createChart(container.current, {
+        layout: { background: { color: "#000" }, textColor: "#DDD" },
+        grid: { vertLines: { color: "rgba(255,255,255,0.05)" }, horzLines: { color: "rgba(255,255,255,0.05)" } },
+        crosshair: {
+          horzLine: {
+            labelBackgroundColor: '#FFFFFF', // White background for price label
+            labelTextColor: '#000000',      // Black text for visibility
+          },
+        },
+        width: container.current.clientWidth,
+        height: container.current.clientHeight,
+        timeScale: { timeVisible: true, secondsVisible: false }
       });
 
-      container.current.appendChild(script);
-    }, 100); // 100ms delay is the "sweet spot" for TradingView widgets
+      const candleSeries = chart.addSeries(CandlestickSeries, {
+        upColor: "#00E676", downColor: "#FF1744", borderVisible: false, 
+        wickUpColor: "#00E676", wickDownColor: "#FF1744", 
+        priceLineColor: "#FFFFFF", // Current price line color
+      });
 
-    // 2. Clean up the timeout if the component unmounts
-    return () => clearTimeout(timeoutId);
-  }, []);
+      chartInstance.current = chart;
+      seriesRef.current = candleSeries;
+
+      if (tradeLines) updateVisuals(tradeLines);
+
+      // 1. Fetch Historical
+      fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=300`)
+        .then(res => res.json())
+        .then(raw => {
+          const data = raw.map(c => ({
+            time: c[0] / 1000, open: parseFloat(c[1]), high: parseFloat(c[2]), low: parseFloat(c[3]), close: parseFloat(c[4])
+          }));
+          candleSeries.setData(data);
+          chart.timeScale().fitContent();
+          
+
+          // 2. Start WebSocket for live movement
+          if (wsRef.current) wsRef.current.close();
+          const socket = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_1m`);
+          wsRef.current = socket;
+
+          socket.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            const k = msg.k;
+            if (onPriceUpdate) onPriceUpdate(parseFloat(k.c).toFixed(2));
+            candleSeries.update({
+              time: k.t / 1000,
+              open: parseFloat(k.o),
+              high: parseFloat(k.h),
+              low: parseFloat(k.l),
+              close: parseFloat(k.c),
+            });
+          };
+        });
+
+      const handleResize = () => chart.applyOptions({ width: container.current.clientWidth, height: container.current.clientHeight });
+      window.addEventListener('resize', handleResize);
+      const observer = new ResizeObserver(handleResize);
+observer.observe(container.current);
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, [onPriceUpdate]);
 
   return (
-    <div className="tradingview-widget-container w-full" ref={container} style={{ height: "300px" }}>
-      <div className="tradingview-widget-container__widget" style={{ height: "300px" }} />
+    <div className="flex-1 w-full bg-black relative overflow-hidden flex flex-col">    
+      <div className="flex-1" ref={container} />
     </div>
   );
 });
 
+/**
+ * INTERACTIVE TRADE WIDGET COMPONENT (Exact UI preserved)
+ */
+const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onPriceChange, price }) {
+  const [side, setSide] = useState("BUY"); 
+  const [amount, setAmount] = useState("1");
+  const [symbol, setSymbol] = useState("BTC/USDT");
+  const [leverage, setLeverage] = useState("1");
+  const [tp, setTp] = useState("71271.43");
+  const [sl, setSl] = useState("71270.43");
+  const [fixedPrice, setFixedPrice] = useState(null);
+  
 
+  // This determines what the user actually sees on the buttons
+const displayPrice = disabled && fixedPrice ? fixedPrice : price;
+const entry = parseFloat(displayPrice || 0);
+  
 
-export default function Dashboard() {
-  const [email, setEmail] = useState("");
-  const [totalPnl, setTotalPnl] = useState(0);
-  const [unrealizedPnl, setUnrealizedPnl] = useState(0);
-  const [apiKey, setApiKey] = useState("");
-  const [apiSecret, setApiSecret] = useState("");
+useEffect(() => {
+  if (onPriceChange) {
+    onPriceChange({ entry, tp: parseFloat(tp), sl: parseFloat(sl), side });
+  }
+}, [entry, tp, sl, side, onPriceChange, , disabled]);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 15 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={cn(
+        "bg-[#191b1b]/40 rounded-2xl p-4 space-y-4 border border-white/[0.05] shadow-2xl transition-opacity",
+        disabled && "opacity-10 pointer-events-none"
+      )}
+    >
+      <div className="grid grid-cols-2 rounded-xl overflow-hidden font-bold border border-white/5">
+        <button 
+          onClick={() => !disabled && setSide("SELL")}
+          className={cn(
+            "p-3 transition-all text-left border-r border-white/5",
+            side === "SELL" ? "bg-[#FF1744]/20 text-[#FF1744]" : "bg-[#2a2b2b] text-[#d1d1d1] opacity-50 hover:opacity-100"
+          )}
+        >
+          <span className="text-[10px] uppercase opacity-70 block mb-1">SELL</span>
+          <div className="text-xl tracking-tighter">{displayPrice}</div>
+        </button>
+        <button 
+          onClick={() => !disabled && setSide("BUY")}
+          className={cn(
+            "p-3 transition-all text-right",
+            side === "BUY" ? "bg-blue-500/20 text-blue-500" : "bg-[#2a2b2b] text-[#d1d1d1] opacity-50 hover:opacity-100"
+          )}
+        >
+          <span className="text-[10px] uppercase opacity-70 block mb-1">BUY</span>
+          <div className="text-xl tracking-tighter">{displayPrice}</div>
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 px-1">
+            Amount <ChevronDown size={12} />
+          </div>
+          <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20 transition-all">
+            <input 
+              disabled={disabled}
+              type="text" 
+              value={amount} 
+              onChange={(e) => setAmount(e.target.value)}
+              className="bg-transparent border-none outline-none text-white text-sm w-full p-0 focus:ring-0"
+            /> USDT
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Symbol</label>
+            <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+              <input 
+                disabled={true}
+                type="text" 
+                value={symbol} 
+                className="bg-transparent border-none outline-none font-medium text-white text-[13px] w-full p-0 focus:ring-0"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Leverage</label>
+            <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+              <input 
+                disabled={disabled}
+                type="text" 
+                value={leverage} 
+                onChange={(e) => setLeverage(e.target.value)}
+                className="bg-transparent border-none outline-none text-white text-[13px] w-full p-0 focus:ring-0"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <div className="space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[10px] uppercase text-white/30 px-1">
+                Take profit
+              </div>
+              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+                <input 
+                  disabled={disabled}
+                  type="text" 
+                  value={tp} 
+                  onChange={(e) => setTp(e.target.value)}
+                  className="bg-transparent border-none outline-none text-white text-xs w-full p-0 focus:ring-0"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-[10px] uppercase text-white/30 px-1">
+                Stop loss
+              </div>
+              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+                <input 
+                  disabled={disabled}
+                  type="text" 
+                  value={sl} 
+                  onChange={(e) => setSl(e.target.value)}
+                  className="bg-transparent border-none outline-none text-white text-xs w-full p-0 focus:ring-0"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      {!disabled && (
+        <div className="flex">
+          <button 
+            onClick={() => {
+    setFixedPrice(price); // Snapshots the live price right now
+    onAccept();           // Tells the parent to start the "Trading" state
+  }}
+            className="flex-1 flex items-center justify-center gap-2 p-2 bg-green-700 hover:bg-green-600 transition-colors text-white text-xs rounded-l cursor-pointer"
+          >
+            <Check size={14} /> accept
+          </button>
+          <button 
+            onClick={onReset}
+            className="flex-1 flex items-center justify-center gap-2 p-2 bg-red-700 hover:bg-red-600 transition-colors text-white text-xs rounded-r cursor-pointer"
+          >
+            x reject
+          </button>
+        </div>
+      )}
+    </motion.div>
+  );
+});
+
+export default function VibeTradingUI() {
   const [prompt, setPrompt] = useState("");
-  const [chatOpen, setChatOpen] = useState(false);
-  const [userMessage, setUserMessage] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [showChart, setShowChart] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [messages, setMessages] = useState([]);
+  const [isTrading, setIsTrading] = useState(false);
+  const [isExecuted, setIsExecuted] = useState(false);
+  const textareaRef = useRef(null);
+  const chatEndRef = useRef(null);
+  const [activeLines, setActiveLines] = useState(null);
+  const [showAgent, setShowAgent] = useState(true);
+  const [currentPrice, setCurrentPrice] = useState(null);
+    const [email, setEmail] = useState("");
 
-  useEffect(() => {
+      useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email) setEmail(session.user.email);
+      setEmail(session?.user?.email || "");
     };
     getUser();
   }, []);
 
-  useEffect(() => {
-    if (!email) return;
-    const fetchKeys = async () => {
-      try {
-        const res = await fetch(`https://api.richacle.com/user/${email}`);
-        const data = await res.json();
-        setApiKey(data?.binance?.apiKey);
-        setApiSecret(data?.binance?.apiSecret);
-      } catch (err) {
-        console.error("Error fetching keys:", err);
-      }
-    };
-    fetchKeys();
-  }, [email]);
+  const handleAccept = () => {
+    setIsTrading(true);
+    setIsExecuted(true);
+    setTimeout(() => {
+      setIsTrading(false);
+      setMessages(prev => [
+        ...prev,
+        {
+          role: "ai",
+          content: (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 flex flex-col gap-2">
+              <button onClick={handleReset} className=" text-left text-sm text-zinc-300 hover:opacity-100">
+                Your trade has been executed successfully, <br/> Click here to <span className="underline text-zinc-100 cursor-pointer">close order.</span>
+              </button>
+            </motion.div>
+          )
+        }
+      ]);
+    }, 2000);
+  };
 
-  useEffect(() => {
-    if (!email || !apiKey || !apiSecret) return;
-    const fetchPnL = async () => {
-      try {
-        const form = new FormData();
-        form.append("email", email);
-        const res = await fetch("https://api.richacle.com/api/balance", {
-          method: "POST",
-          body: form,
-        });
-        const data = await res.json();
-        setTotalPnl(data?.equity || 0);
-        setUnrealizedPnl(data?.unrealized_pnl || 0);
-      } catch (error) {
-        console.error("PnL Fetch Error:", error);
-      }
-    };
-    fetchPnL();
-  }, [email, apiKey, apiSecret]);
+  const handleReset = () => {
+    setMessages([]);
+    setIsSearching(false);
+    setPrompt("");
+    setIsExecuted(false);
+    setActiveLines(null);
+  };
 
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = "inherit";
+      textareaRef.current.style.height = "auto";
       textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
     }
   }, [prompt]);
 
-  const handleSend = () => {
-    if (!prompt.trim()) return;
-    setUserMessage(prompt);
-    setPrompt("");
-    setChatOpen(true);
-    setIsSearching(true);
-    setShowChart(false);
-
-    setTimeout(() => {
-      setShowChart(true);
-      setIsSearching(false);
-    }, 1500);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
-
-  const handleClose = () => {
-    setChatOpen(false);
-    setUserMessage("");
-    setIsSearching(false);
-    setShowChart(false);
-  };
-
-  const TradingViewNews = memo(function TradingViewNews() {
-  const container = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (!container.current) return;
-      container.current.innerHTML = "";
-      const script = document.createElement("script");
-      script.src = "https://s3.tradingview.com/external-embedding/embed-widget-timeline.js";
-      script.type = "text/javascript";
-      script.async = true;
-      script.innerHTML = JSON.stringify({
-        displayMode: "regular",
-        feedMode: "symbol",
-        symbol: "BITSTAMP:BTCUSD",
-        colorTheme: "dark",
-        isTransparent: true, // Set to true to match your premium UI
-        locale: "en",
-        width: "100%", // Changed to 100% for mobile responsiveness
-        height: "550"
-      });
-      container.current.appendChild(script);
-    }, 200);
-    return () => clearTimeout(timeoutId);
-  }, []);
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isSearching]);
 
-  return (
-    <div className="tradingview-widget-container w-full rounded-[24px] overflow-hidden" ref={container}>
-      <div className="tradingview-widget-container__widget"></div>
-    </div>
-  );
-});
+const handleSend = async () => {
+  if (!prompt.trim() || isSearching) return;
 
-  return (
-    <div className="flex flex-col min-h-screen bg-[#191a1a] text-white font-sans selection:bg-cyan-500/30">
-      
-      <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          key="pnl-container"
-          className="space-y-1"
-        >
-          <h1 className="text-6xl font-normal tracking-tighter text-[#e8e8e3]">
-            ${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2 }).format(totalPnl)}
-          </h1>
-          <div className="flex items-center justify-center gap-2">
-            <span className="text-xl font-medium transition-colors duration-500 text-[#39fbff]">
-              {unrealizedPnl >= 0 ? "+" : ""}${unrealizedPnl.toFixed(2)}
-            </span>
+  const currentPrompt = prompt;
+
+  // 1. Add User Message to UI
+  setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
+  setPrompt("");
+  setIsSearching(true);
+
+  try {
+    // 2. Prepare FormData
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("prompt", currentPrompt);
+
+    // 3. Fetch from API
+    const response = await fetch("/api/search", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!response.ok) {
+      toast.error("Failed to fetch prediction");
+    }
+
+    const result = await response.json();
+    const aiData = result.data; // This matches your FastAPI return { "data": ... }
+
+    // 4. Update UI with AI Response
+    setIsSearching(false);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "ai",
+        content: (
+          <div className="space-y-2">
+            <div className="p-3.5 text-zinc-200 border-l-2 border-blue-500/50 bg-blue-500/5">
+              {aiData.research_summary}
+            </div>
           </div>
-        </motion.div>
-      </main>
+        ),
+      },
+    ]);
 
-      <AnimatePresence>
-        {!chatOpen && (
-          <motion.div
-            key="input-bar"
-            initial={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            className="w-full max-w-2xl mx-auto p-6 pb-12"
-          >
-            <div className="relative bg-[#202222] rounded-[32px] p-4 shadow-2xl">
-              <textarea
-                ref={textareaRef}
-                placeholder="Search Crypto to Trade"
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyDown={handleKeyDown}
-                rows={1}
-                className="w-full resize-none bg-transparent border-none outline-none focus:ring-0 py-2 px-3 text-[17px] text-[#e8e8e3] placeholder:text-[#8a8a88]"
-              />
-              <div className="flex items-center justify-end mt-2">
-                <button
-                  onClick={handleSend}
-                  className={cn(
-                    "h-10 w-10 flex items-center justify-center rounded-full transition-all",
-                    prompt.trim() ? "bg-white text-black" : "bg-[#39fbff] text-black"
-                  )}
-                >
-                  <ArrowUp size={20} />
-                </button>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    setSymbol(aiData.symbol)
+    setSide(aiData.side)
+    setLeverage(aiData.leverage)
+    setTp(aiData.take_profit)
+    setSl(aiData.stop_loss)
+  } catch (error) {
+    console.error("Error:", error);
+    setIsSearching(false);
+    setMessages((prev) => [
+      ...prev,
+      { role: "ai", content: "Error: Could not connect to the research engine." },
+    ]);
+  }
+};
 
-      <AnimatePresence>
-        {chatOpen && (
-          <motion.div
-            key="chatbot"
-            initial={{ opacity: 0, y: "100%" }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: "100%" }}
-            transition={{ duration: 0.45, ease: [0.32, 0.72, 0, 1] }}
-            className="fixed inset-0 z-50 bg-[#191a1a] flex flex-col md:mx-auto h-screen md:w-[35%]"
-          >
-            <div className="flex items-center px-5 pt-5 pb-3">
-              <button onClick={handleClose} className="h-9 w-9 flex items-center justify-center rounded-full bg-[#2a2b2b] text-[#8a8a88]">
-                <ChevronLeft size={18} />
-              </button>
-              <span className="ml-3 text-sm text-[#8a8a88]">Close</span>
-            </div>
+  return (
+    <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
+      
+      {/* LEFT SIDE: 70% (Exactly as you wanted it) */}
+      <div className="flex-[7] flex flex-col min-w-0">
+        <AdvancedChart tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
+      </div>
 
-            <div className="flex-1 flex flex-col gap-5 overflow-y-auto px-5 py-2 pb-10">
-              <div className="flex justify-end">
-                <div className="max-w-[75%] bg-[#2a2b2b] text-[#e8e8e3] px-5 py-3.5 rounded-[22px]">
-                  {userMessage}
+      <button 
+  onClick={() => setShowAgent(!showAgent)}
+  className="md:hidden fixed bottom-2 right-6 z-45 p-2 px-3 bg-black text-white border rounded-xl transition-transform"
+>
+  {showAgent ? "chart" : "agent"}
+</button>
+
+      {/* RIGHT SIDE: 30% (Exactly as you wanted it) */}
+  <div className={cn(
+  "flex-[3] flex flex-col bg-black min-w-[320px] max-w-[450px] border-l border-white/5 transition-all",
+  // Mobile logic: Cover screen if shown, hide if not
+  !showAgent ? "hidden md:flex" : "fixed inset-0 z-40 md:relative md:inset-auto"
+)}>
+        <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
+          <AnimatePresence>
+            {messages.map((msg, i) => (
+              <motion.div 
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                key={i} 
+                className={cn("flex flex-col gap-2", msg.role === "user" ? "items-end" : "items-start")}
+              >
+                {typeof msg.content === 'string' ? (
+                  <div className={cn(
+                    "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg rounded-tr-none",
+                    msg.role === "user" ? "bg-[#2a2b2b] text-white" : "bg-transparent text-[#d1d1d1] border-l-2 border-white/20 pl-4"
+                  )}>
+                    {msg.content}
+                  </div>
+                ) : (
+                  <div className="w-full">
+                    {React.isValidElement(msg.content) && msg.content.type === TradeWidget 
+                      ? React.cloneElement(msg.content, { disabled: isTrading || isExecuted, onAccept: handleAccept, price: currentPrice }) 
+                      : msg.content}
+                  </div>
+                )}
+              </motion.div>
+            ))}
+            
+            {isSearching && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
+                <span className="uppercase text-white/40 animate-pulse">RESEARCHING</span>
+              </motion.div>
+            )}
+
+            {isTrading && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
+                <span className="uppercase text-white/40 animate-pulse">TRADING</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <div ref={chatEndRef} />
+        </div>
+
+        <AnimatePresence>
+          {(!isSearching && messages.length === 0) && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              className="p-4 mb-10"
+            >
+              <div className="relative bg-[#0d0d0d] rounded-2xl border border-white/10 p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
+                <textarea
+                  ref={textareaRef}
+                  rows={2}
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
+                  placeholder="Ask Richacle"
+                  className="w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none placeholder:text-white/50 text-white font-medium"
+                />
+                
+                <div className="flex justify-between items-center mt-auto">
+                  <span className="text-[11px] font-bold text-white/70 tracking-widest uppercase">
+                    GPT 5.1
+                  </span>
+                  <button 
+                    onClick={handleSend}
+                    disabled={!prompt.trim() || isSearching}
+                    className="p-1.5 bg-white text-black rounded-full hover:opacity-80 transition-all active:scale-90 shadow-xl"
+                  >
+                    <ArrowUp size={16} strokeWidth={2.5} />
+                  </button>
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-              {isSearching && (
-                <span className="text-[#8a8a88] text-[13px] font-semibold animate-pulse">RESEARCHING</span>
-              )}
-
-
-             <div className="flex gap-2">
-              
-            <h1 className="md:text-2xl">Bitcoin Cracks $65,000 Support as Trump’s Tariff Broadside Knocks Risk Assets</h1>
-            </div>
-            <div className="flex items-center justify-between">
-            <p>78% Confident</p>
-
-             <div className="flex items-center gap-1">
-             <img className="w-5 h-5" src="/logo.png" alt="logo"/>
-            <h1 className="theseason">RICHACLE</h1>
-            </div>
-            </div>
-              <AnimatePresence>
-                {showChart && (
-                  <motion.div
-                    key="chart"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="w-full rounded-[20px] overflow-hidden border border-white/[0.06] flex-shrink-0"
-                    style={{ height: "300px" }} // Explicit height
-                  >
-                    <TradingViewWidget />
-                  </motion.div>
-                )}
-
-              </AnimatePresence>
-                {/* ADD THIS IMMEDIATELY AFTER THE TRADINGVIEW WIDGET DIV */}
-<div className="grid grid-cols-3 gap-3 ">
-  <button className="flex flex-col items-center p-2 rounded-[22px] bg-green-600/20 border border-green-600 active:scale-95 transition-transform">
-    <span className="text-xs font-bold text-green-500 mb-1">Take Profit</span>
-    <span className=" font-semibold">92289</span>
-  </button>
-
-  <button className="flex justify-center items-center p-2 rounded-[22px] bg-[#39fbff]/10 border border-[#39fbff] active:scale-95 transition-transform">
-    <span className="font-bold text-[#39fbff]">BUY</span>
-  </button>
-
-  <button className="flex flex-col items-center p-2 rounded-[22px] bg-red-600/20 border border-red-600 active:scale-95 transition-transform"> 
-    <span className="text-xs font-bold text-red-500 mb-1">Stop Loss</span>
-    <span className=" font-semibold">92220</span>
-  </button>
-</div>
-
-
-              
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <style dangerouslySetInnerHTML={{ __html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+      `}} />
     </div>
   );
 }
