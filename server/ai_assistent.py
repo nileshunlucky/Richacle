@@ -57,7 +57,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
     try:
         # STEP 1: AI Symbol Extraction (Handles typos like "btcoin" -> "BTC/USDT")
         extraction_msg = [
-            {"role": "system", "content": "Extract the crypto trading pair from the user prompt. Return ONLY the symbol in BASE/USDT format. Example: 'BTC/USDT'. If mention of a coin is vague, default to 'BTC/USDT' and its 1min timeframe remember give accurate tp and sl."},
+            {"role": "system", "content": "Extract the crypto trading pair from the user prompt. Return ONLY the symbol in BASE/USDT format. Example: 'BTC/USDT'. If mention of a coin is vague, default to 'BTC/USDT' and its 1min timeframe remember give accurate takeprofit and stoploss. if Buy then takeprofit: To be upper than the current price. if sell then takeprofit: To be lower than the current price.and stoploss. if buy then Stop Loss: To be lower than the current price. if sell then Stop Loss: To be upper than the current price."},
             {"role": "user", "content": prompt}
         ]
         
@@ -181,13 +181,18 @@ async def execute_trade(
         tp_price = float(client.price_to_precision(formatted_symbol, tp))
         sl_price = float(client.price_to_precision(formatted_symbol, sl))
 
+        common_params = {
+            'reduceOnly': True,
+            'workingType': 'MARK_PRICE' # <--- Adds stability
+        }
+
         # Take Profit
         tp_order = await client.create_order(
             symbol=formatted_symbol,
             type='TAKE_PROFIT_MARKET',
             side=exit_side,
             amount=quantity,
-            params={'stopPrice': tp_price, 'reduceOnly': True}
+            params={**common_params,'stopPrice': tp_price}
         )
 
         # Stop Loss
@@ -196,7 +201,7 @@ async def execute_trade(
             type='STOP_MARKET',
             side=exit_side,
             amount=quantity,
-            params={'stopPrice': sl_price, 'reduceOnly': True}
+            params={**common_params,'stopPrice': sl_price}
         )
 
         return {
