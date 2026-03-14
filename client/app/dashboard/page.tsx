@@ -404,7 +404,6 @@ const handleSend = async () => {
     // 1. Handle Credits Exhausted
     if (response.status === 403) {
       setIsSearching(false);
-      setIsPricingOpen(true); // Open pricing component
       setMessages(prev => [...prev, { 
         role: "ai", 
         content: "You've run out of credits. Please upgrade your plan to continue trading." 
@@ -430,7 +429,7 @@ const handleSend = async () => {
         role: "ai",
         content: (
           <div className="space-y-2">
-            <div className="p-3.5 text-zinc-200 border-l-2 border-blue-500/50 bg-blue-500/5">
+            <div className="p-3.5 text-zinc-200">
               {aiData?.research_summary}
             </div>
           </div>
@@ -476,7 +475,7 @@ const handleSend = async () => {
 
       {/* RIGHT SIDE: 30% (Exactly as you wanted it) */}
   <div className={cn(
-  "flex-[3] flex flex-col bg-black min-w-[320px] max-w-[450px] border-l border-white/5 transition-all",
+  "flex-[3] flex flex-col bg-black min-w-[320px] max-w-[450px]  transition-all",
   // Mobile logic: Cover screen if shown, hide if not
   !showAgent ? "hidden md:flex" : "fixed inset-0 z-40 md:relative md:inset-auto"
 )}>
@@ -492,7 +491,7 @@ const handleSend = async () => {
                 {typeof msg.content === 'string' ? (
                   <div className={cn(
                     "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg rounded-tr-none",
-                    msg.role === "user" ? "bg-[#2a2b2b] text-white" : "bg-transparent text-[#d1d1d1] border-l-2 border-white/20 pl-4"
+                    msg.role === "user" ? "bg-[#2a2b2b] text-white" : "bg-transparent text-[#d1d1d1] pl-4"
                   )}>
                     {msg.content}
                   </div>
