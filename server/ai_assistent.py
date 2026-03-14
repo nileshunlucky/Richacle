@@ -152,7 +152,7 @@ async def execute_trade(
     })
     
     if is_demo:
-        client.set_sandbox_mode(True)
+        client.enable_demo_trading(True)
 
     try:
         # Load markets to get precision rules (CRITICAL for Binance)
