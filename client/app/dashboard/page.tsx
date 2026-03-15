@@ -708,9 +708,13 @@ const handleSend = async () => {
                   </div>
                 ) : (
                   <div className="w-full">
-                    {React.isValidElement(msg.content) && msg.content.type === TradeWidget 
-                      ? React.cloneElement(msg.content, { disabled: isTrading || isExecuted, onAccept: handleAccept, price: currentPrice || "0.00" }) 
-                      : msg.content}
+                      {React.isValidElement(msg.content) && msg.content.type === TradeWidget 
+  ? React.cloneElement(msg.content as React.ReactElement<TradeWidgetProps>, { 
+      disabled: isTrading || isExecuted, 
+      onAccept: handleAccept, 
+      price: currentPrice || "0.00" 
+    }) 
+  : msg.content}
                   </div>
                 )}
               </motion.div>
