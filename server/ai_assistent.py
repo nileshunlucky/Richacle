@@ -242,44 +242,33 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
 
     try:
         formatted_symbol = symbol.upper()
+        binance_symbol = formatted_symbol.replace("/", "")
         
-        # 3. Fetch current position to see how much we hold
-        # This returns an array of all positions; we filter for our symbol
+        # 1. Fetch Position
         balance = await client.fetch_balance()
         positions = balance['info']['positions']
-        
-        # Binance internal symbol doesn't have the slash (BTC/USDT -> BTCUSDT)
-        binance_symbol = formatted_symbol.replace("/", "")
         active_pos = next((p for p in positions if p['symbol'] == binance_symbol), None)
 
         if not active_pos or float(active_pos['positionAmt']) == 0:
-            return {"status": "error", "message": f"No active position found for {formatted_symbol}"}
+            return {"status": "error", "message": "No active position"}
 
-        # Determine amount and direction
         pos_amount = float(active_pos['positionAmt'])
         side = 'sell' if pos_amount > 0 else 'buy'
         abs_amount = abs(pos_amount)
 
-        # 4. CANCEL ALL OPEN ORDERS FIRST (TP/SL)
-        # Prevents "ghost" orders from triggering after the position is closed
-        await client.cancel_all_orders(symbol=formatted_symbol)
+        # 2. Kill the "Ghost" TP/SL Orders
+        # This is the 'Nuclear' option for Binance Futures orders
+        await client.fapiPrivateDeleteAllOpenOrders({'symbol': binance_symbol})
 
-        # 5. EXECUTE CLOSE ORDER
+        # 3. Close Position
         close_order = await client.create_market_order(
             symbol=formatted_symbol,
             side=side,
             amount=abs_amount,
-            params={
-                'reduceOnly': True,
-                'type': 'MARKET' # Explicitly state it's a market close
-            }
+            params={'reduceOnly': True, 'closePosition': True}
         )
 
-        return {
-            "status": "success",
-            "message": f"Closed {formatted_symbol} position of {abs_amount}",
-            "orderId": close_order['id']
-        }
+        return {"status": "success", "orderId": close_order['id']}
 
     except Exception as e:
         print(traceback.format_exc())
