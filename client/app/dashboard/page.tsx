@@ -418,7 +418,7 @@ export default function VibeTradingUI() {
   const [isExecuted, setIsExecuted] = useState(false);
   const textareaRef = useRef(null);
   const chatEndRef = useRef(null);
-  const [activeLines, setActiveLines] = useState(null);
+  const [activeLines, setActiveLines] = useState<TradeLines | null>(null);
   const [showAgent, setShowAgent] = useState(true);
   const [currentPrice, setCurrentPrice] = useState(null);
     const [email, setEmail] = useState("");
@@ -501,7 +501,7 @@ const handleAccept = async (tradeParams: TradeParams) => {
   };
 
   // Inside VibeTradingUI component
-const handleCloseOrder = async (symbol) => {
+const handleCloseOrder = async (symbol: string) => {
   setIsClosing(true); // Re-use the trading loading state
   
   try {
@@ -542,18 +542,20 @@ const handleCloseOrder = async (symbol) => {
 
   } catch (error) {
     console.error("Close Error:", error);
-    toast.error(error.message);
+    toast.error(error instanceof Error ? error.message : "Failed to close position");
   } finally {
     setIsClosing(false);
   }
 };
 
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
-    }
-  }, [prompt]);
+ // Around line 542
+useEffect(() => {
+  if (textareaRef.current) {
+    const el = textareaRef.current as HTMLTextAreaElement; // Add this type cast
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }
+}, [prompt]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -609,7 +611,7 @@ const handleSend = async () => {
       setActiveSymbol(aiData.symbol);
       // Automatically draw the TP/SL lines based on AI prediction
       setActiveLines({
-        entry: parseFloat(aiData.entry_price || currentPrice), // Use current live price as entry
+        entry: parseFloat(aiData.entry_price || currentPrice || "0"),
         tp: parseFloat(aiData.take_profit),
         sl: parseFloat(aiData.stop_loss),
         side: aiData.side
