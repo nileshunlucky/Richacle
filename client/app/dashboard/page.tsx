@@ -16,19 +16,39 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import Pricing from "@/components/Pricing";
 
-/**
- * UTILITY: Conditional Classnames
- */
 const cn = (...classes: (string | boolean | undefined | null)[]) => 
   classes.filter(Boolean).join(" ");
 
-/**
- * ADVANCED CHART: UI Kept Exactly Same, Updated with Real Binance Data
- */
-/**
- * ADVANCED CHART: UI Kept Exactly Same, Updated with Real Binance Data
- */
-const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT" }) {
+interface TradeLines {
+  entry: number;
+  tp: number;
+  sl: number;
+  side: string;
+}
+
+interface AdvancedChartProps {
+  tradeLines: TradeLines | null;
+  onPriceUpdate: (price: string) => void;
+  symbol?: string;
+}
+
+interface TradeWidgetProps {
+  onReset: () => void;
+  onAccept: (params: any) => void; // Replace 'any' with your specific trade object if possible
+  disabled: boolean;
+  onPriceChange: (lines: TradeLines) => void;
+  price: string | null;
+  initialData: {
+    side?: string;
+    symbol?: string;
+    leverage?: number | string;
+    take_profit?: number | string;
+    stop_loss?: number | string;
+    research_summary?: string;
+  };
+}
+
+const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT" }: AdvancedChartProps) {
   const container = useRef(null);
   const chartInstance = useRef(null);
   const seriesRef = useRef(null);
@@ -214,7 +234,7 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
 /**
  * INTERACTIVE TRADE WIDGET COMPONENT (Exact UI preserved)
  */
-const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onPriceChange, price , initialData}) {
+const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onPriceChange, price , initialData}: TradeWidgetProps) {
   const [side, setSide] = useState(initialData?.side || "buy"); 
   const [amount, setAmount] = useState("100");
   const [symbol, setSymbol] = useState(initialData?.symbol || "BTC/USDT");
