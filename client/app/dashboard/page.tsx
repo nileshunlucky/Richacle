@@ -58,6 +58,10 @@ interface TradeParams {
   sl: string;
 }
 
+interface Message {
+  role: "user" | "ai";
+  content: string | React.ReactNode;
+}
 
 const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT" }: AdvancedChartProps) {
   // 1. Properly typed refs using the imported library types
@@ -408,7 +412,7 @@ useEffect(() => {
 export default function VibeTradingUI() {
   const [prompt, setPrompt] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isTrading, setIsTrading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isExecuted, setIsExecuted] = useState(false);
