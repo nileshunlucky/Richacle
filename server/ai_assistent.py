@@ -242,42 +242,39 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
 
     try:
         formatted_symbol = symbol.upper()
-        binance_symbol = formatted_symbol.replace("/", "")
         
-        # 1. Fetch current position
+        # 3. Fetch current position to see how much we hold
+        # This returns an array of all positions; we filter for our symbol
         balance = await client.fetch_balance()
         positions = balance['info']['positions']
+        
+        # Binance internal symbol doesn't have the slash (BTC/USDT -> BTCUSDT)
+        binance_symbol = formatted_symbol.replace("/", "")
         active_pos = next((p for p in positions if p['symbol'] == binance_symbol), None)
 
         if not active_pos or float(active_pos['positionAmt']) == 0:
-            return {"status": "error", "message": f"No active position for {formatted_symbol}"}
+            return {"status": "error", "message": f"No active position found for {formatted_symbol}"}
 
+        # Determine amount and direction
         pos_amount = float(active_pos['positionAmt'])
         side = 'sell' if pos_amount > 0 else 'buy'
         abs_amount = abs(pos_amount)
 
-        # 2. CANCEL ALL ORDERS (TP/SL)
-        # Use the direct Binance call to ensure trigger orders are cleared
-        try:
-            await client.fapiPrivateDeleteAllOpenOrders({'symbol': binance_symbol})
-        except Exception as e:
-            print(f"Cleanup warning: {e}")
+        # 4. CANCEL ALL OPEN ORDERS FIRST (TP/SL)
+        # Prevents "ghost" orders from triggering after the position is closed
+        await client.cancel_all_orders(formatted_symbol)
 
-        # 3. EXECUTE CLOSE ORDER
-        # Note: We send 'amount' as a fallback, but 'closePosition' 
-        # tells Binance to ignore it and just close everything.
+        # 5. EXECUTE CLOSE ORDER
         close_order = await client.create_market_order(
             symbol=formatted_symbol,
             side=side,
             amount=abs_amount,
-            params={
-                'closePosition': True # This handles the 'reduce' logic automatically
-            }
+            params={'reduceOnly': True}
         )
 
         return {
             "status": "success",
-            "message": f"Closed {formatted_symbol} and cleared TP/SL",
+            "message": f"Closed {formatted_symbol} position of {abs_amount}",
             "orderId": close_order['id']
         }
 
