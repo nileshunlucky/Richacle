@@ -481,8 +481,11 @@ const handleAccept = async (tradeParams: TradeParams) => {
     ]);
   } catch (error) {
     console.error("Trade Error:", error);
+    if (error instanceof Error) {
     toast.error(error.message);
-    // Re-enable the widget so they can try again if it failed
+  } else {
+    toast.error("An unexpected error occurred");
+  }
     setIsExecuted(false);
   } finally {
     setIsTrading(false);
