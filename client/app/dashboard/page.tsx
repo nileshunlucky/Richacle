@@ -416,11 +416,11 @@ export default function VibeTradingUI() {
   const [isTrading, setIsTrading] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [isExecuted, setIsExecuted] = useState(false);
-  const textareaRef = useRef(null);
-  const chatEndRef = useRef(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const chatEndRef = useRef<HTMLDivElement>(null);
   const [activeLines, setActiveLines] = useState<TradeLines | null>(null);
   const [showAgent, setShowAgent] = useState(true);
-  const [currentPrice, setCurrentPrice] = useState(null);
+  const [currentPrice, setCurrentPrice] = useState<string | null>(null);
     const [email, setEmail] = useState("");
     const [activeSymbol, setActiveSymbol] = useState("BTC/USDT");
   const [showPricing, setShowPricing] = useState(false);
