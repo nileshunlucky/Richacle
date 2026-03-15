@@ -49,7 +49,7 @@ interface TradeWidgetProps {
 }
 
 const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT" }: AdvancedChartProps) {
-  const container = useRef(null);
+  const container = useRef<HTMLDivElement>(null);
   const chartInstance = useRef(null);
   const seriesRef = useRef(null);
   const wsRef = useRef(null);
@@ -61,7 +61,7 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
 
   const timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"];
 
-  const updateVisuals = (lines) => {
+  const updateVisuals = (lines: TradeLines | null) => {
     if (!seriesRef.current || !chartInstance.current || !window.LightweightCharts) return;
 
     // 1. CLEAR PREVIOUS LINES & FILLS
