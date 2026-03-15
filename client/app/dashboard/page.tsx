@@ -15,6 +15,7 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import Pricing from "@/components/Pricing";
+import * as LightweightCharts from 'lightweight-charts';
 
 const cn = (...classes: (string | boolean | undefined | null)[]) => 
   classes.filter(Boolean).join(" ");
@@ -48,24 +49,28 @@ interface TradeWidgetProps {
   };
 }
 
+
 const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT" }: AdvancedChartProps) {
+  // 1. Properly typed refs using the imported library types
+  const chartInstance = useRef<LightweightCharts.IChartApi | null>(null);
+  const seriesRef = useRef<LightweightCharts.ISeriesApi<"Candlestick"> | null>(null);
+  const tpFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
+  const slFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
+
   const container = useRef<HTMLDivElement>(null);
-  const chartInstance = useRef(null);
-  const seriesRef = useRef(null);
-  const wsRef = useRef(null);
-  const activeLinesRef = useRef([]);
-  const tpFillRef = useRef(null);
-  const slFillRef = useRef(null);
+  const wsRef = useRef<WebSocket | null>(null);
+  const activeLinesRef = useRef<LightweightCharts.IPriceLine[]>([]);
   const [interval, setInterval] = useState("1m");
   const [isChartReady, setIsChartReady] = useState(false);
 
   const timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"];
 
   const updateVisuals = (lines: TradeLines | null) => {
-    if (!seriesRef.current || !chartInstance.current || !window.LightweightCharts) return;
+    // 2. NO MORE "window.LightweightCharts" check. Just check the refs.
+    if (!seriesRef.current || !chartInstance.current) return;
 
-    // 1. CLEAR PREVIOUS LINES & FILLS
-    activeLinesRef.current.forEach(line => seriesRef.current.removePriceLine(line));
+    // CLEAR PREVIOUS LINES & FILLS
+    activeLinesRef.current.forEach(line => seriesRef.current?.removePriceLine(line));
     activeLinesRef.current = [];
     if (tpFillRef.current) { chartInstance.current.removeSeries(tpFillRef.current); tpFillRef.current = null; }
     if (slFillRef.current) { chartInstance.current.removeSeries(slFillRef.current); slFillRef.current = null; }
@@ -75,8 +80,8 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
     const { entry, tp, sl, side } = lines;
     const isBuy = side.toUpperCase() === 'BUY';
 
-    // 2. CREATE TP FILL (Baseline)
-    tpFillRef.current = chartInstance.current.addSeries(window.LightweightCharts.BaselineSeries, {
+    // 3. Use the imported LightweightCharts directly
+    tpFillRef.current = chartInstance.current.addBaselineSeries({
       baseValue: { type: 'price', price: entry },
       topFillColor1: isBuy ? 'rgba(0, 230, 118, 0.25)' : 'rgba(0,0,0,0)',
       topFillColor2: isBuy ? 'rgba(0, 230, 118, 0.05)' : 'rgba(0,0,0,0)',
@@ -88,8 +93,7 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
       crosshairMarkerVisible: false,
     });
 
-    // 3. CREATE SL FILL (Baseline)
-    slFillRef.current = chartInstance.current.addSeries(window.LightweightCharts.BaselineSeries, {
+    slFillRef.current = chartInstance.current.addBaselineSeries({
       baseValue: { type: 'price', price: entry },
       topFillColor1: !isBuy ? 'rgba(255, 23, 68, 0.25)' : 'rgba(0,0,0,0)',
       topFillColor2: !isBuy ? 'rgba(255, 23, 68, 0.05)' : 'rgba(0,0,0,0)',
@@ -101,71 +105,57 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
       crosshairMarkerVisible: false,
     });
 
-    // DATA SYNC: Get the current time range from the candle series
-    const candleData = seriesRef.current.data();
+    const candleData = (seriesRef.current.data() as any);
     if (candleData.length > 0) {
       const firstTime = candleData[0].time;
       const lastTime = candleData[candleData.length - 1].time;
 
-      // Map the TP value across the time range
-      tpFillRef.current.setData([
-        { time: firstTime, value: tp },
-        { time: lastTime, value: tp }
-      ]);
-
-      // Map the SL value across the time range
-      slFillRef.current.setData([
-        { time: firstTime, value: sl },
-        { time: lastTime, value: sl }
-      ]);
+      tpFillRef.current.setData([{ time: firstTime, value: tp }, { time: lastTime, value: tp }]);
+      slFillRef.current.setData([{ time: firstTime, value: sl }, { time: lastTime, value: sl }]);
     }
 
-    // 4. DRAW PRICE LINES (lineStyle: 0 = Solid)
     const eLine = seriesRef.current.createPriceLine({ 
       price: entry, color: isBuy ? '#3b82f6' : '#FF1744', 
-      lineWidth: 2, lineStyle: 0, title: side.toUpperCase() 
+      lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: side.toUpperCase() 
     });
     const tLine = seriesRef.current.createPriceLine({ 
-      price: tp, color: '#00E676', lineWidth: 2, lineStyle: 0, title: 'TAKE PROFIT' 
+      price: tp, color: '#00E676', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'TAKE PROFIT' 
     });
     const sLine = seriesRef.current.createPriceLine({ 
-      price: sl, color: '#FF1744', lineWidth: 2, lineStyle: 0, title: 'STOP LOSS' 
+      price: sl, color: '#FF1744', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'STOP LOSS' 
     });
 
     activeLinesRef.current = [eLine, tLine, sLine];
   };
 
+  // 4. CLEAN EFFECT: No more script injection
   useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js";
-    script.async = true;
-    script.onload = () => {
-      if (!container.current) return;
-      const chart = window.LightweightCharts.createChart(container.current, {
-        layout: { background: { color: "#000" }, textColor: "#DDD" },
-        grid: { vertLines: { color: "rgba(255,255,255,0.05)" }, horzLines: { color: "rgba(255,255,255,0.05)" } },
-        width: container.current.clientWidth,
-        height: container.current.clientHeight,
-        timeScale: { timeVisible: true, borderVisible: false },
-        rightPriceScale: { borderVisible: false }
-      });
+    if (!container.current) return;
 
-      const candleSeries = chart.addSeries(window.LightweightCharts.CandlestickSeries, {
-        upColor: "#00E676", downColor: "#FF1744", borderVisible: false, 
-        wickUpColor: "#00E676", wickDownColor: "#FF1744", priceLineColor: "#FFFFFF",
-      });
+    const chart = LightweightCharts.createChart(container.current, {
+      layout: { background: { color: "#000" }, textColor: "#DDD" },
+      grid: { vertLines: { color: "rgba(255,255,255,0.05)" }, horzLines: { color: "rgba(255,255,255,0.05)" } },
+      width: container.current.clientWidth,
+      height: container.current.clientHeight,
+      timeScale: { timeVisible: true, borderVisible: false },
+      rightPriceScale: { borderVisible: false }
+    });
 
-      chartInstance.current = chart;
-      seriesRef.current = candleSeries;
-      setIsChartReady(true);
-    };
-    document.head.appendChild(script);
+    const candleSeries = chart.addCandlestickSeries({
+      upColor: "#00E676", downColor: "#FF1744", borderVisible: false, 
+      wickUpColor: "#00E676", wickDownColor: "#FF1744", priceLineColor: "#FFFFFF",
+    });
+
+    chartInstance.current = chart;
+    seriesRef.current = candleSeries;
+    setIsChartReady(true);
 
     const handleResize = () => {
       if (container.current && chartInstance.current) {
         chartInstance.current.applyOptions({ width: container.current.clientWidth, height: container.current.clientHeight });
       }
     };
+
     window.addEventListener('resize', handleResize);
     return () => {
       window.removeEventListener('resize', handleResize);
