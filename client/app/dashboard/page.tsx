@@ -19,7 +19,8 @@ import Pricing from "@/components/Pricing";
 /**
  * UTILITY: Conditional Classnames
  */
-const cn = (...classes) => classes.filter(Boolean).join(" ");
+const cn = (...classes: (string | boolean | undefined | null)[]) => 
+  classes.filter(Boolean).join(" ");
 
 /**
  * ADVANCED CHART: UI Kept Exactly Same, Updated with Real Binance Data
