@@ -49,6 +49,15 @@ interface TradeWidgetProps {
   };
 }
 
+interface TradeParams {
+  symbol: string;
+  side: string;
+  leverage: string;
+  amount: string;
+  tp: string;
+  sl: string;
+}
+
 
 const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT" }: AdvancedChartProps) {
   // 1. Properly typed refs using the imported library types
@@ -421,7 +430,7 @@ export default function VibeTradingUI() {
   }, []);
 
   // Inside VibeTradingUI component
-const handleAccept = async (tradeParams) => {
+const handleAccept = async (tradeParams: TradeParams) => {
   setIsTrading(true);
   
   try {
