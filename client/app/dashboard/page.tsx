@@ -169,14 +169,24 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
     
     if (wsRef.current) wsRef.current.close();
 
-    fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=300`)
-      .then(res => res.json())
-      .then(raw => {
-        const data = raw.map(c => ({
-          time: c[0] / 1000, open: parseFloat(c[1]), high: parseFloat(c[2]), low: parseFloat(c[3]), close: parseFloat(c[4])
-        }));
-        seriesRef.current.setData(data);
-        chartInstance.current.timeScale().fitContent();
+    type BinanceKline = [number, string, string, string, string, string, number, string, number, string, string, string];
+
+fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=300`)
+  .then(res => res.json())
+  .then((raw: BinanceKline[]) => { // Add the type here
+    const data = raw.map((c: BinanceKline) => ({ // Add the type here
+      time: (c[0] / 1000) as LightweightCharts.UTCTimestamp, 
+      open: parseFloat(c[1]), 
+      high: parseFloat(c[2]), 
+      low: parseFloat(c[3]), 
+      close: parseFloat(c[4])
+    }));
+    
+    if (seriesRef.current) {
+      seriesRef.current.setData(data);
+      chartInstance.current?.timeScale().fitContent();
+    }
+     
         
         // Refresh visuals whenever data is loaded to ensure gradients stretch to new data points
         if (tradeLines) updateVisuals(tradeLines);
