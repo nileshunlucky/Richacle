@@ -196,9 +196,13 @@ fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${
         socket.onmessage = (event) => {
           const k = JSON.parse(event.data).k;
           if (onPriceUpdate) onPriceUpdate(parseFloat(k.c).toFixed(2));
-          seriesRef.current.update({
-            time: k.t / 1000, open: parseFloat(k.o), high: parseFloat(k.h), low: parseFloat(k.l), close: parseFloat(k.c),
-          });
+          seriesRef.current?.update({
+    time: (k.t / 1000) as LightweightCharts.UTCTimestamp, 
+    open: parseFloat(k.o), 
+    high: parseFloat(k.h), 
+    low: parseFloat(k.l), 
+    close: parseFloat(k.c),
+  });
         };
       });
   }, [isChartReady, symbol, interval]);
