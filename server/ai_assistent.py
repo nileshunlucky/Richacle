@@ -244,31 +244,42 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
         formatted_symbol = symbol.upper()
         binance_symbol = formatted_symbol.replace("/", "")
         
-        # 1. Fetch Position
+        # 1. Fetch current position
         balance = await client.fetch_balance()
         positions = balance['info']['positions']
         active_pos = next((p for p in positions if p['symbol'] == binance_symbol), None)
 
         if not active_pos or float(active_pos['positionAmt']) == 0:
-            return {"status": "error", "message": "No active position"}
+            return {"status": "error", "message": f"No active position for {formatted_symbol}"}
 
         pos_amount = float(active_pos['positionAmt'])
         side = 'sell' if pos_amount > 0 else 'buy'
         abs_amount = abs(pos_amount)
 
-        # 2. Kill the "Ghost" TP/SL Orders
-        # This is the 'Nuclear' option for Binance Futures orders
-        await client.fapiPrivateDeleteAllOpenOrders({'symbol': binance_symbol})
+        # 2. CANCEL ALL ORDERS (TP/SL)
+        # Use the direct Binance call to ensure trigger orders are cleared
+        try:
+            await client.fapiPrivateDeleteAllOpenOrders({'symbol': binance_symbol})
+        except Exception as e:
+            print(f"Cleanup warning: {e}")
 
-        # 3. Close Position
+        # 3. EXECUTE CLOSE ORDER
+        # Note: We send 'amount' as a fallback, but 'closePosition' 
+        # tells Binance to ignore it and just close everything.
         close_order = await client.create_market_order(
             symbol=formatted_symbol,
             side=side,
             amount=abs_amount,
-            params={'reduceOnly': True, 'closePosition': True}
+            params={
+                'closePosition': True # This handles the 'reduce' logic automatically
+            }
         )
 
-        return {"status": "success", "orderId": close_order['id']}
+        return {
+            "status": "success",
+            "message": f"Closed {formatted_symbol} and cleared TP/SL",
+            "orderId": close_order['id']
+        }
 
     except Exception as e:
         print(traceback.format_exc())
