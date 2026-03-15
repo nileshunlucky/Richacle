@@ -245,12 +245,12 @@ const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onP
   const [leverage, setLeverage] = useState(initialData?.leverage?.toString() || "10");
   const [tp, setTp] = useState(initialData?.take_profit?.toString() || "");
   const [sl, setSl] = useState(initialData?.stop_loss?.toString() || "");
-  const [fixedPrice, setFixedPrice] = useState(null);
+  const [fixedPrice, setFixedPrice] = useState<string | null>(null);
   
 
   // This determines what the user actually sees on the buttons
 const displayPrice = disabled && fixedPrice ? fixedPrice : price;
-const entry = parseFloat(displayPrice || 0);
+const entry = parseFloat(displayPrice || "0");
   
 
 useEffect(() => {
