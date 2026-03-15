@@ -639,6 +639,8 @@ const handleSend = async () => {
             onPriceChange={setActiveLines}
             onReset={handleReset}
             onAccept={handleAccept}
+            disabled={false} 
+            price={currentPrice}
           />
         ),
       },
@@ -707,7 +709,7 @@ const handleSend = async () => {
                 ) : (
                   <div className="w-full">
                     {React.isValidElement(msg.content) && msg.content.type === TradeWidget 
-                      ? React.cloneElement(msg.content, { disabled: isTrading || isExecuted, onAccept: handleAccept, price: currentPrice }) 
+                      ? React.cloneElement(msg.content, { disabled: isTrading || isExecuted, onAccept: handleAccept, price: currentPrice || "0.00" }) 
                       : msg.content}
                   </div>
                 )}
