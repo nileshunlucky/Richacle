@@ -29,7 +29,7 @@ export default function TermsPage() {
         <div>
           <h1 className="text-3xl font-bold">Terms & Conditions</h1>
           <p className="text-neutral-500 text-sm mt-1">
-            RICHACLE — No-Code AI Algorithm Trading Platform — Last updated{" "}
+            RICHACLE — Research AI Agent for Daytrading — Last updated{" "}
             {new Date().getFullYear()}
           </p>
         </div>
@@ -49,10 +49,11 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">2. Use of the Platform</h2>
           <p className="text-neutral-400 text-sm leading-relaxed">
-            RICHACLE enables users to build, automate, and execute trading systems
-            using No-Code AI logic. It may be used solely for legal trading
-            activities. Attempts to reverse-engineer, exploit system functions, or
-            manipulate markets may result in immediate permanent account termination.
+            RICHACLE provides an AI-driven research environment to analyze markets 
+            and generate daytrading insights. It may be used solely for legal research 
+            and informational purposes. Attempts to reverse-engineer the AI agents, 
+            exploit system functions, or manipulate markets may result in immediate 
+            permanent account termination.
           </p>
         </section>
 
@@ -60,10 +61,11 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">3. Market Risk & Disclaimer</h2>
           <p className="text-neutral-400 text-sm leading-relaxed">
-            Financial markets involve risk. No profitability, outcome, or trading
-            result is guaranteed. AI-generated trading logic does not eliminate
-            risk. You acknowledge that all trading decisions and algorithm
-            configurations are executed at your own discretion and responsibility.
+            Financial markets involve significant risk. No profitability, outcome, 
+            or specific trading result is guaranteed. AI-generated research and agent 
+            insights are for informational purposes and do not eliminate risk. You 
+            acknowledge that all trading decisions based on AI research are 
+            executed at your own discretion and absolute responsibility.
           </p>
         </section>
 
@@ -71,10 +73,11 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">4. Data Privacy</h2>
           <p className="text-neutral-400 text-sm leading-relaxed">
-            User information, API keys, and trading configurations are collected
+            User information, research queries, and agent configurations are collected
             solely to operate and enhance the platform. We do not sell or distribute
-            user or trading information. You are responsible for maintaining the
-            confidentiality of your credentials and broker permissions.
+            user data or proprietary research patterns. You are responsible for 
+            maintaining the confidentiality of your credentials and any integrated 
+            broker permissions.
           </p>
         </section>
 
@@ -82,11 +85,11 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">5. Billing & Payments</h2>
           <p className="text-neutral-400 text-sm leading-relaxed">
-            All payments are final, non-cancelable, and non-refundable once access
-            to the platform is granted. Subscription renewals occur automatically
-            unless cancelled in advance of the renewal date. No refunds are issued
-            for trading loss, API errors, system unavailability, or user-generated
-            logic underperformance.
+            All payments are final and non-refundable once access to the research 
+            tools is granted. Subscription renewals occur automatically unless 
+            cancelled in advance. No refunds are issued for trading losses, 
+            AI hallucinations, system downtime, or the performance of decisions 
+            made based on agent research.
           </p>
         </section>
 
@@ -94,10 +97,10 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">6. Limitation of Liability</h2>
           <p className="text-neutral-400 text-sm leading-relaxed">
-            RICHACLE is not liable for losses, market movements, execution delays,
-            exchange downtime, third-party broker failures, or financial damages
-            caused by automated trading. The user assumes full responsibility when
-            connecting external broker accounts or enabling auto-execution.
+            RICHACLE is not liable for losses, market movements, data delays,
+            exchange downtime, or financial damages caused by the use of its 
+            AI agents. The user assumes full responsibility for any real-world 
+            application of the research provided by the platform.
           </p>
         </section>
 
@@ -106,8 +109,8 @@ export default function TermsPage() {
           <h2 className="text-xl font-semibold">7. User Compliance & Legal Use</h2>
           <p className="text-neutral-400 text-sm leading-relaxed">
             Users are solely responsible for ensuring compliance with local trading
-            laws, taxation rules, and financial regulations before operating
-            automated trading systems through RICHACLE.
+            laws, taxation rules, and financial regulations before acting upon 
+            AI-generated research or connecting RICHACLE to any live trading environment.
           </p>
         </section>
 

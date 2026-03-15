@@ -262,14 +262,17 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
 
         # 4. CANCEL ALL OPEN ORDERS FIRST (TP/SL)
         # Prevents "ghost" orders from triggering after the position is closed
-        await client.cancel_all_orders(formatted_symbol)
+        await client.cancel_all_orders(symbol=formatted_symbol)
 
         # 5. EXECUTE CLOSE ORDER
         close_order = await client.create_market_order(
             symbol=formatted_symbol,
             side=side,
             amount=abs_amount,
-            params={'reduceOnly': True}
+            params={
+                'reduceOnly': True,
+                'type': 'MARKET' # Explicitly state it's a market close
+            }
         )
 
         return {

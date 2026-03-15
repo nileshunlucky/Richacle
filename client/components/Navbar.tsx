@@ -216,7 +216,7 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10  flex items-center justify-center">
-              <img className="h-7 w-7" src="https://upload.wikimedia.org/wikipedia/commons/5/57/Binance_Logo.png" alt="binance"/>
+              <img className="h-7 w-7" src="https://www.pngall.com/wp-content/uploads/10/Binance-Coin-Crypto-Logo-Transparent.png" alt="binance"/>
             </div>
             <div>
               <h2 className="text-xl font-semibold">Binance</h2>

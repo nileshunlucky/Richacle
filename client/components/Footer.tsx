@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Instagram, Twitter } from "lucide-react";
+import { Youtube, Twitter } from "lucide-react";
 import Link from "next/link";
 
 export default function Footer() {
@@ -16,7 +16,7 @@ export default function Footer() {
             © {year} <span className="theseason">RICHACLE</span> Inc. All rights reserved.
           </p>
 
-          {/* Links + Instagram */}
+          {/* Links + Youtube */}
           <div className="flex items-center flex-wrap gap-6 justify-center">
 
             {/* Links */}
@@ -39,14 +39,14 @@ export default function Footer() {
               </li>
             </ul>
 
-            {/* Instagram */}
+            {/* Youtube */}
             <a
-              href="https://instagram.com/richacle"
+              href="https://Youtube.com/@richacle"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2  hover:text-white transition"
             >
-              <Instagram size={20} />
+              <Youtube size={20} />
             </a>
             {/* X */}
             <a

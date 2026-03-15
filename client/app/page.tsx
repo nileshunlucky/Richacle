@@ -1,13 +1,14 @@
 "use client"
 
 import react from "react"
-import Waitlist from "../components/Waitlist"
-
+import Hero from "../components/Hero"
+import Footer from "../components/Footer"
 
 export default function Home() {
   return (
     <div className="bg-black">
-      <Waitlist />
+      <Hero />
+      <Footer />
     </div>
   );
 }

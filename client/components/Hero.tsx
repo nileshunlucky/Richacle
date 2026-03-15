@@ -54,6 +54,59 @@ const FeatureCard = ({ icon: Icon, title, description, badge }: any) => (
   </motion.div>
 );
 
+const LogoCarousel = () => {
+  const logos = [
+    { name: "Binance", url: "https://www.pngall.com/wp-content/uploads/10/Binance-Coin-Crypto-Logo-Transparent.png" },
+    { name: "TradingView", url: "https://companieslogo.com/img/orig/tradingview.D-0d181e04.png?t=1720244494" },
+    { name: "OpenAI", url: "https://img.icons8.com/androidL/512/FFFFFF/chatgpt.png" },
+    { name: "LemonSqueezy", url: "https://assets.streamlinehq.com/image/private/w_300,h_300,ar_1/f_auto/v1/icons/logos/lemonsqueezy-ddrqv8rreff6rbq7ilmkfx.png/lemonsqueezy-ty3ju10kqubex1dikb59vf.png" },
+    { name: "Vercel", url: "https://apipie.ai/docs/img/Integrations/Vercel-AI/vercel.png" },
+  ];
+
+  // Triple the logos to ensure the screen is always full, preventing the "reset jump"
+  const tripleLogos = [...logos, ...logos, ...logos];
+
+  return (
+    <div className="w-full bg-black py-10 overflow-hidden relative">
+      {/* Premium Side Fades */}
+      <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-black to-transparent z-20 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-black to-transparent z-20 pointer-events-none" />
+
+      <motion.div
+        className="flex whitespace-nowrap"
+        animate={{
+          x: ["0%", "-33.3333%"],
+        }}
+        transition={{
+          duration: 25,
+          ease: "linear",
+          repeat: Infinity,
+        }}
+        style={{ width: "max-content" }}
+      >
+        {tripleLogos.map((logo, index) => (
+          <div
+            key={index}
+            className="flex items-center gap-4 mx-8 md:mx-16 shrink-0"
+          >
+            <img
+              src={logo.url}
+              alt={logo.name}
+              className={`h-6 md:h-8 w-auto object-contain opacity-50 grayscale hover:opacity-100 transition-opacity duration-300 ${
+                logo.name == "LemonSqueezy" ? "invert" : ""
+              }`}
+            />
+            <span className="text-zinc-500 font-medium text-sm md:text-lg tracking-tight">
+              {logo.name}
+            </span>
+          </div>
+        ))}
+      </motion.div>
+    </div>
+  );
+};
+
+
 // --- Main Page ---
 
 export default function AILandingPage() {
@@ -62,12 +115,14 @@ export default function AILandingPage() {
 
   // --- Typography Animation Logic ---
   useEffect(() => {
+
     const phrases = [
-      "Buy BTC when EMA 9 crosses above EMA 21 on 1h charts...",
-      "Sell ETH if RSI exceeds 70 and MACD shows bearish divergence...",
-      "Execute a scalp strategy on SOL using Bollinger Band breakouts...",
-      "Long BNB when whale accumulation is detected on-chain..."
-    ];
+  "I want to daytrade BTC/USDT on the 1-minute chart...",
+  "Find me a high-probability entry on ETH futures right now...",
+  "Analyse SOL market structure and give me TP and SL levels...",
+  "Should I go long or short on BNB at current price?",
+  "Research XRP momentum and plan my next futures trade...",
+];
 
     let currentPhraseIdx = 0;
     let currentCharIdx = 0;
@@ -103,6 +158,8 @@ export default function AILandingPage() {
     return () => clearTimeout(timeout);
   }, []);
 
+  
+
   const models = [
     { name: "ChatGPT", url: "https://www.edigitalagency.com.au/wp-content/uploads/new-ChatGPT-icon-white-png-large-size.png" },
     { name: "Claude", url: "https://img.icons8.com/ios11/512/FFFFFF/claude-ai.png" },
@@ -132,35 +189,20 @@ export default function AILandingPage() {
 >
   {/* Top Line */}
   <span className="block mb-2">
-    Build Trading Algorithm In Seconds
+    The World's Most Powerful Daytrading AI Agent
   </span>
-  
-  {/* Bottom Line (Branding) */}
-  <div className="flex items-center justify-center gap-3 mt-4">
-    <span className="text-xl md:text-4xl font-light text-zinc-100 tracking-normal">
-      Reinvented by
-    </span>
-    <div className="flex items-center gap-1 rounded-2xl">
-      <img 
-        src="/logo.png" 
-        alt="Richacle" 
-        className="w-8 h-8 md:w-12 md:h-12 object-contain" 
-      />
-      <span className="text-2xl md:text-5xl font-light tracking-[0.15em] theseason">
-        RICHACLE
-      </span>
-    </div>
-  </div>
+
 </motion.h1>
 
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-zinc-300 mb-10 max-w-2xl mx-auto md:text-lg"
+            className="text-zinc-200 mb-10 max-w-2xl mx-auto md:text-xl"
           >
-            Build, Backtest, and Deploy. <br /> 
-            Create crypto algos by chatting with AI
+            Built to make you extraordinarily wealthy, <br/> <span className="font-light theseason">
+        RICHACLE
+      </span> is the best way to trade with AI.
           </motion.p>
 
         </div>
@@ -182,12 +224,12 @@ export default function AILandingPage() {
               <textarea
                 value={input}
                 readOnly
-                placeholder="Buy BTC when EMA 9 crosses above EMA 21..."
+                placeholder="Daytrade on Bitcoin at 5min timeframe on 1:3 RR"
                 className="w-full bg-transparent p-6  text-zinc-300 outline-none resize-none md:h-44 text-sm md:text-base placeholder:text-zinc-700 cursor-default"
               />
               
               <div className="flex items-center justify-between p-3">
-                <span className="text-xs animate-pulse font-bold  theseason  uppercase">
+                <span className="text-xs md:text-lg theseason  uppercase">
                   RICHACLE
                 </span>
                 
@@ -207,16 +249,13 @@ export default function AILandingPage() {
             className="flex items-center justify-center gap-3 mb-5 text-xs md:text-xl z-50"
           >
             <Link href="/dashboard">
-              <Button >Get started</Button>
-            </Link>
-            <Link href="/strategy">
-              <Button variant="outline">Create Strategy</Button>
+              <Button >Get started Daytarding</Button>
             </Link>
           </motion.div>
       </section>
 
      
-
+<LogoCarousel />
           
  {/* --- PREMIUM 3-STEP WORKFLOW --- */}
       <section className="py-24 md:py-32 px-4 md:px-6">
@@ -226,7 +265,7 @@ export default function AILandingPage() {
             <h2 className="text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-white mb-3">
               Three simple steps
             </h2>
-            <p className=" text-base md:text-lg">Build, test, deploy. all in 1</p>
+            <p className=" text-base md:text-lg">Chat, Research, Trade - all in 1</p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-6">
@@ -247,23 +286,23 @@ export default function AILandingPage() {
               
               <div className="h-48 md:h-56 rounded-2xl bg-zinc-950 border border-zinc-800 p-5 flex flex-col justify-between transition-all hover:border-zinc-700">
                 <div className="space-y-3">
-                  <div className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold">AI Input</div>
+                  <div className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold">Prompt</div>
                   <div className="bg-black/50 border border-zinc-800 rounded-lg p-3">
-                    <p className="text-xs text-zinc-400 leading-relaxed">
-                      "Buy BTC when RSI drops below 30..."
+                    <p className="text-xs text-zinc-400 ">
+                      "Daytrade on Bitcoin at 5min..."
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
                     <div className="w-1 h-1 rounded-full bg-white animate-pulse" />
-                    <span className="text-[9px] text-zinc-600 uppercase tracking-wider">Processing</span>
+                    <span className="text-[9px] font-semibold text-zinc-500 uppercase animate-pulse">Researching</span>
                   </div>
                 </div>
               </div>
 
               <div className="mt-6 space-y-2">
-                <h3 className="text-lg md:text-xl font-medium text-white">Create with AI</h3>
+                <h3 className="text-lg md:text-xl font-medium text-white">Chat with AI</h3>
                 <p className="text-sm  leading-relaxed">
-                  Describe your strategy in plain English. <span className="theseason">RICHACLE</span> builds the logic instantly.
+                  Describe your Daytrading strategy in plain English. <span className="theseason">RICHACLE</span> agent reserach the market deeply.
                 </p>
               </div>
             </motion.div>
@@ -284,16 +323,20 @@ export default function AILandingPage() {
               </div>
 
               <div className="h-48 md:h-56 rounded-2xl bg-zinc-950 border border-zinc-800 p-5 flex flex-col justify-between transition-all hover:border-zinc-700">
-                <div>
-                  <div className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold mb-4">Performance</div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="bg-black/50 border border-zinc-800 rounded-lg p-3">
-                      <div className="text-[9px] text-zinc-600 uppercase mb-1">Return</div>
-                      <div className="text-lg font-semibold text-white">+247%</div>
+                <div className="flex flex-col gap-1">
+                  <div className="text-[10px] uppercase tracking-widest text-zinc-600 font-bold mb-2 gap-1">Research</div>
+                    <div className="bg-black/50 border border-zinc-800 rounded-lg p-2">
+                      <div className="text-[9px] text-zinc-600 uppercase mb-1">BUY</div>
+                      <div className="text-lg font-semibold text-white">$71200</div>
                     </div>
-                    <div className="bg-black/50 border border-zinc-800 rounded-lg p-3">
-                      <div className="text-[9px] text-zinc-600 uppercase mb-1">Win Rate</div>
-                      <div className="text-lg font-semibold text-white">68%</div>
+                  <div className="grid grid-cols-2 gap-1">
+                    <div className="bg-black/50 border border-zinc-800 rounded-lg p-2">
+                      <div className="text-[9px] text-zinc-600 uppercase mb-1">Take Profit</div>
+                      <div className="text-lg font-semibold text-white">$71500</div>
+                    </div>
+                    <div className="bg-black/50 border border-zinc-800 rounded-lg p-2">
+                      <div className="text-[9px] text-zinc-600 uppercase mb-1">Stop Loss</div>
+                      <div className="text-lg font-semibold text-white">$71000</div>
                     </div>
                   </div>
                 </div>
@@ -305,9 +348,9 @@ export default function AILandingPage() {
               </div>
 
               <div className="mt-6 space-y-2">
-                <h3 className="text-lg md:text-xl font-medium text-white">Backtest Results</h3>
+                <h3 className="text-lg md:text-xl font-medium text-white">Research Agent</h3>
                 <p className="text-sm  leading-relaxed">
-                  Validate against years of historical data before going live.
+                  Realtime research gives you short summary, accurate technical analysis insights.
                 </p>
               </div>
             </motion.div>
@@ -350,12 +393,12 @@ export default function AILandingPage() {
                 </div>
                 
                 <button className="w-full py-3 bg-white text-black text-sm font-medium rounded-lg hover:bg-zinc-200 transition-colors">
-                  Deploy
+                  Trade
                 </button>
               </div>
 
               <div className="mt-6 space-y-2">
-                <h3 className="text-lg md:text-xl font-medium text-white">Deploy & Execute</h3>
+                <h3 className="text-lg md:text-xl font-medium text-white">Trade in 1 click</h3>
                 <p className="text-sm  leading-relaxed">
                   Go Demo/Live trading with one click. Directly connected to Binance API.
                 </p>
@@ -376,7 +419,6 @@ export default function AILandingPage() {
           </h2>
           <div className="flex items-center justify-center gap-3 text-xs md:text-xl">
              <Link href="/dashboard"> <Button >Get Access Now</Button></Link>
-            <Link href="/strategy"> <Button variant="outline" >Create with Copilot</Button></Link>
           </div>
         </div>
       </section>

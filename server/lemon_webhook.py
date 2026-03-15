@@ -16,17 +16,17 @@ LEMON_SQUEEZING_WEBHOOK_SECRET = os.getenv("LEMON_SQUEEZING_WEBHOOK_SECRET")
 # Map your Lemon Squeezy plan variant IDs to the number of credits, backtest, copilot
 
 PLANS = {
-    1126909: {  # Basic
-        "plan": "PRO",
-        "credits": 250,
-        "backtest": 20,
-        "copilot": 200
+    1404986: {  # Hobby
+        "plan": "Hobby",
+        "credits": 1000,
     },
-    1126913: {  # Pro
-        "plan": "PREMIUM",
+    1404987: {  # Pro
+        "plan": "Pro",
         "credits": 3000,
-        "backtest": 250,
-        "copilot": 2000
+    },
+    1404989: {  # Premium
+        "plan": "Premium",
+        "credits": 10000,
     }
 }
 
@@ -95,8 +95,6 @@ async def lemon_webhook(request: Request, x_signature: str = Header(None)):
                     "subscription_id": data.get("id"),
                     "subscription_started_at": datetime.now(timezone.utc),
                     "credits": plan["credits"],
-                    "backtest": plan["backtest"],
-                    "copilot": plan["copilot"],
                     "plan": plan["plan"],
                     "active": True
                 }
@@ -115,8 +113,6 @@ async def lemon_webhook(request: Request, x_signature: str = Header(None)):
             {
                 "$set": {
                     "credits": plan["credits"],
-                    "backtest": plan["backtest"],
-                    "copilot": plan["copilot"],
                     "plan": plan["plan"],
                     "active": True,
                 }
@@ -134,9 +130,7 @@ async def lemon_webhook(request: Request, x_signature: str = Header(None)):
                     "subscription_status": "cancelled",
                     "subscription_cancelled_at": datetime.now(timezone.utc),
                     "credits": 0,
-                    "backtest": 0,
-                    "copilot": 0,
-                    "plan": "FREE",
+                    "plan": "Free",
                     "active": False
                 },
                 "$unset": {"plan_variant_id": ""},
@@ -155,9 +149,7 @@ async def lemon_webhook(request: Request, x_signature: str = Header(None)):
                     "subscription_status": "expired",
                     "subscription_expired_at": datetime.now(timezone.utc),
                     "credits": 0,
-                    "backtest": 0,
-                    "copilot": 0,
-                    "plan": "FREE",
+                    "plan": "Free",
                     "active": False
                 },
                 "$unset": {"plan_variant_id": ""},

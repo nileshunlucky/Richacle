@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
+import Pricing from "@/components/Pricing";
 
 /**
  * UTILITY: Conditional Classnames
@@ -23,18 +24,26 @@ const cn = (...classes) => classes.filter(Boolean).join(" ");
 /**
  * ADVANCED CHART: UI Kept Exactly Same, Updated with Real Binance Data
  */
-const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate }) {
+/**
+ * ADVANCED CHART: UI Kept Exactly Same, Updated with Real Binance Data
+ */
+const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT" }) {
   const container = useRef(null);
   const chartInstance = useRef(null);
   const seriesRef = useRef(null);
-  const wsRef = useRef(null); // Added for live updates
+  const wsRef = useRef(null);
   const activeLinesRef = useRef([]);
   const tpFillRef = useRef(null);
   const slFillRef = useRef(null);
+  const [interval, setInterval] = useState("1m");
+  const [isChartReady, setIsChartReady] = useState(false);
+
+  const timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"];
 
   const updateVisuals = (lines) => {
     if (!seriesRef.current || !chartInstance.current || !window.LightweightCharts) return;
 
+    // 1. CLEAR PREVIOUS LINES & FILLS
     activeLinesRef.current.forEach(line => seriesRef.current.removePriceLine(line));
     activeLinesRef.current = [];
     if (tpFillRef.current) { chartInstance.current.removeSeries(tpFillRef.current); tpFillRef.current = null; }
@@ -43,127 +52,160 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate })
     if (!lines) return;
 
     const { entry, tp, sl, side } = lines;
-    const currentTime = Math.floor(Date.now() / 1000);
+    const isBuy = side.toUpperCase() === 'BUY';
 
+    // 2. CREATE TP FILL (Baseline)
     tpFillRef.current = chartInstance.current.addSeries(window.LightweightCharts.BaselineSeries, {
       baseValue: { type: 'price', price: entry },
-      topFillColor1: 'rgba(0, 230, 118, 0.25)',
-      topFillColor2: 'rgba(0, 230, 118, 0.02)',
-      topLineColor: 'rgba(0, 230, 118, 0.4)',
-      bottomFillColor1: 'rgba(0,0,0,0)', bottomFillColor2: 'rgba(0,0,0,0)',
-      bottomLineColor: 'rgba(0,0,0,0)',
-      priceLineVisible: false, lastValueVisible: false,
+      topFillColor1: isBuy ? 'rgba(0, 230, 118, 0.25)' : 'rgba(0,0,0,0)',
+      topFillColor2: isBuy ? 'rgba(0, 230, 118, 0.05)' : 'rgba(0,0,0,0)',
+      bottomFillColor1: !isBuy ? 'rgba(0, 230, 118, 0.25)' : 'rgba(0,0,0,0)',
+      bottomFillColor2: !isBuy ? 'rgba(0, 230, 118, 0.05)' : 'rgba(0,0,0,0)',
+      lineVisible: false, 
+      priceLineVisible: false, 
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
     });
 
+    // 3. CREATE SL FILL (Baseline)
     slFillRef.current = chartInstance.current.addSeries(window.LightweightCharts.BaselineSeries, {
       baseValue: { type: 'price', price: entry },
-      topFillColor1: 'rgba(0,0,0,0)', topFillColor2: 'rgba(0,0,0,0)',
-      topLineColor: 'rgba(0,0,0,0)',
-      bottomFillColor1: 'rgba(255, 23, 68, 0.25)',
-      bottomFillColor2: 'rgba(255, 23, 68, 0.02)',
-      bottomLineColor: 'rgba(255, 23, 68, 0.4)',
-      priceLineVisible: false, lastValueVisible: false,
+      topFillColor1: !isBuy ? 'rgba(255, 23, 68, 0.25)' : 'rgba(0,0,0,0)',
+      topFillColor2: !isBuy ? 'rgba(255, 23, 68, 0.05)' : 'rgba(0,0,0,0)',
+      bottomFillColor1: isBuy ? 'rgba(255, 23, 68, 0.25)' : 'rgba(0,0,0,0)',
+      bottomFillColor2: isBuy ? 'rgba(255, 23, 68, 0.05)' : 'rgba(0,0,0,0)',
+      lineVisible: false,
+      priceLineVisible: false, 
+      lastValueVisible: false,
+      crosshairMarkerVisible: false,
     });
 
-    const dataPoints = [{ time: currentTime - 100000, value: tp }, { time: currentTime + 100000, value: tp }];
-    const slDataPoints = [{ time: currentTime - 100000, value: sl }, { time: currentTime + 100000, value: sl }];
+    // DATA SYNC: Get the current time range from the candle series
+    const candleData = seriesRef.current.data();
+    if (candleData.length > 0) {
+      const firstTime = candleData[0].time;
+      const lastTime = candleData[candleData.length - 1].time;
 
-    tpFillRef.current.setData(dataPoints);
-    slFillRef.current.setData(slDataPoints);
+      // Map the TP value across the time range
+      tpFillRef.current.setData([
+        { time: firstTime, value: tp },
+        { time: lastTime, value: tp }
+      ]);
 
+      // Map the SL value across the time range
+      slFillRef.current.setData([
+        { time: firstTime, value: sl },
+        { time: lastTime, value: sl }
+      ]);
+    }
+
+    // 4. DRAW PRICE LINES (lineStyle: 0 = Solid)
     const eLine = seriesRef.current.createPriceLine({ 
-      price: entry, color: side === 'BUY' ? '#3b82f6' : '#FF1744', 
+      price: entry, color: isBuy ? '#3b82f6' : '#FF1744', 
       lineWidth: 2, lineStyle: 0, title: side.toUpperCase() 
     });
-    const tLine = seriesRef.current.createPriceLine({ price: tp, color: '#00E676', lineWidth: 2, lineStyle: 0, title: 'TAKE PROFIT' });
-    const sLine = seriesRef.current.createPriceLine({ price: sl, color: '#FF1744', lineWidth: 2, lineStyle: 0, title: 'STOP LOSS' });
+    const tLine = seriesRef.current.createPriceLine({ 
+      price: tp, color: '#00E676', lineWidth: 2, lineStyle: 0, title: 'TAKE PROFIT' 
+    });
+    const sLine = seriesRef.current.createPriceLine({ 
+      price: sl, color: '#FF1744', lineWidth: 2, lineStyle: 0, title: 'STOP LOSS' 
+    });
 
     activeLinesRef.current = [eLine, tLine, sLine];
   };
-
-  useEffect(() => {
-    updateVisuals(tradeLines);
-  }, [tradeLines]);
 
   useEffect(() => {
     const script = document.createElement("script");
     script.src = "https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js";
     script.async = true;
     script.onload = () => {
-      if (!container.current || !window.LightweightCharts) return;
-      
-      const { createChart, CandlestickSeries } = window.LightweightCharts;
-
-      const chart = createChart(container.current, {
+      if (!container.current) return;
+      const chart = window.LightweightCharts.createChart(container.current, {
         layout: { background: { color: "#000" }, textColor: "#DDD" },
         grid: { vertLines: { color: "rgba(255,255,255,0.05)" }, horzLines: { color: "rgba(255,255,255,0.05)" } },
-        crosshair: {
-          horzLine: {
-            labelBackgroundColor: '#FFFFFF', // White background for price label
-            labelTextColor: '#000000',      // Black text for visibility
-          },
-        },
         width: container.current.clientWidth,
         height: container.current.clientHeight,
-        timeScale: { timeVisible: true, secondsVisible: false }
+        timeScale: { timeVisible: true, borderVisible: false },
+        rightPriceScale: { borderVisible: false }
       });
 
-      const candleSeries = chart.addSeries(CandlestickSeries, {
+      const candleSeries = chart.addSeries(window.LightweightCharts.CandlestickSeries, {
         upColor: "#00E676", downColor: "#FF1744", borderVisible: false, 
-        wickUpColor: "#00E676", wickDownColor: "#FF1744", 
-        priceLineColor: "#FFFFFF", // Current price line color
+        wickUpColor: "#00E676", wickDownColor: "#FF1744", priceLineColor: "#FFFFFF",
       });
 
       chartInstance.current = chart;
       seriesRef.current = candleSeries;
-
-      if (tradeLines) updateVisuals(tradeLines);
-
-      // 1. Fetch Historical
-      fetch(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1m&limit=300`)
-        .then(res => res.json())
-        .then(raw => {
-          const data = raw.map(c => ({
-            time: c[0] / 1000, open: parseFloat(c[1]), high: parseFloat(c[2]), low: parseFloat(c[3]), close: parseFloat(c[4])
-          }));
-          candleSeries.setData(data);
-          chart.timeScale().fitContent();
-          
-
-          // 2. Start WebSocket for live movement
-          if (wsRef.current) wsRef.current.close();
-          const socket = new WebSocket(`wss://stream.binance.com:9443/ws/btcusdt@kline_1m`);
-          wsRef.current = socket;
-
-          socket.onmessage = (event) => {
-            const msg = JSON.parse(event.data);
-            const k = msg.k;
-            if (onPriceUpdate) onPriceUpdate(parseFloat(k.c).toFixed(2));
-            candleSeries.update({
-              time: k.t / 1000,
-              open: parseFloat(k.o),
-              high: parseFloat(k.h),
-              low: parseFloat(k.l),
-              close: parseFloat(k.c),
-            });
-          };
-        });
-
-      const handleResize = () => chart.applyOptions({ width: container.current.clientWidth, height: container.current.clientHeight });
-      window.addEventListener('resize', handleResize);
-      const observer = new ResizeObserver(handleResize);
-observer.observe(container.current);
+      setIsChartReady(true);
     };
     document.head.appendChild(script);
 
-    return () => {
-      if (wsRef.current) wsRef.current.close();
+    const handleResize = () => {
+      if (container.current && chartInstance.current) {
+        chartInstance.current.applyOptions({ width: container.current.clientWidth, height: container.current.clientHeight });
+      }
     };
-  }, [onPriceUpdate]);
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      if (chartInstance.current) chartInstance.current.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isChartReady || !seriesRef.current) return;
+    const binanceSymbol = symbol.replace("/", "").toUpperCase();
+    
+    if (wsRef.current) wsRef.current.close();
+
+    fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=300`)
+      .then(res => res.json())
+      .then(raw => {
+        const data = raw.map(c => ({
+          time: c[0] / 1000, open: parseFloat(c[1]), high: parseFloat(c[2]), low: parseFloat(c[3]), close: parseFloat(c[4])
+        }));
+        seriesRef.current.setData(data);
+        chartInstance.current.timeScale().fitContent();
+        
+        // Refresh visuals whenever data is loaded to ensure gradients stretch to new data points
+        if (tradeLines) updateVisuals(tradeLines);
+
+        const socket = new WebSocket(`wss://stream.binance.com:9443/ws/${binanceSymbol.toLowerCase()}@kline_${interval}`);
+        wsRef.current = socket;
+        socket.onmessage = (event) => {
+          const k = JSON.parse(event.data).k;
+          if (onPriceUpdate) onPriceUpdate(parseFloat(k.c).toFixed(2));
+          seriesRef.current.update({
+            time: k.t / 1000, open: parseFloat(k.o), high: parseFloat(k.h), low: parseFloat(k.l), close: parseFloat(k.c),
+          });
+        };
+      });
+  }, [isChartReady, symbol, interval]);
+
+  useEffect(() => {
+    if (isChartReady) updateVisuals(tradeLines);
+  }, [tradeLines, isChartReady]);
 
   return (
-    <div className="flex-1 w-full bg-black relative overflow-hidden flex flex-col">    
-      <div className="flex-1" ref={container} />
+    <div className="flex-1 w-full bg-black relative overflow-hidden flex flex-col"> 
+      <div className="absolute top-4 left-4 z-20 flex flex-col gap-1 pointer-events-none">
+        <h2 className="text-xl font-bold text-white tracking-tighter">{symbol}</h2>
+        <div className="flex gap-2 pointer-events-auto">
+          {timeframes.map(tf => (
+            <button
+              key={tf}
+              onClick={() => setInterval(tf)}
+              className={cn(
+                "text-[10px] px-2 py-0.5 rounded border transition-all",
+                interval === tf ? "bg-white text-black border-white" : "bg-black/40 text-white/50 border-white/10 hover:border-white/30"
+              )}
+            >
+              {tf.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="absolute inset-0 h-full w-full" ref={container} />
     </div>
   );
 });
@@ -334,6 +376,7 @@ export default function VibeTradingUI() {
   const [isSearching, setIsSearching] = useState(false);
   const [messages, setMessages] = useState([]);
   const [isTrading, setIsTrading] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const [isExecuted, setIsExecuted] = useState(false);
   const textareaRef = useRef(null);
   const chatEndRef = useRef(null);
@@ -341,6 +384,8 @@ export default function VibeTradingUI() {
   const [showAgent, setShowAgent] = useState(true);
   const [currentPrice, setCurrentPrice] = useState(null);
     const [email, setEmail] = useState("");
+    const [activeSymbol, setActiveSymbol] = useState("BTC/USDT");
+  const [showPricing, setShowPricing] = useState(false);
 
       useEffect(() => {
     const getUser = async () => {
@@ -383,13 +428,15 @@ const handleAccept = async (tradeParams) => {
         role: "ai",
         content: (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 flex flex-col gap-2">
-            <div className="text-sm text-green-400 font-bold flex items-center gap-2">
-              <Check size={16}/> ORDER PLACED SUCCESSFULLY
+            <div className="text-sm font-bold flex items-center gap-2">
+              ORDER PLACED SUCCESSFULLY
             </div>
-            <button className=" text-left text-sm text-zinc-300 hover:opacity-100">
-              Order ID: {result.orderId.substring(0,10)}... <br/> 
-              Click here to <span onClick={() => handleCloseOrder(tradeParams.symbol)} className="underline text-zinc-100 cursor-pointer">close position now.</span>
-            </button>
+            <button 
+                onClick={() => handleCloseOrder(tradeParams.symbol)} 
+                className="underline text-left cursor-pointer mt-1"
+              >
+                Click here to close position now.
+              </button>
           </motion.div>
         )
       }
@@ -414,7 +461,7 @@ const handleAccept = async (tradeParams) => {
 
   // Inside VibeTradingUI component
 const handleCloseOrder = async (symbol) => {
-  setIsTrading(true); // Re-use the trading loading state
+  setIsClosing(true); // Re-use the trading loading state
   
   try {
     const formData = new FormData();
@@ -440,8 +487,8 @@ const handleCloseOrder = async (symbol) => {
       {
         role: "ai",
         content: (
-          <div className="p-4 text-xs text-zinc-500 italic">
-            Position for {symbol} has been liquidated/closed.
+          <div className="p-4 text-zinc-500">
+            Position for {symbol} has been closed.
           </div>
         )
       }
@@ -450,13 +497,13 @@ const handleCloseOrder = async (symbol) => {
     // Cleanup: Reset UI states so user can search again
     setTimeout(() => {
       handleReset();
-    }, 2000);
+    }, 3000);
 
   } catch (error) {
     console.error("Close Error:", error);
     toast.error(error.message);
   } finally {
-    setIsTrading(false);
+    setIsClosing(false);
   }
 };
 
@@ -494,8 +541,14 @@ const handleSend = async () => {
       setIsSearching(false);
       setMessages(prev => [...prev, { 
         role: "ai", 
-        content: "You've run out of credits. Please upgrade your plan to continue trading." 
+        content: (
+            <div>
+              You run out of credits. Please <span onClick={()=> setShowPricing(true)} className="underline cursor-pointer text-zinc-100"> upgrade your plan </span> to continue trading.
+            </div>
+        ),
       }]);
+      toast("You've run out of credits. Please upgrade your plan to continue trading.")
+      setShowPricing(true);
       return;
     }
 
@@ -508,7 +561,19 @@ const handleSend = async () => {
 
     // 3. Process Successful Response
     const result = await response.json();
+    console.log(result)
     const aiData = result.data; 
+
+    if (aiData?.symbol) {
+      setActiveSymbol(aiData.symbol);
+      // Automatically draw the TP/SL lines based on AI prediction
+      setActiveLines({
+        entry: parseFloat(aiData.entry_price || currentPrice), // Use current live price as entry
+        tp: parseFloat(aiData.take_profit),
+        sl: parseFloat(aiData.stop_loss),
+        side: aiData.side
+      });
+    }
 
     setIsSearching(false);
     setMessages((prev) => [
@@ -548,10 +613,23 @@ const handleSend = async () => {
 
   return (
     <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
+    {showPricing && (
+  <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
+    {/* Close Button */}
+    <button 
+      onClick={() => setShowPricing(false)}
+      className="fixed top-5 right-10 z-[10000] text-white cursor-pointer"
+    >
+      ✕
+    </button>
+    
+    <Pricing />
+  </div>
+)}
       
       {/* LEFT SIDE: 70% (Exactly as you wanted it) */}
       <div className="flex-[7] flex flex-col min-w-0">
-        <AdvancedChart tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
+        <AdvancedChart symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
 
       <button 
@@ -602,6 +680,11 @@ const handleSend = async () => {
             {isTrading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
                 <span className="uppercase text-white/40 animate-pulse">TRADING</span>
+              </motion.div>
+            )}
+            {isClosing && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
+                <span className="uppercase text-white/40 animate-pulse">CLOSING</span>
               </motion.div>
             )}
           </AnimatePresence>
