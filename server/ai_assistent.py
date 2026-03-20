@@ -131,113 +131,14 @@ async def execute_trade(
     tp: float = Form(...),
     sl: float = Form(...),
 ):
-    # 1. Get Keys from DB
-    user = users_collection.find_one({"email": email})
-    if not user: raise HTTPException(status_code=404, detail="User not found")
-
-    binance_data = user.get("binance", {})
-    api_key = binance_data.get("apiKey")
-    encrypted_secret = binance_data.get("apiSecret")
-    is_demo = binance_data.get("demo", False)
-
-    if not api_key or not encrypted_secret:
-        raise HTTPException(status_code=400, detail="Binance API keys missing.")
-
-    # Decrypt the secret
-    try:
-        decrypted_secret = fernet.decrypt(encrypted_secret.encode()).decode()
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to decrypt API secret.")
-
-    # 2. Initialize Private Exchange
-    client = ccxt.binance({
-        'apiKey': api_key,
-        'secret': decrypted_secret, # Use the decrypted variable!
-        'options': {'defaultType': 'future'}
-    })
-    
-    if is_demo:
-        client.enable_demo_trading(True)
-
-    try:
-        # Load markets to get precision rules (CRITICAL for Binance)
-        await client.load_markets()
-        
-        # 3. Setup Leverage
-        formatted_symbol = symbol.upper() # Ensure it's BTC/USDT
-        await client.set_leverage(leverage, formatted_symbol)
-
-        # 4. Calculate Quantity with Correct Precision
-        price = await get_live_price(symbol)
-        if not price: raise Exception("Could not fetch live price for calculation")
-        
-        raw_quantity = (amount * leverage) / price
-        # Use CCXT helper to round to the exchange's required decimal places
-        quantity = float(client.amount_to_precision(formatted_symbol, raw_quantity))
-        
-        # 5. Execute Market Order (Side MUST be lowercase)
-        order_side = 'buy' if side.upper() == "BUY" else 'sell'
-        main_order = await client.create_market_order(formatted_symbol, order_side, quantity)
-
-        # 6. Set Take Profit & Stop Loss (Exit sides are opposite)
-        exit_side = 'sell' if order_side == 'buy' else 'buy'
-        
-        # Round TP/SL to correct price precision
-        tp_price = float(client.price_to_precision(formatted_symbol, tp))
-        sl_price = float(client.price_to_precision(formatted_symbol, sl))
-
-        common_params = {
-            'reduceOnly': True,
-
-            'workingType': 'MARK_PRICE' # <--- Adds stability
-        }
-
-        # Take Profit
-        tp_order = await client.create_order(
-            symbol=formatted_symbol,
-            type='TAKE_PROFIT_MARKET',
-            side=exit_side,
-            amount=quantity,
-            params={**common_params,'stopPrice': tp_price}
-        )
-
-        # Stop Loss
-        sl_order = await client.create_order(
-            symbol=formatted_symbol,
-            type='STOP_MARKET',
-            side=exit_side,
-            amount=quantity,
-            params={**common_params,'stopPrice': sl_price}
-        )
-
-        return {
-            "status": "success",
-            "message": f"Trade executed on {'Demo' if is_demo else 'Real'} Account",
-            "orderId": main_order['id'],
-            "tpId": tp_order['id'],
-            "slId": sl_order['id']
-        }
-
-    except Exception as e:
-        print(traceback.format_exc())
-        raise HTTPException(status_code=400, detail=f"Binance Error: {str(e)}")
-    finally:
-        await client.close() # Clean up connection
-
-@router.post("/api/close-position")
-async def close_position(email: str = Form(...), symbol: str = Form(...)):
-    # 1. Get and Validate User
     user = users_collection.find_one({"email": email})
     if not user: raise HTTPException(status_code=404, detail="User not found")
 
     binance_data = user.get("binance", {})
     api_key = binance_data.get("apiKey")
     is_demo = binance_data.get("demo", False)
-    
-    # Decrypt Secret
     decrypted_secret = fernet.decrypt(binance_data.get("apiSecret").encode()).decode()
 
-    # 2. Initialize Client
     client = ccxt.binance({
         'apiKey': api_key,
         'secret': decrypted_secret,
@@ -246,45 +147,86 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
     if is_demo: client.enable_demo_trading(True)
 
     try:
-        formatted_symbol = symbol.upper() # Use 'BTC/USDT' format for CCXT
+        await client.load_markets()
+        formatted_symbol = symbol.upper()
+        
+        # 1. Set Leverage
+        await client.set_leverage(leverage, formatted_symbol)
 
-        # STEP 1: CANCEL ALL OPEN ORDERS (TP/SL)
-        # We do this first so the 'Quantity' is no longer locked by TP/SL orders
-        try:
-            await client.cancel_all_orders(formatted_symbol)
-        except Exception as e:
-            print(f"No orders to cancel or error: {e}")
+        # 2. Get Price and Calculate Quantity
+        price = await get_live_price(formatted_symbol)
+        qty = float(client.amount_to_precision(formatted_symbol, (amount * leverage) / price))
+        
+        # 3. Entry Order
+        order_side = 'buy' if side.upper() == "BUY" else 'sell'
+        main_order = await client.create_market_order(formatted_symbol, order_side, qty)
 
-        # STEP 2: FETCH POSITION TO GET EXACT SIZE
-        # fetch_positions is the most accurate way to see 'Long' or 'Short'
+        # 4. TP/SL (THE FIX: Use closePosition=True)
+        exit_side = 'sell' if order_side == 'buy' else 'buy'
+        tp_price = float(client.price_to_precision(formatted_symbol, tp))
+        sl_price = float(client.price_to_precision(formatted_symbol, sl))
+
+        # This links the SL/TP specifically to the "Position" 
+        # so they show up correctly in the "Open Orders" tab
+        common_params = {'reduceOnly': True, 'closePosition': True}
+
+        await client.create_order(formatted_symbol, 'TAKE_PROFIT_MARKET', exit_side, qty, params={'stopPrice': tp_price, **common_params})
+        await client.create_order(formatted_symbol, 'STOP_MARKET', exit_side, qty, params={'stopPrice': sl_price, **common_params})
+
+        return {"status": "success", "message": "Trade and TP/SL setup complete"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    finally:
+        await client.close()
+
+@router.post("/api/close-position")
+async def close_position(email: str = Form(...), symbol: str = Form(...)):
+    user = users_collection.find_one({"email": email})
+    if not user: raise HTTPException(status_code=404, detail="User not found")
+
+    binance_data = user.get("binance", {})
+    api_key = binance_data.get("apiKey")
+    is_demo = binance_data.get("demo", False)
+    decrypted_secret = fernet.decrypt(binance_data.get("apiSecret").encode()).decode()
+
+    client = ccxt.binance({
+        'apiKey': api_key,
+        'secret': decrypted_secret,
+        'options': {'defaultType': 'future'}
+    })
+    if is_demo: client.enable_demo_trading(True)
+
+    try:
+        formatted_symbol = symbol.upper()
+
+        # 1. KILL ALL ORDERS FIRST (TP, SL, Limits)
+        # We call this twice using different methods to ensure Binance wipes the book
+        await client.cancel_all_orders(formatted_symbol) 
+        
+        # 2. GET CURRENT POSITION
+        # fetch_positions is the industry standard for specific symbol checks
         positions = await client.fetch_positions([formatted_symbol])
         active_pos = next((p for p in positions if p['symbol'] == formatted_symbol), None)
 
         if not active_pos or float(active_pos['contracts']) == 0:
-            return {"status": "success", "message": "No active position, but orders cleared."}
+            return {"status": "success", "message": "No position found, orders cleared."}
 
-        # STEP 3: EXECUTE MARKET CLOSE
-        pos_amount = float(active_pos['contracts'])
-        
-        # If amount > 0, we are Long (need to Sell). If < 0, we are Short (need to Buy).
-        side = 'sell' if pos_amount > 0 else 'buy'
+        # 3. MARKET CLOSE THE POSITION
+        contracts = float(active_pos['contracts'])
+        # CCXT 'contracts' is positive for Longs, negative for Shorts
+        side = 'sell' if contracts > 0 else 'buy'
         
         close_order = await client.create_market_order(
             symbol=formatted_symbol,
             side=side,
-            amount=abs(pos_amount),
-            params={'reduceOnly': True} # Prevents opening a new opposite position
+            amount=abs(contracts),
+            params={'reduceOnly': True}
         )
 
-        return {
-            "status": "success",
-            "message": f"Closed {formatted_symbol} and cleared all TP/SL.",
-            "orderId": close_order['id']
-        }
+        return {"status": "success", "message": f"Closed {abs(contracts)} {formatted_symbol} and wiped TP/SL."}
 
     except Exception as e:
         print(traceback.format_exc())
         raise HTTPException(status_code=400, detail=f"Close Error: {str(e)}")
-    
     finally:
         await client.close()
