@@ -163,6 +163,12 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
   }, [email]);
 
 
+  // show only in /dashboard page
+  if (pathname !== "/dashboard") {  
+    return null;
+  }
+
+
   return (
     // Set to absolute and top-0 so it doesn't push the Dashboard content down
     <nav className="w-full ">
