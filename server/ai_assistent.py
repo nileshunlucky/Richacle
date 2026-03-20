@@ -237,7 +237,10 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
     if not api_key or not encrypted_secret:
         raise HTTPException(status_code=400, detail="Binance API keys missing.")
 
-    decrypted_secret = fernet.decrypt(encrypted_secret.encode()).decode()
+    try:
+        decrypted_secret = fernet.decrypt(encrypted_secret.encode()).decode()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to decrypt API secret.")
 
     client = ccxt.binance({
         'apiKey': api_key,
@@ -248,43 +251,70 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
         client.enable_demo_trading(True)
 
     try:
-        formatted_symbol = symbol.upper().replace("/", "") + "/" + "USDT" if "/" not in symbol.upper() else symbol.upper()
         await client.load_markets()
 
-        # 1. Fetch positions using fetch_positions (more reliable than fetch_balance)
+        # Normalize symbol: accept "BTC", "BTCUSDT", or "BTC/USDT" → always "BTC/USDT"
+        raw = symbol.upper().strip()
+        if "/" in raw:
+            formatted_symbol = raw  # already BTC/USDT
+        elif raw.endswith("USDT"):
+            base = raw[:-4]
+            formatted_symbol = f"{base}/USDT"
+        else:
+            formatted_symbol = f"{raw}/USDT"
+
+        # Raw Binance symbol without slash (for direct API calls)
+        binance_symbol = formatted_symbol.replace("/", "")
+
+        print(f"[close-position] formatted_symbol={formatted_symbol}, binance_symbol={binance_symbol}")
+
+        # STEP 1: Fetch active position
         positions = await client.fetch_positions([formatted_symbol])
+        print(f"[close-position] positions returned: {positions}")
+
         active_pos = next(
-            (p for p in positions if p['symbol'] == formatted_symbol and float(p['contracts']) != 0),
+            (p for p in positions if p.get('symbol') == formatted_symbol and float(p.get('contracts') or 0) != 0),
             None
         )
 
         if not active_pos:
-            return {"status": "error", "message": f"No active position found for {formatted_symbol}"}
+            return {
+                "status": "error",
+                "message": f"No active position found for {formatted_symbol}"
+            }
 
-        pos_amount = float(active_pos['contracts'])
-        side = 'sell' if active_pos['side'] == 'long' else 'buy'
-        abs_amount = abs(pos_amount)
+        pos_contracts = float(active_pos['contracts'])
+        pos_side = active_pos.get('side', '')  # 'long' or 'short'
+        close_side = 'sell' if pos_side == 'long' else 'buy'
+        abs_amount = abs(pos_contracts)
 
-        # 2. Cancel ALL open orders for this symbol using the Futures-specific endpoint
-        # This correctly cancels STOP_MARKET and TAKE_PROFIT_MARKET conditional orders
+        print(f"[close-position] side={pos_side}, contracts={pos_contracts}, closing with={close_side}")
+
+        # STEP 2: Cancel all open orders (TP + SL) — correct CCXT param format
         try:
-            binance_symbol = formatted_symbol.replace("/", "")
-            await client.fapiPrivateDeleteAllOpenOrders({'symbol': binance_symbol})
+            await client.cancel_all_orders(formatted_symbol)
         except Exception as cancel_err:
-            print(f"Warning: Could not cancel open orders: {cancel_err}")
-            # Don't block the close — proceed anyway
+            print(f"[close-position] cancel_all_orders failed: {cancel_err}")
+            # Fallback: use raw fapi endpoint
+            try:
+                await client.fapiPrivateDeleteAllOpenOrders(params={'symbol': binance_symbol})
+            except Exception as fapi_err:
+                print(f"[close-position] fapiPrivateDeleteAllOpenOrders also failed: {fapi_err}")
+                # Still proceed — don't block the close
 
-        # 3. Close the position with a market order
+        # STEP 3: Close the position with a market order
         close_order = await client.create_market_order(
             symbol=formatted_symbol,
-            side=side,
+            side=close_side,
             amount=abs_amount,
             params={'reduceOnly': True}
         )
 
+        print(f"[close-position] close_order={close_order['id']}")
+
         return {
             "status": "success",
-            "message": f"Closed {formatted_symbol} position of {abs_amount}",
+            "message": f"Closed {'Demo' if is_demo else 'Live'} {pos_side} {formatted_symbol} x{abs_amount}",
             "orderId": close_order['id']
         }
 
