@@ -222,6 +222,7 @@ async def execute_trade(
         raise HTTPException(status_code=400, detail=f"Binance Error: {str(e)}")
     finally:
         await client.close() # Clean up connection
+        
 @router.post("/api/close-position")
 async def close_position(email: str = Form(...), symbol: str = Form(...)):
     user = users_collection.find_one({"email": email})
@@ -245,7 +246,7 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
         formatted_symbol = symbol.upper()
         binance_symbol = formatted_symbol.replace("/", "")
 
-        # 1. Fetch position from balance (your working approach)
+        # 1. Fetch position (your working approach — unchanged)
         balance = await client.fetch_balance()
         positions = balance['info']['positions']
         active_pos = next((p for p in positions if p['symbol'] == binance_symbol), None)
@@ -257,18 +258,22 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
         side = 'sell' if pos_amount > 0 else 'buy'
         abs_amount = abs(pos_amount)
 
-        # 2. Fetch all open orders and cancel each one (TP + SL)
-        # cancel_all_orders doesn't work reliably on Binance Futures —
-        # fetch_open_orders + cancel one by one always works
+        # 2. Cancel TP/SL — they are ALGO orders since Binance's Dec 2025 update.
+        # fetch_open_orders / cancel_all_orders will NEVER see them.
+        # Must use fapiPrivateGetAlgoOrders + fapiPrivateDeleteAlgoOrder per algoId.
         try:
-            open_orders = await client.fetch_open_orders(formatted_symbol)
-            for order in open_orders:
-                await client.cancel_order(order['id'], formatted_symbol)
+            algo_orders = await client.fapiPrivateGetAlgoOrders({'symbol': binance_symbol})
+            orders_list = algo_orders.get('orders', [])
+            for o in orders_list:
+                algo_id = o.get('algoId')
+                if algo_id:
+                    await client.fapiPrivateDeleteAlgoOrder({'algoId': algo_id, 'symbol': binance_symbol})
+                    print(f"[close-position] cancelled algoId={algo_id}")
         except Exception as cancel_err:
-            print(f"[close-position] cancel warning: {cancel_err}")
+            print(f"[close-position] algo cancel warning: {cancel_err}")
             # Don't block — still close the position
 
-        # 3. Close the position
+        # 3. Close the position (your working approach — unchanged)
         close_order = await client.create_market_order(
             symbol=formatted_symbol,
             side=side,
