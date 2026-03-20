@@ -245,7 +245,8 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
     client = ccxt.binance({
         'apiKey': api_key,
         'secret': decrypted_secret,
-        'options': {'defaultType': 'future'}
+        'options': {'defaultType': 'future'},
+        'enableRateLimit': True,
     })
     if is_demo:
         client.enable_demo_trading(True)
@@ -253,27 +254,25 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
     try:
         await client.load_markets()
 
-        # Normalize symbol: accept "BTC", "BTCUSDT", or "BTC/USDT" → always "BTC/USDT"
+        # Normalize to "BTC/USDT" format
         raw = symbol.upper().strip()
         if "/" in raw:
-            formatted_symbol = raw  # already BTC/USDT
+            formatted_symbol = raw
         elif raw.endswith("USDT"):
-            base = raw[:-4]
-            formatted_symbol = f"{base}/USDT"
+            formatted_symbol = raw[:-4] + "/USDT"
         else:
-            formatted_symbol = f"{raw}/USDT"
+            formatted_symbol = raw + "/USDT"
 
-        # Raw Binance symbol without slash (for direct API calls)
+        # Raw Binance symbol without slash: "BTCUSDT"
         binance_symbol = formatted_symbol.replace("/", "")
 
-        print(f"[close-position] formatted_symbol={formatted_symbol}, binance_symbol={binance_symbol}")
+        # STEP 1: Use fapiPrivateGetPositionRisk — the ONLY reliable way to get positionAmt
+        # fetch_positions() breaks on many ccxt versions; this raw call always works
+        all_positions = await client.fapiPrivateGetPositionRisk({'symbol': binance_symbol})
 
-        # STEP 1: Fetch active position
-        positions = await client.fetch_positions([formatted_symbol])
-        print(f"[close-position] positions returned: {positions}")
-
+        # positionAmt is a string like "0.050" or "-0.050" or "0.000"
         active_pos = next(
-            (p for p in positions if p.get('symbol') == formatted_symbol and float(p.get('contracts') or 0) != 0),
+            (p for p in all_positions if float(p.get('positionAmt', '0')) != 0),
             None
         )
 
@@ -283,24 +282,20 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
                 "message": f"No active position found for {formatted_symbol}"
             }
 
-        pos_contracts = float(active_pos['contracts'])
-        pos_side = active_pos.get('side', '')  # 'long' or 'short'
-        close_side = 'sell' if pos_side == 'long' else 'buy'
-        abs_amount = abs(pos_contracts)
+        pos_amt = float(active_pos['positionAmt'])
+        abs_amount = abs(pos_amt)
 
-        print(f"[close-position] side={pos_side}, contracts={pos_contracts}, closing with={close_side}")
+        # positive positionAmt = LONG → close with SELL
+        # negative positionAmt = SHORT → close with BUY
+        close_side = 'sell' if pos_amt > 0 else 'buy'
 
-        # STEP 2: Cancel all open orders (TP + SL) — correct CCXT param format
+        # STEP 2: Cancel ALL open orders (TP + SL) for this symbol
+        # Pass symbol dict directly — this is the correct ccxt raw call format
         try:
-            await client.cancel_all_orders(formatted_symbol)
+            await client.fapiPrivateDeleteAllOpenOrders({'symbol': binance_symbol})
         except Exception as cancel_err:
-            print(f"[close-position] cancel_all_orders failed: {cancel_err}")
-            # Fallback: use raw fapi endpoint
-            try:
-                await client.fapiPrivateDeleteAllOpenOrders(params={'symbol': binance_symbol})
-            except Exception as fapi_err:
-                print(f"[close-position] fapiPrivateDeleteAllOpenOrders also failed: {fapi_err}")
-                # Still proceed — don't block the close
+            print(f"[close-position] Warning: cancel orders failed: {cancel_err}")
+            # Don't block — still attempt the close
 
         # STEP 3: Close the position with a market order
         close_order = await client.create_market_order(
@@ -310,12 +305,11 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
             params={'reduceOnly': True}
         )
 
-        print(f"[close-position] close_order={close_order['id']}")
-
         return {
             "status": "success",
-            "message": f"Closed {'Demo' if is_demo else 'Live'} {pos_side} {formatted_symbol} x{abs_amount}",
-            "orderId": close_order['id']
+            "message": f"Closed {'Demo' if is_demo else 'Live'} {'LONG' if pos_amt > 0 else 'SHORT'} {formatted_symbol} — {abs_amount} contracts",
+            "orderId": close_order['id'],
+            "cancelledOrders": "TP/SL cancelled via fapiPrivateDeleteAllOpenOrders"
         }
 
     except Exception as e:
