@@ -67,10 +67,10 @@ const LogoCarousel = () => {
   const tripleLogos = [...logos, ...logos, ...logos];
 
   return (
-    <div className="w-full bg-black py-10 overflow-hidden relative">
+    <div className="w-full  py-10 overflow-hidden relative">
       {/* Premium Side Fades */}
-      <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-black to-transparent z-20 pointer-events-none" />
-      <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-black to-transparent z-20 pointer-events-none" />
+      <div className="absolute inset-y-0 left-0 w-24 md:w-48 bg-gradient-to-r from-transparent to-transparent z-20 pointer-events-none" />
+      <div className="absolute inset-y-0 right-0 w-24 md:w-48 bg-gradient-to-l from-transparent to-transparent z-20 pointer-events-none" />
 
       <motion.div
         className="flex whitespace-nowrap"
@@ -174,6 +174,9 @@ export default function AILandingPage() {
   return (
     <div className="min-h-screen  font-sans ">
 
+<img src="https://wallpapercave.com/wp/wp6439117.jpg" alt="logo" className="h-screen w-screen object-cover z-0 fixed top-0 left-0 " />
+
+
 
       <div className="relative z-50">
 
@@ -188,9 +191,9 @@ export default function AILandingPage() {
   className="text-3xl md:text-7xl font-bold tracking-tight mb-8 text-white max-w-4xl mx-auto leading-[1.1]"
 >
   {/* Top Line */}
-  <span className="block mb-2">
-    The World's Most Powerful Daytrading AI Agent
-  </span>
+  <div className="block mb-2">
+    The World's Most Powerful  <span className="theseason">Trading</span> AI Agent
+  </div>
 
 </motion.h1>
 
@@ -302,7 +305,7 @@ export default function AILandingPage() {
               <div className="mt-6 space-y-2">
                 <h3 className="text-lg md:text-xl font-medium text-white">Chat with AI</h3>
                 <p className="text-sm  leading-relaxed">
-                  Describe your Daytrading strategy in plain English. <span className="theseason">RICHACLE</span> agent reserach the market deeply.
+                  Describe your Daytrading strategy in plain English. <span className="theseason">RICHACLE</span> agent research the market deeply.
                 </p>
               </div>
             </motion.div>

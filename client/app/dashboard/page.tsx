@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import Pricing from "@/components/Pricing";
 import * as LightweightCharts from 'lightweight-charts';
 
+
 const cn = (...classes: (string | boolean | undefined | null)[]) => 
   classes.filter(Boolean).join(" ");
 
@@ -31,6 +32,7 @@ interface AdvancedChartProps {
   tradeLines: TradeLines | null;
   onPriceUpdate: (price: string) => void;
   symbol?: string;
+  isDemo?: boolean;
 }
 
 interface TradeWidgetProps {
@@ -63,7 +65,7 @@ interface Message {
   content: string | React.ReactNode;
 }
 
-const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT" }: AdvancedChartProps) {
+const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", isDemo = false }: AdvancedChartProps) {
   // 1. Properly typed refs using the imported library types
   const chartInstance = useRef<LightweightCharts.IChartApi | null>(null);
   const seriesRef = useRef<LightweightCharts.ISeriesApi<"Candlestick"> | null>(null);
@@ -73,7 +75,7 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
   const container = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const activeLinesRef = useRef<LightweightCharts.IPriceLine[]>([]);
-  const [interval, setInterval] = useState("1m");
+  const [interval, setInterval] = useState("15m");
   const [isChartReady, setIsChartReady] = useState(false);
 
   const timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"];
@@ -182,9 +184,19 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
     
     if (wsRef.current) wsRef.current.close();
 
+    // 1. Setup Conditional URLs
+    const restBase = isDemo 
+      ? "https://testnet.binancefuture.com/fapi/v1" 
+      : "https://fapi.binance.com/fapi/v1";
+    
+    // Inside the useEffect in AdvancedChart
+const wsBase = isDemo 
+  ? "stream.binancefuture.com" // Standard testnet stream
+  : "fstream.binance.com";    // Standard production stream
+
     type BinanceKline = [number, string, string, string, string, string, number, string, number, string, string, string];
 
-fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${interval}&limit=300`)
+fetch(`${restBase}/klines?symbol=${binanceSymbol}&interval=${interval}&limit=300`)
   .then(res => res.json())
   .then((raw: BinanceKline[]) => { // Add the type here
     const data = raw.map((c: BinanceKline) => ({ // Add the type here
@@ -204,7 +216,7 @@ fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${
         // Refresh visuals whenever data is loaded to ensure gradients stretch to new data points
         if (tradeLines) updateVisuals(tradeLines);
 
-        const socket = new WebSocket(`wss://stream.binance.com:9443/ws/${binanceSymbol.toLowerCase()}@kline_${interval}`);
+        const socket = new WebSocket(`wss://${wsBase}/ws/${binanceSymbol.toLowerCase()}@kline_${interval}`);
         wsRef.current = socket;
         socket.onmessage = (event) => {
           const k = JSON.parse(event.data).k;
@@ -218,7 +230,7 @@ fetch(`https://api.binance.com/api/v3/klines?symbol=${binanceSymbol}&interval=${
   });
         };
       });
-  }, [isChartReady, symbol, interval]);
+  }, [isChartReady, symbol, interval, isDemo]);
 
   useEffect(() => {
     if (isChartReady) updateVisuals(tradeLines);
@@ -258,12 +270,13 @@ const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onP
   const [leverage, setLeverage] = useState(initialData?.leverage?.toString() || "10");
   const [tp, setTp] = useState(initialData?.take_profit?.toString() || "");
   const [sl, setSl] = useState(initialData?.stop_loss?.toString() || "");
-  const [fixedPrice, setFixedPrice] = useState<string | null>(null);
+  const [fixedPrice, setFixedPrice] = useState<string | null>(null);;
   
 
   // This determines what the user actually sees on the buttons
 const displayPrice = disabled && fixedPrice ? fixedPrice : price;
 const entry = parseFloat(displayPrice || "0");
+
   
 
 useEffect(() => {
@@ -410,6 +423,7 @@ useEffect(() => {
 });
 
 export default function VibeTradingUI() {
+  const [isDemo, setIsDemo] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -424,6 +438,7 @@ export default function VibeTradingUI() {
     const [email, setEmail] = useState("");
     const [activeSymbol, setActiveSymbol] = useState("BTC/USDT");
   const [showPricing, setShowPricing] = useState(false);
+  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
       useEffect(() => {
     const getUser = async () => {
@@ -432,6 +447,28 @@ export default function VibeTradingUI() {
     };
     getUser();
   }, []);
+
+  
+ useEffect(() => {
+  if (!email) return;
+
+  const fetchBinance = async () => {
+    try {
+      // 1. Fetch User Data (Binance Keys)
+      const userRes = await fetch(`https://api.richacle.com/user/${email}`);
+      const userData = await userRes.json();
+      
+      setIsDemo(userData?.binance?.demo);
+      setIsConfigLoaded(true);
+
+    } catch (error) {
+      console.error("Poll error:", error);
+      setIsConfigLoaded(true);
+    }
+  };
+
+  fetchBinance(); 
+}, [email]);
 
   // Inside VibeTradingUI component
 const handleAccept = async (tradeParams: TradeParams) => {
@@ -520,7 +557,7 @@ const handleCloseOrder = async (symbol: string) => {
       throw new Error(result.detail || "Failed to close position");
     }
 
-    toast.success(`Position closed: ${symbol}`);
+    toast(`Position closed: ${symbol}`);
     
     // Add a "Closed" message to the chat
     setMessages(prev => [
@@ -671,10 +708,12 @@ const handleSend = async () => {
     <Pricing />
   </div>
 )}
+
+
       
       {/* LEFT SIDE: 70% (Exactly as you wanted it) */}
       <div className="flex-[7] flex flex-col min-w-0">
-        <AdvancedChart symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
+        <AdvancedChart isDemo={isDemo} symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
 
       <button 
