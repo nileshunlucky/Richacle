@@ -222,94 +222,64 @@ async def execute_trade(
         raise HTTPException(status_code=400, detail=f"Binance Error: {str(e)}")
     finally:
         await client.close() # Clean up connection
-
 @router.post("/api/close-position")
 async def close_position(email: str = Form(...), symbol: str = Form(...)):
     user = users_collection.find_one({"email": email})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    if not user: raise HTTPException(status_code=404, detail="User not found")
 
     binance_data = user.get("binance", {})
     api_key = binance_data.get("apiKey")
     encrypted_secret = binance_data.get("apiSecret")
     is_demo = binance_data.get("demo", False)
 
-    if not api_key or not encrypted_secret:
-        raise HTTPException(status_code=400, detail="Binance API keys missing.")
-
-    try:
-        decrypted_secret = fernet.decrypt(encrypted_secret.encode()).decode()
-    except Exception:
-        raise HTTPException(status_code=500, detail="Failed to decrypt API secret.")
+    decrypted_secret = fernet.decrypt(encrypted_secret.encode()).decode()
 
     client = ccxt.binance({
         'apiKey': api_key,
         'secret': decrypted_secret,
-        'options': {'defaultType': 'future'},
-        'enableRateLimit': True,
+        'options': {'defaultType': 'future'}
     })
-    if is_demo:
-        client.enable_demo_trading(True)
+    if is_demo: client.enable_demo_trading(True)
 
     try:
-        await client.load_markets()
-
-        # Normalize to "BTC/USDT" format
-        raw = symbol.upper().strip()
-        if "/" in raw:
-            formatted_symbol = raw
-        elif raw.endswith("USDT"):
-            formatted_symbol = raw[:-4] + "/USDT"
-        else:
-            formatted_symbol = raw + "/USDT"
-
-        # Raw Binance symbol without slash: "BTCUSDT"
+        formatted_symbol = symbol.upper()
         binance_symbol = formatted_symbol.replace("/", "")
 
-        # STEP 1: Use fapiPrivateGetPositionRisk — the ONLY reliable way to get positionAmt
-        # fetch_positions() breaks on many ccxt versions; this raw call always works
-        all_positions = await client.fapiPrivateGetPositionRisk({'symbol': binance_symbol})
+        # 1. Fetch position from balance (your working approach)
+        balance = await client.fetch_balance()
+        positions = balance['info']['positions']
+        active_pos = next((p for p in positions if p['symbol'] == binance_symbol), None)
 
-        # positionAmt is a string like "0.050" or "-0.050" or "0.000"
-        active_pos = next(
-            (p for p in all_positions if float(p.get('positionAmt', '0')) != 0),
-            None
-        )
+        if not active_pos or float(active_pos['positionAmt']) == 0:
+            return {"status": "error", "message": f"No active position found for {formatted_symbol}"}
 
-        if not active_pos:
-            return {
-                "status": "error",
-                "message": f"No active position found for {formatted_symbol}"
-            }
+        pos_amount = float(active_pos['positionAmt'])
+        side = 'sell' if pos_amount > 0 else 'buy'
+        abs_amount = abs(pos_amount)
 
-        pos_amt = float(active_pos['positionAmt'])
-        abs_amount = abs(pos_amt)
-
-        # positive positionAmt = LONG → close with SELL
-        # negative positionAmt = SHORT → close with BUY
-        close_side = 'sell' if pos_amt > 0 else 'buy'
-
-        # STEP 2: Cancel ALL open orders (TP + SL) for this symbol
-        # Pass symbol dict directly — this is the correct ccxt raw call format
+        # 2. Fetch all open orders and cancel each one (TP + SL)
+        # cancel_all_orders doesn't work reliably on Binance Futures —
+        # fetch_open_orders + cancel one by one always works
         try:
-            await client.fapiPrivateDeleteAllOpenOrders({'symbol': binance_symbol})
+            open_orders = await client.fetch_open_orders(formatted_symbol)
+            for order in open_orders:
+                await client.cancel_order(order['id'], formatted_symbol)
         except Exception as cancel_err:
-            print(f"[close-position] Warning: cancel orders failed: {cancel_err}")
-            # Don't block — still attempt the close
+            print(f"[close-position] cancel warning: {cancel_err}")
+            # Don't block — still close the position
 
-        # STEP 3: Close the position with a market order
+        # 3. Close the position
         close_order = await client.create_market_order(
             symbol=formatted_symbol,
-            side=close_side,
+            side=side,
             amount=abs_amount,
             params={'reduceOnly': True}
         )
 
         return {
             "status": "success",
-            "message": f"Closed {'Demo' if is_demo else 'Live'} {'LONG' if pos_amt > 0 else 'SHORT'} {formatted_symbol} — {abs_amount} contracts",
-            "orderId": close_order['id'],
-            "cancelledOrders": "TP/SL cancelled via fapiPrivateDeleteAllOpenOrders"
+            "message": f"Closed {formatted_symbol} position of {abs_amount}",
+            "orderId": close_order['id']
         }
 
     except Exception as e:
