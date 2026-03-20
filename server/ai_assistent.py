@@ -222,7 +222,7 @@ async def execute_trade(
         raise HTTPException(status_code=400, detail=f"Binance Error: {str(e)}")
     finally:
         await client.close() # Clean up connection
-        
+
 @router.post("/api/close-position")
 async def close_position(email: str = Form(...), symbol: str = Form(...)):
     user = users_collection.find_one({"email": email})
@@ -244,7 +244,7 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
 
     try:
         formatted_symbol = symbol.upper()
-        binance_symbol = formatted_symbol.replace("/", "")
+        binance_symbol = formatted_symbol.replace("/", "")  # BTC/USDT → BTCUSDT
 
         # 1. Fetch position (your working approach — unchanged)
         balance = await client.fetch_balance()
@@ -258,20 +258,19 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
         side = 'sell' if pos_amount > 0 else 'buy'
         abs_amount = abs(pos_amount)
 
-        # 2. Cancel TP/SL — they are ALGO orders since Binance's Dec 2025 update.
-        # fetch_open_orders / cancel_all_orders will NEVER see them.
-        # Must use fapiPrivateGetAlgoOrders + fapiPrivateDeleteAlgoOrder per algoId.
+        # 2. Cancel TP/SL — since Dec 2025 these are ALGO orders on /fapi/v1/openAlgoOrders
+        # NOT visible to fetch_open_orders or cancel_all_orders at all
         try:
-            algo_orders = await client.fapiPrivateGetAlgoOrders({'symbol': binance_symbol})
-            orders_list = algo_orders.get('orders', [])
-            for o in orders_list:
-                algo_id = o.get('algoId')
+            algo_response = await client.fapiPrivateGetOpenAlgoOrders({'symbol': binance_symbol})
+            # Response is a list of algo orders directly
+            algo_orders = algo_response if isinstance(algo_response, list) else algo_response.get('orders', [])
+            for order in algo_orders:
+                algo_id = order.get('algoId')
                 if algo_id:
-                    await client.fapiPrivateDeleteAlgoOrder({'algoId': algo_id, 'symbol': binance_symbol})
+                    await client.fapiPrivateDeleteAlgoOrder({'algoId': algo_id})
                     print(f"[close-position] cancelled algoId={algo_id}")
         except Exception as cancel_err:
-            print(f"[close-position] algo cancel warning: {cancel_err}")
-            # Don't block — still close the position
+            print(f"[close-position] algo cancel error: {cancel_err}")
 
         # 3. Close the position (your working approach — unchanged)
         close_order = await client.create_market_order(
