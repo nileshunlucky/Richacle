@@ -188,7 +188,6 @@ async def execute_trade(
 
         common_params = {
             'reduceOnly': True,
-            'closePosition': True,
             'workingType': 'MARK_PRICE' # <--- Adds stability
         }
 
