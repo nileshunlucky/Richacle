@@ -96,7 +96,7 @@ const LogoCarousel = () => {
                 logo.name == "LemonSqueezy" ? "invert" : ""
               }`}
             />
-            <span className="text-zinc-500 font-medium text-sm md:text-lg tracking-tight">
+            <span className="text-zinc-500 font-medium text-sm md:text-lg ">
               {logo.name}
             </span>
           </div>
@@ -178,7 +178,7 @@ export default function AILandingPage() {
 
 
 
-      <div className="relative z-50">
+      <div className="relative z-50 mt-10">
 
       {/* Hero Section */}
       <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5 ">
@@ -188,11 +188,11 @@ export default function AILandingPage() {
           <motion.h1 
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
-  className="text-3xl md:text-7xl font-bold tracking-tight mb-8 text-white max-w-4xl mx-auto leading-[1.1]"
+  className="text-3xl md:text-6xl font-bold  mb-8 text-white max-w-7xl mx-auto "
 >
   {/* Top Line */}
   <div className="block mb-2">
-    The World's Most Powerful  <span className="theseason">Trading</span> AI Agent
+    The World's Most Powerful <span className="theseason">Realtime Research</span> Trading AI Agent
   </div>
 
 </motion.h1>
@@ -205,7 +205,7 @@ export default function AILandingPage() {
           >
             Built to make you extraordinarily wealthy, <br/> <span className="font-light theseason">
         RICHACLE
-      </span> is the best way to trade with AI.
+      </span> is the smart way to trade with AI.
           </motion.p>
 
         </div>
@@ -227,7 +227,7 @@ export default function AILandingPage() {
               <textarea
                 value={input}
                 readOnly
-                placeholder="Daytrade on Bitcoin at 5min timeframe on 1:3 RR"
+                placeholder="Ask Richacle"
                 className="w-full bg-transparent p-6  text-zinc-300 outline-none resize-none md:h-44 text-sm md:text-base placeholder:text-zinc-700 cursor-default"
               />
               
@@ -265,7 +265,7 @@ export default function AILandingPage() {
         <div className="max-w-6xl mx-auto">
           
           <div className="mb-16 md:mb-24">
-            <h2 className="text-3xl md:text-5xl lg:text-6xl font-semibold tracking-tight text-white mb-3">
+            <h2 className="text-3xl md:text-5xl lg:text-6xl font-semibold  text-white mb-3">
               Three simple steps
             </h2>
             <p className=" text-base md:text-lg">Chat, Research, Trade - all in 1</p>
@@ -417,7 +417,7 @@ export default function AILandingPage() {
       {/* Footer CTA */}
       <section className="my-10 px-6 text-center">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-7xl font-bold tracking-tighter mb-8 bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent">
+          <h2 className="text-3xl md:text-7xl font-bold er mb-8 bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent">
             Ready to beat the market?
           </h2>
           <div className="flex items-center justify-center gap-3 text-xs md:text-xl">

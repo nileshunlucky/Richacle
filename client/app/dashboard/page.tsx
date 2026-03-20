@@ -130,7 +130,7 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
     }
 
     const eLine = seriesRef.current.createPriceLine({ 
-      price: entry, color: isBuy ? '#3b82f6' : '#FF1744', 
+      price: entry, color: isBuy ? '#1e3a8a' : '#FF1744', 
       lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: side.toUpperCase() 
     });
     const tLine = seriesRef.current.createPriceLine({ 
@@ -325,7 +325,7 @@ useEffect(() => {
           <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20 transition-all">
             <input 
               disabled={disabled}
-              type="text" 
+              type="number" 
               value={amount} 
               onChange={(e) => setAmount(e.target.value)}
               className="bg-transparent border-none outline-none text-white text-sm w-full p-0 focus:ring-0"
@@ -350,7 +350,7 @@ useEffect(() => {
             <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
               <input 
                 disabled={disabled}
-                type="text" 
+                type="number" 
                 value={leverage} 
                 onChange={(e) => setLeverage(e.target.value)}
                 className="bg-transparent border-none outline-none text-white text-[13px] w-full p-0 focus:ring-0"
@@ -368,7 +368,7 @@ useEffect(() => {
               <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
                 <input 
                   disabled={disabled}
-                  type="text" 
+                  type="number" 
                   value={tp} 
                   onChange={(e) => setTp(e.target.value)}
                   className="bg-transparent border-none outline-none text-white text-xs w-full p-0 focus:ring-0"
@@ -382,7 +382,7 @@ useEffect(() => {
               <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
                 <input 
                   disabled={disabled}
-                  type="text" 
+                  type="number"   
                   value={sl} 
                   onChange={(e) => setSl(e.target.value)}
                   className="bg-transparent border-none outline-none text-white text-xs w-full p-0 focus:ring-0"
@@ -406,13 +406,13 @@ useEffect(() => {
       sl
     });
   }}
-            className="flex-1 flex items-center justify-center gap-2 p-2 bg-green-700 hover:bg-green-600 transition-colors text-white text-xs rounded-l cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-green-700 bg-green-700/20 hover:bg-green-700/30 transition-colors text-green-200 text-xs rounded-l cursor-pointer"
           >
             <Check size={14} /> accept
           </button>
           <button 
             onClick={onReset}
-            className="flex-1 flex items-center justify-center gap-2 p-2 bg-red-700 hover:bg-red-600 transition-colors text-white text-xs rounded-r cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-red-700 bg-red-700/20 hover:bg-red-700/30 transition-colors text-red-200 text-xs rounded-r cursor-pointer"
           >
             x reject
           </button>
