@@ -188,6 +188,7 @@ async def execute_trade(
 
         common_params = {
             'reduceOnly': True,
+
             'workingType': 'MARK_PRICE' # <--- Adds stability
         }
 
@@ -225,82 +226,65 @@ async def execute_trade(
 
 @router.post("/api/close-position")
 async def close_position(email: str = Form(...), symbol: str = Form(...)):
-    # 1. Get and Validate User Keys
+    # 1. Get and Validate User
     user = users_collection.find_one({"email": email})
-    if not user: 
-        raise HTTPException(status_code=404, detail="User not found")
+    if not user: raise HTTPException(status_code=404, detail="User not found")
 
     binance_data = user.get("binance", {})
     api_key = binance_data.get("apiKey")
-    encrypted_secret = binance_data.get("apiSecret")
     is_demo = binance_data.get("demo", False)
+    
+    # Decrypt Secret
+    decrypted_secret = fernet.decrypt(binance_data.get("apiSecret").encode()).decode()
 
-    if not api_key or not encrypted_secret:
-        raise HTTPException(status_code=400, detail="API keys are missing.")
-
-    # 2. Decrypt Secret & Initialize Client
-    try:
-        decrypted_secret = fernet.decrypt(encrypted_secret.encode()).decode()
-        client = ccxt.binance({
-            'apiKey': api_key,
-            'secret': decrypted_secret,
-            'options': {'defaultType': 'future'}
-        })
-        if is_demo: 
-            client.enable_demo_trading(True)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail="Initialization/Decryption failed.")
+    # 2. Initialize Client
+    client = ccxt.binance({
+        'apiKey': api_key,
+        'secret': decrypted_secret,
+        'options': {'defaultType': 'future'}
+    })
+    if is_demo: client.enable_demo_trading(True)
 
     try:
-        formatted_symbol = symbol.upper() # Ensure BTC/USDT format
+        formatted_symbol = symbol.upper() # Use 'BTC/USDT' format for CCXT
 
-        # 3. CRITICAL: Cancel ALL Open Orders (TP and SL) first
-        # This prevents TP/SL from staying open after the position is gone.
+        # STEP 1: CANCEL ALL OPEN ORDERS (TP/SL)
+        # We do this first so the 'Quantity' is no longer locked by TP/SL orders
         try:
             await client.cancel_all_orders(formatted_symbol)
         except Exception as e:
-            print(f"Non-critical: Failed to cancel orders: {e}")
+            print(f"No orders to cancel or error: {e}")
 
-        # 4. Fetch the specific position using fetch_positions (Faster/Direct)
+        # STEP 2: FETCH POSITION TO GET EXACT SIZE
+        # fetch_positions is the most accurate way to see 'Long' or 'Short'
         positions = await client.fetch_positions([formatted_symbol])
-        
-        # CCXT maps the raw response to a standard structure
-        # We look for the side based on 'contracts' or 'positionAmt'
         active_pos = next((p for p in positions if p['symbol'] == formatted_symbol), None)
 
         if not active_pos or float(active_pos['contracts']) == 0:
-            return {
-                "status": "success", 
-                "message": f"All orders cleared, but no active position found for {formatted_symbol}"
-            }
+            return {"status": "success", "message": "No active position, but orders cleared."}
 
-        # 5. Determine Exit Parameters
+        # STEP 3: EXECUTE MARKET CLOSE
         pos_amount = float(active_pos['contracts'])
-        # If pos_amount is positive, we are LONG -> Side must be SELL to close
-        # If pos_amount is negative, we are SHORT -> Side must be BUY to close
+        
+        # If amount > 0, we are Long (need to Sell). If < 0, we are Short (need to Buy).
         side = 'sell' if pos_amount > 0 else 'buy'
-        abs_amount = abs(pos_amount)
-
-        # 6. Execute the Market Close Order
-        # Using 'reduceOnly' ensures we don't accidentally open a new position
+        
         close_order = await client.create_market_order(
             symbol=formatted_symbol,
             side=side,
-            amount=abs_amount,
-            params={'reduceOnly': True}
+            amount=abs(pos_amount),
+            params={'reduceOnly': True} # Prevents opening a new opposite position
         )
 
         return {
             "status": "success",
-            "message": f"Successfully closed {formatted_symbol} position and cleared all TP/SL orders.",
-            "orderId": close_order['id'],
-            "closedAmount": abs_amount
+            "message": f"Closed {formatted_symbol} and cleared all TP/SL.",
+            "orderId": close_order['id']
         }
 
     except Exception as e:
         print(traceback.format_exc())
-        raise HTTPException(status_code=400, detail=f"Close Position Error: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Close Error: {str(e)}")
     
     finally:
-        # Always close the connection
         await client.close()
