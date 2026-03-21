@@ -52,6 +52,7 @@ def save_referral(email: str = Form(...)):
     # 3. If user doesn't exist, insert as new user
     user_data = {
         "email": email,
+        "credits": 3,
     }
 
     users_collection.insert_one(user_data)

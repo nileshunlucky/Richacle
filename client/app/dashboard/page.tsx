@@ -182,7 +182,12 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
     if (!isChartReady || !seriesRef.current) return;
     const binanceSymbol = symbol.replace("/", "").toUpperCase();
     
-    if (wsRef.current) wsRef.current.close();
+
+    if (wsRef.current) {
+    wsRef.current.onmessage = null; // Add this line
+    wsRef.current.close();
+    wsRef.current = null;
+  }
 
     // 1. Setup Conditional URLs
     const restBase = isDemo 
@@ -221,13 +226,20 @@ fetch(`${restBase}/klines?symbol=${binanceSymbol}&interval=${interval}&limit=300
         socket.onmessage = (event) => {
           const k = JSON.parse(event.data).k;
           if (onPriceUpdate) onPriceUpdate(parseFloat(k.c).toFixed(2));
-          seriesRef.current?.update({
-    time: (k.t / 1000) as LightweightCharts.UTCTimestamp, 
-    open: parseFloat(k.o), 
-    high: parseFloat(k.h), 
-    low: parseFloat(k.l), 
-    close: parseFloat(k.c),
-  });
+          if (seriesRef.current && isChartReady && (seriesRef.current.data() as any).length > 0) {
+    try {
+      seriesRef.current.update({
+        time: (k.t / 1000) as LightweightCharts.UTCTimestamp, 
+        open: parseFloat(k.o), 
+        high: parseFloat(k.h), 
+        low: parseFloat(k.l), 
+        close: parseFloat(k.c),
+      });
+    } catch (e) {
+      // Prevents the "update error" crash during timeframe transition
+      console.warn("Socket update skipped: Chart re-loading");
+    }
+  }
         };
       });
   }, [isChartReady, symbol, interval, isDemo]);
@@ -270,20 +282,17 @@ const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onP
   const [leverage, setLeverage] = useState(initialData?.leverage?.toString() || "10");
   const [tp, setTp] = useState(initialData?.take_profit?.toString() || "");
   const [sl, setSl] = useState(initialData?.stop_loss?.toString() || "");
-  const [fixedPrice, setFixedPrice] = useState<string | null>(null);;
+
   
-
-  // This determines what the user actually sees on the buttons
-const displayPrice = disabled && fixedPrice ? fixedPrice : price;
-const entry = parseFloat(displayPrice || "0");
-
+const displayPrice = price || "0.00"; 
+const entry = parseFloat(displayPrice);
   
 
 useEffect(() => {
   if (onPriceChange) {
     onPriceChange({ entry, tp: parseFloat(tp), sl: parseFloat(sl), side });
   }
-}, [entry, tp, sl, side, onPriceChange, , disabled]);
+}, [entry, tp, sl, side, onPriceChange]);
 
   return (
     <motion.div
@@ -396,7 +405,6 @@ useEffect(() => {
         <div className="flex">
           <button 
             onClick={() => {
-    setFixedPrice(price); // Snapshots the live price right now
     onAccept({
       symbol,
       side,
@@ -439,6 +447,8 @@ export default function VibeTradingUI() {
     const [activeSymbol, setActiveSymbol] = useState("BTC/USDT");
   const [showPricing, setShowPricing] = useState(false);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
+  // Add this near your other state declarations in VibeTradingUI
+const [confirmedEntryPrice, setConfirmedEntryPrice] = useState<number | null>(null);
 
       useEffect(() => {
     const getUser = async () => {
@@ -447,6 +457,38 @@ export default function VibeTradingUI() {
     };
     getUser();
   }, []);
+
+  useEffect(() => {
+  if (!isExecuted || !activeLines || !currentPrice) return;
+
+  const price = parseFloat(currentPrice);
+  const { tp, sl, side } = activeLines;
+  const isBuy = side.toUpperCase() === "BUY";
+
+  // Check if TP hit
+  const tpHit = isBuy ? price >= tp : price <= tp;
+  // Check if SL hit
+  const slHit = isBuy ? price <= sl : price >= sl;
+
+  if (tpHit || slHit) {
+    
+    // 1. Call your Close API to clean up any remaining orphaned TP/SL orders on Binance
+    handleCloseOrder(activeSymbol);
+
+    // 2. Toast Notify
+    if(tpHit){
+      toast.success(`TAKE PROFIT HIT ${tp}`)
+    } else {
+      toast.error(`STOP LOSS HIT ${sl}`)
+    }
+
+
+    // 3. Reset the UI so the user can trade again
+    setTimeout(() => {
+      handleReset();
+    }, 3000);
+  }
+}, [currentPrice, isExecuted, activeLines, activeSymbol]);
 
   
  useEffect(() => {
@@ -496,8 +538,8 @@ const handleAccept = async (tradeParams: TradeParams) => {
     }
 
     // Success state
+    setConfirmedEntryPrice(result.entryPrice);
     setIsExecuted(true);
-    console.log("entryPrice", result.entryPrice);
     setMessages(prev => [
       ...prev,
       {
@@ -748,14 +790,18 @@ const handleSend = async () => {
                   </div>
                 ) : (
                   <div className="w-full">
-                      {React.isValidElement(msg.content) && msg.content.type === TradeWidget 
+{React.isValidElement(msg.content) && msg.content.type === TradeWidget 
   ? React.cloneElement(msg.content as React.ReactElement<TradeWidgetProps>, { 
       disabled: isTrading || isExecuted, 
       onAccept: handleAccept, 
-      price: currentPrice || "0.00" 
+      // If trade is executed, show the API price, otherwise show live price
+      price: isExecuted && confirmedEntryPrice 
+             ? confirmedEntryPrice.toString() 
+             : (currentPrice || "0.00") 
     }) 
   : msg.content}
                   </div>
+                  
                 )}
               </motion.div>
             ))}
