@@ -179,6 +179,8 @@ async def execute_trade(
         order_side = 'buy' if side.upper() == "BUY" else 'sell'
         main_order = await client.create_market_order(formatted_symbol, order_side, quantity)
 
+        actual_fill_price = main_order.get('average') or main_order.get('price')
+
         # 6. Set Take Profit & Stop Loss (Exit sides are opposite)
         exit_side = 'sell' if order_side == 'buy' else 'buy'
         
@@ -212,6 +214,7 @@ async def execute_trade(
         return {
             "status": "success",
             "message": f"Trade executed on {'Demo' if is_demo else 'Real'} Account",
+            "entryPrice": actual_fill_price,
             "orderId": main_order['id'],
             "tpId": tp_order['id'],
             "slId": sl_order['id']

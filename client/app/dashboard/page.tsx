@@ -497,6 +497,7 @@ const handleAccept = async (tradeParams: TradeParams) => {
 
     // Success state
     setIsExecuted(true);
+    console.log("entryPrice", result.entryPrice);
     setMessages(prev => [
       ...prev,
       {
@@ -785,7 +786,7 @@ const handleSend = async () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="p-4 mb-10"
+              className="p-4 mb-10 md:mb-0"
             >
               <div className="relative bg-[#0d0d0d] rounded-2xl border border-white/10 p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
                 <textarea
