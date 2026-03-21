@@ -298,7 +298,7 @@ useEffect(() => {
         <button 
           onClick={() => !disabled && setSide("SELL")}
           className={cn(
-            "p-3 transition-all text-left border-r border-white/5",
+            "p-3 transition-all text-left  cursor-pointer",
             side === "SELL" ? "bg-[#FF1744]/20 text-[#FF1744]" : "bg-[#2a2b2b] text-[#d1d1d1] opacity-50 hover:opacity-100"
           )}
         >
@@ -308,7 +308,7 @@ useEffect(() => {
         <button 
           onClick={() => !disabled && setSide("BUY")}
           className={cn(
-            "p-3 transition-all text-right",
+            "p-3 transition-all text-right cursor-pointer",
             side === "BUY" ? "bg-blue-500/20 text-blue-500" : "bg-[#2a2b2b] text-[#d1d1d1] opacity-50 hover:opacity-100"
           )}
         >

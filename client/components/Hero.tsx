@@ -174,7 +174,17 @@ export default function AILandingPage() {
   return (
     <div className="min-h-screen  font-sans ">
 
-<img src="https://wallpapercave.com/wp/wp6439117.jpg" alt="logo" className="h-screen w-screen object-cover z-0 fixed top-0 left-0 " />
+{/* Fixed Glow Background - Full Width Horizon */}
+<div className="fixed inset-0 z-0 bg-[#050505]">
+  <div 
+    className="absolute inset-0 opacity-60"
+    style={{
+      background: `radial-gradient(100% 50% at 50% 100%, #ff0080 0%, #3b001d 40%, transparent 100%)`
+    }}
+  />
+  {/* Optional: Subtle top-down fade to keep the top of the site dark */}
+  <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-transparent opacity-90" />
+</div>
 
 
 
