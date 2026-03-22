@@ -179,70 +179,86 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
   }, []);
 
   useEffect(() => {
-    if (!isChartReady || !seriesRef.current) return;
-    const binanceSymbol = symbol.replace("/", "").toUpperCase();
-    
+  if (!isChartReady || !seriesRef.current) return;
+  
+  let isCurrent = true; // Flag to prevent race conditions
+  const binanceSymbol = symbol.replace("/", "").toUpperCase();
 
-    if (wsRef.current) {
-    wsRef.current.onmessage = null; // Add this line
+  // 1. Immediate Cleanup of existing socket
+  if (wsRef.current) {
+    wsRef.current.onmessage = null;
     wsRef.current.close();
     wsRef.current = null;
   }
 
-    // 1. Setup Conditional URLs
-    const restBase = isDemo 
-      ? "https://testnet.binancefuture.com/fapi/v1" 
-      : "https://fapi.binance.com/fapi/v1";
-    
-    // Inside the useEffect in AdvancedChart
-const wsBase = isDemo 
-  ? "stream.binancefuture.com" // Standard testnet stream
-  : "fstream.binance.com";    // Standard production stream
+  const restBase = isDemo 
+    ? "https://testnet.binancefuture.com/fapi/v1" 
+    : "https://fapi.binance.com/fapi/v1";
+  
+  const wsBase = isDemo 
+    ? "stream.binancefuture.com" 
+    : "fstream.binance.com";
 
-    type BinanceKline = [number, string, string, string, string, string, number, string, number, string, string, string];
+  type BinanceKline = [number, string, string, string, string, string, number, string, number, string, string, string];
 
-fetch(`${restBase}/klines?symbol=${binanceSymbol}&interval=${interval}&limit=300`)
-  .then(res => res.json())
-  .then((raw: BinanceKline[]) => { // Add the type here
-    const data = raw.map((c: BinanceKline) => ({ // Add the type here
-      time: (c[0] / 1000) as LightweightCharts.UTCTimestamp, 
-      open: parseFloat(c[1]), 
-      high: parseFloat(c[2]), 
-      low: parseFloat(c[3]), 
-      close: parseFloat(c[4])
-    }));
-    
-    if (seriesRef.current) {
-      seriesRef.current.setData(data);
-      chartInstance.current?.timeScale().fitContent();
-    }
-     
+  // 2. Clear current data so the chart doesn't show old candles while loading
+  seriesRef.current.setData([]);
+
+  fetch(`${restBase}/klines?symbol=${binanceSymbol}&interval=${interval}&limit=300`)
+    .then(res => res.json())
+    .then((raw: BinanceKline[]) => {
+      // If symbol changed while we were fetching, STOP.
+      if (!isCurrent) return;
+
+      const data = raw.map((c: BinanceKline) => ({
+        time: (c[0] / 1000) as LightweightCharts.UTCTimestamp, 
+        open: parseFloat(c[1]), 
+        high: parseFloat(c[2]), 
+        low: parseFloat(c[3]), 
+        close: parseFloat(c[4])
+      }));
+      
+      if (seriesRef.current) {
+        seriesRef.current.setData(data);
+        chartInstance.current?.timeScale().fitContent();
+      }
+
+      if (tradeLines) updateVisuals(tradeLines);
+
+      const socket = new WebSocket(`wss://${wsBase}/ws/${binanceSymbol.toLowerCase()}@kline_${interval}`);
+      wsRef.current = socket;
+
+      socket.onmessage = (event) => {
+        if (!isCurrent) return; // Ignore if component updated
         
-        // Refresh visuals whenever data is loaded to ensure gradients stretch to new data points
-        if (tradeLines) updateVisuals(tradeLines);
+        const k = JSON.parse(event.data).k;
+        if (onPriceUpdate) onPriceUpdate(parseFloat(k.c).toFixed(2));
+        
+        if (seriesRef.current && isChartReady) {
+          try {
+            seriesRef.current.update({
+              time: (k.t / 1000) as LightweightCharts.UTCTimestamp, 
+              open: parseFloat(k.o), 
+              high: parseFloat(k.h), 
+              low: parseFloat(k.l), 
+              close: parseFloat(k.c),
+            });
+          } catch (e) {
+            console.warn("Socket update skipped: Chart re-loading");
+          }
+        }
+      };
+    });
 
-        const socket = new WebSocket(`wss://${wsBase}/ws/${binanceSymbol.toLowerCase()}@kline_${interval}`);
-        wsRef.current = socket;
-        socket.onmessage = (event) => {
-          const k = JSON.parse(event.data).k;
-          if (onPriceUpdate) onPriceUpdate(parseFloat(k.c).toFixed(2));
-          if (seriesRef.current && isChartReady && (seriesRef.current.data() as any).length > 0) {
-    try {
-      seriesRef.current.update({
-        time: (k.t / 1000) as LightweightCharts.UTCTimestamp, 
-        open: parseFloat(k.o), 
-        high: parseFloat(k.h), 
-        low: parseFloat(k.l), 
-        close: parseFloat(k.c),
-      });
-    } catch (e) {
-      // Prevents the "update error" crash during timeframe transition
-      console.warn("Socket update skipped: Chart re-loading");
+  // 3. Cleanup function for the effect
+  return () => {
+    isCurrent = false;
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
     }
-  }
-        };
-      });
-  }, [isChartReady, symbol, interval, isDemo]);
+  };
+}, [isChartReady, symbol, interval, isDemo]);
 
   useEffect(() => {
     if (isChartReady) updateVisuals(tradeLines);
