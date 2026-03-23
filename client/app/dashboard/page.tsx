@@ -16,6 +16,11 @@ import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
 import Pricing from "@/components/Pricing";
 import * as LightweightCharts from 'lightweight-charts';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 
 const cn = (...classes: (string | boolean | undefined | null)[]) => 
@@ -302,6 +307,42 @@ const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onP
   
 const displayPrice = price || "0.00"; 
 const entry = parseFloat(displayPrice);
+
+  const formatUSD = (value) => {
+  if (!value) return "";
+  return Number(value).toLocaleString("en-US");
+};
+
+// Inside TradeWidget component
+const { toWin, roiPercentage } = React.useMemo(() => {
+  const amt = parseFloat(amount) || 0;
+  const lev = parseFloat(leverage) || 1;
+  const targetPrice = parseFloat(tp) || 0;
+
+  if (entry > 0 && targetPrice > 0 && amt > 0) {
+    // 1. Calculate the raw price move percentage
+    // For BUY: (TP - Entry) / Entry
+    // For SELL: (Entry - TP) / Entry
+    const isBuy = side.toUpperCase() === "BUY";
+    const priceMove = isBuy 
+      ? (targetPrice - entry) / entry 
+      : (entry - targetPrice) / entry;
+    
+    // 2. Multiply by leverage for ROI
+    const roi = priceMove * lev;
+    
+    // 3. Calculate Final Amount (Initial + Profit)
+    const profit = amt * roi;
+    const totalWin = amt + profit;
+
+    return {
+      toWin: totalWin.toFixed(2),
+      roiPercentage: (roi * 100).toFixed(2) // Converts 0.267 to "267"
+    };
+  }
+  
+  return { toWin: "0.00", roiPercentage: "0" };
+}, [amount, leverage, tp, entry, side]);
   
 
 useEffect(() => {
@@ -345,18 +386,55 @@ useEffect(() => {
       <div className="space-y-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 px-1">
-            Amount <ChevronDown size={12} />
+            Amount
           </div>
-          <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20 transition-all">
-            <input 
-              disabled={disabled}
-              type="number" 
-              value={amount} 
-              onChange={(e) => setAmount(e.target.value)}
-              className="bg-transparent border-none outline-none text-white text-sm w-full p-0 focus:ring-0"
-            /> USDT
-          </div>
+          <div className="flex items-center py-2 border-b border-white/10 transition-all">
+
+
+<input 
+  disabled={disabled}
+  type="text" 
+  inputMode="decimal"
+  value={amount ? `$${formatUSD(amount)}` : ''} 
+  onChange={(e) => {
+    const rawValue = e.target.value.replace(/[^0-9.]/g, '');
+    setAmount(rawValue);
+  }}
+  className="bg-transparent outline-none text-white text-right text-2xl w-full p-0 focus:ring-0"
+  placeholder="$0"
+/>
+</div>
         </div>
+
+        <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center w-full">
+                  <div className="flex flex-col gap-1">
+    <span >To Win 💵</span>
+    {/* Displaying the exact ROI percentage */}
+    <span className="text-zinc-500">
+      +{roiPercentage}% 
+      <span className="text-zinc-500 px-2">
+      <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button type="button" className="outline-none">
+                      <Info size={13} className="text-zinc-600 hover:text-zinc-300 transition-colors" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>ROI (Return on Investment)</p>
+                  </TooltipContent>
+                </Tooltip>
+      </span>
+    </span>
+  </div> 
+                  <span className={cn(
+  "text-2xl",
+  Number(toWin) < (parseFloat(amount) || 0) ? "text-red-500" : "text-green-500"
+)}>
+  {toWin ? `$${Number(toWin).toLocaleString("en-US")}` : "$0"}
+</span>
+                  </div>
+                  </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
@@ -810,7 +888,6 @@ const handleSend = async () => {
   ? React.cloneElement(msg.content as React.ReactElement<TradeWidgetProps>, { 
       disabled: isTrading || isExecuted, 
       onAccept: handleAccept, 
-      // If trade is executed, show the API price, otherwise show live price
       price: isExecuted && confirmedEntryPrice 
              ? confirmedEntryPrice.toString() 
              : (currentPrice || "0.00") 

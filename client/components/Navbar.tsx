@@ -128,6 +128,7 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
         setTotalPnl(0);
         setStrategiesPerf(0);
       }
+       
 
     } catch (error) {
       console.error("Poll error:", error);

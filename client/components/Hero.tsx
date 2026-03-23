@@ -215,7 +215,7 @@ export default function AILandingPage() {
           >
             Built to make you extraordinarily wealthy, <br/> <span className="font-light theseason">
         RICHACLE
-      </span> is the smart way to trade with AI.
+      </span> the future of vibe trading.
           </motion.p>
 
         </div>
