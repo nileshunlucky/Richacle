@@ -308,7 +308,7 @@ const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onP
 const displayPrice = price || "0.00"; 
 const entry = parseFloat(displayPrice);
 
-  const formatUSD = (value) => {
+  const formatUSD = (value: string | number) => {
   if (!value) return "";
   return Number(value).toLocaleString("en-US");
 };
