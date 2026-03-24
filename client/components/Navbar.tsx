@@ -38,6 +38,7 @@ export default function Navbar() {
   const [loading, setLoading] = useState(false)
   const [totalPnl, setTotalPnl] = useState(0)
 const [strategiesPerf, setStrategiesPerf] = useState(0)
+ const [showMobileTip, setShowMobileTip] = useState(false);
 
     // Fetch user session
   useEffect(() => {
@@ -138,7 +139,12 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
   fetchData(); 
 }, [email, apiKey, apiSecret]);
 
-
+const toggleMobileTip = () => {
+    // Only show tooltip on small screens
+    if (window.innerWidth < 768) {
+      setShowMobileTip(!showMobileTip)
+    }
+  }
 
   useEffect(() => {
     if (!email) return;
@@ -266,10 +272,10 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
             <div className="space-y-2">
               <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1 flex items-center gap-2">
                 Public IPv4 address
-                <Tooltip>
+                <Tooltip open={showMobileTip || undefined}>
                   <TooltipTrigger asChild>
                     <button type="button" className="outline-none">
-                      <Info size={13} className="text-zinc-600 hover:text-zinc-300 transition-colors" />
+                      <Info onClick={toggleMobileTip} size={13} className="text-zinc-600 hover:text-zinc-300 transition-colors" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>

@@ -13,35 +13,30 @@ export default function Home() {
 
   const plans = [
     {
-      name: "Free Plan",
-      price: 0,
-      period: "forever",
+      name: "Hobby Plan",
+      price: 20,
+      period: "/month",
       features: [
-        "One-week Pro trial",
-        "Limited Strategy Credits",
-        "Limited Backtest",
-        "Limited Copilot",
+        "Realtime Research",
+        "Quant Agent",
         "Binance Intergration",
+        "Tradingview Chart",
       ],
-      cta: "Get Started",
-      link: "/dashboard",
+      cta: "Get Hobby",
+      link: `https://richacle.lemonsqueezy.com/checkout/buy/d839c805-dc80-46f2-89b5-01500d03c4ce/?checkout[email]=${email}`,
       featured: false
     },
     {
       name: "Pro Plan",
-      price: 25,
+      price: 60,
       period: "/month",
       features: [
-        "Everything in Free, Plus",
-        "Strategy Credits",
-      
-        "Backtest",
-        "Copilot",
-        "3 Live/Demo Deployment",
+        "Everything in Hobby, Plus",
+        "3x usage on GPT5.1 model",
         "Exclusive support"
       ],
       cta: "Get Pro",
-      link: `https://richacle.lemonsqueezy.com/checkout/buy/076a89d9-d4fa-44de-874d-a090b2e65342/?checkout[email]=${email}`,
+      link: `https://richacle.lemonsqueezy.com/checkout/buy/5af3ef48-aafc-4e5c-a681-74a4ff58c3f6/?checkout[email]=${email}`,
       featured: true
     },
     {
@@ -50,12 +45,11 @@ export default function Home() {
       period: "/month",
       features: [
         "Everything in Pro, Plus",
-        "8x usage on Strategy Credits, Backtest, Copilot",
-        "24 Live/Demo Deployment",
+        "10x usage on GPT5.1 model",
         "Priority access to new features",
       ],
       cta: "Get Premium",
-      link: `https://richacle.lemonsqueezy.com/checkout/buy/a62bd459-6c77-47fc-a43c-cf874c426d7a/?checkout[email]=${email}`,
+      link: `https://richacle.lemonsqueezy.com/checkout/buy/fe21fae8-a209-480c-a9c0-31e80ad5bbef/?checkout[email]=${email}`,
       featured: false
     }
   ];
@@ -84,7 +78,7 @@ const cardVariants = {
 
 
   return (
-    <div className="bg-black text-white md:pt-10 ">
+    <div className="bg-black text-white md:pt-28 ">
     
       {/* Hero Section */}
       <div className="pt-20 pb-16 px-6 relative min-h-screen">

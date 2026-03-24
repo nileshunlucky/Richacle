@@ -303,10 +303,18 @@ const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onP
   const [leverage, setLeverage] = useState(initialData?.leverage?.toString() || "10");
   const [tp, setTp] = useState(initialData?.take_profit?.toString() || "");
   const [sl, setSl] = useState(initialData?.stop_loss?.toString() || "");
+  const [showMobileTip, setShowMobileTip] = useState(false);
 
   
 const displayPrice = price || "0.00"; 
 const entry = parseFloat(displayPrice);
+
+ const toggleMobileTip = () => {
+    // Only show tooltip on small screens
+    if (window.innerWidth < 768) {
+      setShowMobileTip(!showMobileTip)
+    }
+  }
 
   const formatUSD = (value: string | number) => {
   if (!value) return "";
@@ -414,10 +422,10 @@ useEffect(() => {
     <span className="text-zinc-500">
       +{roiPercentage}% 
       <span className="text-zinc-500 px-2">
-      <Tooltip>
+      <Tooltip  open={showMobileTip || undefined}>
                   <TooltipTrigger asChild>
                     <button type="button" className="outline-none">
-                      <Info size={13} className="text-zinc-600 hover:text-zinc-300 transition-colors" />
+                      <Info  onClick={toggleMobileTip} size={13} className="text-zinc-600 hover:text-zinc-300 transition-colors" />
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
@@ -798,9 +806,13 @@ const handleSend = async () => {
       {
         role: "ai",
         content: (
-          <div className="space-y-2">
+          <div className="space-y-2 flex flex-col">
             <div className="p-3.5 text-zinc-200">
               {aiData?.research_summary}
+            </div>
+            <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
+              <h1 className=" font-semibold text-zinc-200">{aiData?.confidence}% confidence</h1>
+              <h1 className=" text-zinc-200 font-light theseason">RICHACLE</h1>
             </div>
           </div>
         ),

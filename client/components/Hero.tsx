@@ -198,11 +198,11 @@ export default function AILandingPage() {
           <motion.h1 
   initial={{ opacity: 0, y: 20 }}
   animate={{ opacity: 1, y: 0 }}
-  className="text-3xl md:text-6xl font-bold  mb-8 text-white max-w-7xl mx-auto "
+  className="text-[25px] md:text-6xl font-bold  mb-8 text-white max-w-7xl mx-auto"
 >
   {/* Top Line */}
   <div className="block mb-2">
-    The World's Most Powerful <span className="theseason">Realtime Research</span> Trading AI Agent
+    the <span className="theseason">Oracle</span> of vibe trading
   </div>
 
 </motion.h1>
@@ -213,9 +213,10 @@ export default function AILandingPage() {
             transition={{ delay: 0.1 }}
             className="text-zinc-200 mb-10 max-w-2xl mx-auto md:text-xl"
           >
-            Built to make you extraordinarily wealthy, <br/> <span className="font-light theseason">
+           <span className="font-light theseason">
         RICHACLE
-      </span> the future of vibe trading.
+      </span> realtime research AI agent,<br/> 
+       Built to make you extraordinarily wealthy.
           </motion.p>
 
         </div>
@@ -262,7 +263,7 @@ export default function AILandingPage() {
             className="flex items-center justify-center gap-3 mb-5 text-xs md:text-xl z-50"
           >
             <Link href="/dashboard">
-              <Button >Get started Daytarding</Button>
+              <Button >Sign up and get Free Credits 🎁</Button>
             </Link>
           </motion.div>
       </section>

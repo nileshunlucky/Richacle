@@ -31,6 +31,7 @@ class CryptoPrediction(BaseModel):
     leverage: int = Field(description="Leverage value between 1 and 125.")
     take_profit: float = Field(description="Target price calculated with 1:3 Risk-to-Reward.")
     stop_loss: float = Field(description="Stop loss price calculated to protect capital.")
+    confidence: int = Field(description="Accuracy score between 0 and 100 representing prediction certainty.")
 
 async def get_live_price(symbol: str):
     """Fetches real-time price from Binance using CCXT."""
@@ -92,6 +93,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
             f"2. Side: Predict BUY or SELL. \n"
             f"3. Leverage: 1-125 based on volatility. \n"
             f"4. TP/SL: Calculate based on a 1:3 Risk-to-Reward ratio relative to the live price ({live_price})."
+            f"5. Confidence: Provide a score from 0-100 based on technical strength and data clarity."
         )
 
         completion = openai_client.beta.chat.completions.parse(
