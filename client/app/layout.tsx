@@ -71,6 +71,16 @@ export default function RootLayout({
           `}
         </Script>
 
+        {/* Lemon Squeezy Affiliate Tracking */}
+        <Script id="lemon-squeezy-affiliate-config" strategy="afterInteractive">
+          {`window.lemonSqueezyAffiliateConfig = { store: "richcale" };`}
+        </Script>
+        <Script 
+          src="https://lmsqueezy.com/affiliate.js" 
+          strategy="afterInteractive" 
+          defer 
+        />
+
         <Toaster position="top-right" richColors />
         <Navbar />
         {children}

@@ -284,10 +284,10 @@ const toggleMobileTip = () => {
                 </Tooltip>
               </label>
               <div 
-                onClick={()=> navigator.clipboard.writeText("43.204.237.247")} 
+                onClick={()=> navigator.clipboard.writeText("65.2.153.133")} 
                 className="w-full flex justify-between items-center bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm cursor-pointer hover:border-zinc-700 transition-colors"
               >
-                <span className="text-zinc-400">43.204.237.247</span>
+                <span className="text-zinc-400">65.2.153.133</span>
                 <Copy size={16} className="text-zinc-500" />
               </div>
             </div>

@@ -37,6 +37,14 @@ export default function Footer() {
                   Terms
                 </Link>
               </li>
+              <li>
+                <a
+                  href="https://richacle.lemonsqueezy.com/affiliates"
+                  className="text-sm  hover:text-white transition"
+                >
+                  Affiliate Program
+                </a>
+              </li>
             </ul>
 
             {/* Youtube */}
