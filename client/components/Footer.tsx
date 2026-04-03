@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Youtube, Twitter } from "lucide-react";
+import { Send, Twitter } from "lucide-react";
 import Link from "next/link";
 
 export default function Footer() {
@@ -16,7 +16,7 @@ export default function Footer() {
             © {year} <span className="theseason">RICHACLE</span> Inc. All rights reserved.
           </p>
 
-          {/* Links + Youtube */}
+          {/* Links + social */}
           <div className="flex items-center flex-wrap gap-6 justify-center">
 
             {/* Links */}
@@ -47,14 +47,14 @@ export default function Footer() {
               </li>
             </ul>
 
-            {/* Youtube */}
+            {/* Telegram */}
             <a
-              href="https://Youtube.com/@richacle"
+              href="https://t.me/richacle"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2  hover:text-white transition"
             >
-              <Youtube size={20} />
+              <Send size={20} />
             </a>
             {/* X */}
             <a

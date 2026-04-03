@@ -532,6 +532,103 @@ useEffect(() => {
   );
 });
 
+const TradeResultOverlay = ({ 
+  type, 
+  pnl, 
+  symbol, 
+  onClose,
+  details
+}: { 
+  type: 'WIN' | 'LOSS', 
+  pnl: string, 
+  symbol: string, 
+  onClose: () => void,
+  details: {
+    prompt: string,
+    amount: string,
+    leverage: string,
+    odds: string,
+    side: string
+  }
+}) => {
+  const isWin = type === 'WIN';
+  
+  return (
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-xl p-4 md:p-6"
+    >
+      <motion.div 
+        initial={{ scale: 0.95, y: 30, opacity: 0 }}
+        animate={{ scale: 1, y: 0, opacity: 1 }}
+        transition={{ type: "spring", damping: 25, stiffness: 150 }}
+        onClick={onClose}
+        className="relative cursor-pointer w-full max-w-[650px] overflow-hidden rounded-[24px] md:rounded-[32px] shadow-[0_32px_120px_-15px_rgba(0,0,0,0.8)]"
+        style={{
+          backgroundColor: '#000000',
+          backgroundImage: isWin 
+            ? `radial-gradient(100% 100% at 50% 100%, #004A1A 0%, #001A08 40%, #000804 60%, #000000 90%, transparent 100%)`
+            : `radial-gradient(100% 90% at 50% 100%, #7A001B 0%, #4A0010 30%, #1A0508 60%, #000000 90%, transparent 100%)`
+        }}
+      >
+        <div className="relative z-10 p-5 flex flex-col items-center">
+          
+          {/* Main Content Container: Mobile Stack, Desktop Row */}
+          <div className="w-full flex flex-col md:flex-row items-stretch md:items-center overflow-hidden">
+            
+            {/* LEFT SIDE: Logo & Prompt */}
+            <div className="flex-1 p-4 md:p-8 text-left space-y-3">
+              <div className="flex items-center gap-3 mb-6 md:mb-10 w-full ">
+                <img className="h-6 w-6 md:h-8 md:w-8 opacity-90" src="/logo.png" alt="logo"/>
+                <p className="text-xl md:text-2xl text-white font-medium theseason tracking-tight">RICHACLE</p>
+              </div>
+              <p className="text-white text-xl md:text-2xl font-semibold leading-tight tracking-tight">
+                {details.prompt}
+              </p>
+            </div>
+
+            {/* Separator: Vertical on Desktop, Horizontal on Mobile */}
+            <div className="h-px w-full md:h-40 md:w-px bg-white/10  my-2 md:my-0" />
+
+            {/* RIGHT SIDE: Trade Details */}
+            <div className="p-4 md:p-8 w-full md:w-64 text-left flex flex-col justify-center">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <h4 className={`text-xl md:text-2xl font-bold tracking-tight uppercase ${isWin ? 'text-blue-700' : 'text-red-700'}`}>
+                    Traded {details.side}
+                  </h4>
+                  <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
+                    <span>Amount</span>
+                    <span className="tabular-nums font-bold text-white">${details.amount}</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
+                    <span>Leverage</span>
+                    <span className="tabular-nums font-bold text-white">{details.leverage}x</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
+                    <span>Odds</span>
+                    <span className="tabular-nums font-bold text-white">{details.odds}</span>
+                  </div>
+                </div>
+
+                <div className="h-px w-full bg-white/10 border-dashed border-zinc-600/20" />
+                
+                <div className="space-y-1">
+                  <span className="text-zinc-200 text-xs font-medium">To {isWin ? 'Win' : 'Loss'}</span>
+                  <div className="text-4xl md:text-5xl font-bold tracking-tighter tabular-nums text-[#CFA968]">
+                    ${pnl}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
 export default function VibeTradingUI() {
   const [isDemo, setIsDemo] = useState(false);
   const [prompt, setPrompt] = useState("");
@@ -551,6 +648,49 @@ export default function VibeTradingUI() {
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
   // Add this near your other state declarations in VibeTradingUI
 const [confirmedEntryPrice, setConfirmedEntryPrice] = useState<number | null>(null);
+const [lastResearch, setLastResearch] = useState<any>(null);
+const [activeTradeParams, setActiveTradeParams] = useState<any>(null);
+const [tradeResult, setTradeResult] = useState<{
+  show: boolean;
+  type: 'WIN' | 'LOSS';
+  pnl: string;
+} | null>(null);
+
+useEffect(() => {
+  if (!isExecuted || !activeLines || !currentPrice || !activeTradeParams) return;
+
+  const price = parseFloat(currentPrice);
+  const { tp, sl, side, entry } = activeLines;
+  const isBuy = side.toUpperCase() === "BUY";
+
+  const tpHit = isBuy ? price >= tp : price <= tp;
+  const slHit = isBuy ? price <= sl : price >= sl;
+
+  if (tpHit || slHit) {
+    handleCloseOrder(activeSymbol);
+
+    // CALCULATE ACTUAL PNL
+    const exitPrice = tpHit ? tp : sl;
+    const priceDiff = Math.abs(exitPrice - entry);
+    const percentageChange = priceDiff / entry;
+    const calculatedPnl = (
+      parseFloat(activeTradeParams.amount) * parseFloat(activeTradeParams.leverage) * percentageChange
+    ).toFixed(2);
+
+    setTradeResult({
+      show: true,
+      type: tpHit ? 'WIN' : 'LOSS',
+      pnl: calculatedPnl,
+      details: {
+        prompt: lastResearch?.research_summary?.substring(0, 60) + "..." || "Trade Executed",
+        amount: activeTradeParams.amount,
+        leverage: activeTradeParams.leverage,
+        odds: lastResearch?.confidence || "0",
+        side: side
+      }
+    });
+  }
+}, [currentPrice, isExecuted, activeLines, activeSymbol, activeTradeParams]);
 
       useEffect(() => {
     const getUser = async () => {
@@ -616,6 +756,7 @@ const [confirmedEntryPrice, setConfirmedEntryPrice] = useState<number | null>(nu
 
   // Inside VibeTradingUI component
 const handleAccept = async (tradeParams: TradeParams) => {
+  setActiveTradeParams(tradeParams);
   setIsTrading(true);
   
   try {
@@ -788,6 +929,7 @@ const handleSend = async () => {
     const result = await response.json();
     console.log(result)
     const aiData = result.data; 
+    setLastResearch(aiData);
 
     if (aiData?.symbol) {
       setActiveSymbol(aiData.symbol);
@@ -964,7 +1106,22 @@ const handleSend = async () => {
             </motion.div>
           )}
         </AnimatePresence>
+
       </div>
+        <AnimatePresence>
+      {tradeResult?.show && (
+        <TradeResultOverlay 
+          type={tradeResult.type}
+          pnl={tradeResult.pnl}
+          symbol={activeSymbol}
+          details={tradeResult.details}
+          onClose={() => {
+            setTradeResult(null);
+            handleReset(); // Reset the main UI after closing result
+          }}
+        />
+      )}
+    </AnimatePresence>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
