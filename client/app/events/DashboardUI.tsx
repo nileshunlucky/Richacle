@@ -14,11 +14,9 @@ import {
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 export interface MarketData {
-    leverage: string;
     odds: string;
     side: string;
   symbol: string;
-  side: string;
   leverage: string;
   tp: string;
   sl: string;
