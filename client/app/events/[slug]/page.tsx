@@ -8,6 +8,7 @@ type Props = {
 
 const MARKET_DATABASE: Record<string, any> = {
   "morgan-stanley-bitcoin": {
+title:"Morgan Stanley Launch Bitcoin ETF",
   symbol: "BTC/USDT",
   side: "BUY",
   tp: "75000",
@@ -22,6 +23,7 @@ const MARKET_DATABASE: Record<string, any> = {
   side: "SELL",
   tp: "71200",
   sl: "72400",
+  title: "",
   summary: "TRUMP FAKES BITCOIN GAMBLING",
   timeline: "7-14 days to target",
     leverage: "50",
@@ -36,7 +38,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     twitter: {
       card: "summary_large_image",
-      title: "Richacle Market",
+      title: market?.title,
       description: market?.summary,
       images: [`https://richacle.com/events/${slug}.png`], 
     },
