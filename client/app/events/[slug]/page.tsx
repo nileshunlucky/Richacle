@@ -7,7 +7,7 @@ type Props = {
 };
 
 const MARKET_DATABASE: Record<string, any> = {
-  "morgan-stanley-bitcoin": {
+  "morgan-stanley-launch-bitcoin": {
 title:"Morgan Stanley Launch Bitcoin ETF",
   symbol: "BTC/USDT",
   side: "BUY",
