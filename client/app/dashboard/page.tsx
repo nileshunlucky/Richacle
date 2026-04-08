@@ -56,6 +56,19 @@ interface TradeWidgetProps {
   };
 }
 
+interface TradeResultState {
+  show: boolean;
+  type: 'WIN' | 'LOSS';
+  pnl: string;
+  details: {
+    prompt: string;
+    amount: string;
+    leverage: string;
+    odds: string;
+    side: string;
+  };
+}
+
 interface TradeParams {
   symbol: string;
   side: string;
@@ -650,11 +663,7 @@ export default function VibeTradingUI() {
 const [confirmedEntryPrice, setConfirmedEntryPrice] = useState<number | null>(null);
 const [lastResearch, setLastResearch] = useState<any>(null);
 const [activeTradeParams, setActiveTradeParams] = useState<any>(null);
-const [tradeResult, setTradeResult] = useState<{
-  show: boolean;
-  type: 'WIN' | 'LOSS';
-  pnl: string;
-} | null>(null);
+const [tradeResult, setTradeResult] = useState<TradeResultState | null>(null);
 
 useEffect(() => {
   if (!isExecuted || !activeLines || !currentPrice || !activeTradeParams) return;
