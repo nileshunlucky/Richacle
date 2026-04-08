@@ -18,7 +18,7 @@ export interface MarketData {
     side: string;
   symbol: string;
   leverage: string;
-  tp: string;
+  tp: string; 
   sl: string;
   summary: string;
   timeline: string;
@@ -316,12 +316,12 @@ const TradeWidget = memo(function TradeWidget({
   price,
   initialData,
 }: TradeWidgetProps) {
-  const [side] = useState(initialData?.side);
   const [amount, setAmount] = useState("10000");
-  const [symbol] = useState(initialData?.symbol);
-  const [leverage, setLeverage] = useState(initialData?.leverage?.toString());
-  const [tp] = useState(initialData?.take_profit?.toString());
-  const [sl] = useState(initialData?.stop_loss?.toString());
+  const [leverage, setLeverage] = useState(initialData?.leverage?.toString() || "1");
+const [tp] = useState(initialData?.take_profit?.toString() || "0");
+const [sl] = useState(initialData?.stop_loss?.toString() || "0");
+const [side] = useState(initialData?.side || "BUY"); 
+const [symbol] = useState(initialData?.symbol || "BTC/USDT");
   const [showMobileTip, setShowMobileTip] = useState(false);
 
   const displayPrice = price || "0.00";
@@ -359,7 +359,7 @@ const TradeWidget = memo(function TradeWidget({
 
   useEffect(() => {
     if (onPriceChange) {
-      onPriceChange({ entry, tp: parseFloat(tp), sl: parseFloat(sl), side });
+      onPriceChange({ entry, tp: parseFloat(tp || "0"), sl: parseFloat(sl || "0"), side });
     }
   }, [entry, tp, sl, side, onPriceChange]);
 
