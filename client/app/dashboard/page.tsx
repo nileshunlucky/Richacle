@@ -962,7 +962,7 @@ const handleSend = async () => {
               {aiData?.research_summary}
             </div>
             <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
-              <h1 className=" font-semibold text-zinc-200">{aiData?.confidence}% confidence</h1>
+              <h1 className=" font-semibold text-zinc-200">Win Rate {aiData?.confidence}%</h1>
               <h1 className=" text-zinc-200 font-light theseason">RICHACLE</h1>
             </div>
           </div>
