@@ -21,7 +21,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 const cn = (...classes: (string | boolean | undefined | null)[]) => 
   classes.filter(Boolean).join(" ");
@@ -664,6 +670,15 @@ const [confirmedEntryPrice, setConfirmedEntryPrice] = useState<number | null>(nu
 const [lastResearch, setLastResearch] = useState<any>(null);
 const [activeTradeParams, setActiveTradeParams] = useState<any>(null);
 const [tradeResult, setTradeResult] = useState<TradeResultState | null>(null);
+const [selectedModel, setSelectedModel] = useState("grok-4.2");
+
+const models = [
+  { id: "claude-4.7", name: "Claude Opus 4.7" },
+  { id: "gpt-5.4", name: "GPT 5.4" },
+  { id: "gemini-3.1", name: "Gemini 3.1 Pro" },
+  { id: "grok-4.2", name: "Grok 4.2" },
+  { id: "deepseek-v3.2", name: "Deepseek-V3.2" },
+]
 
 useEffect(() => {
   if (!isExecuted || !activeLines || !currentPrice || !activeTradeParams) return;
@@ -993,6 +1008,7 @@ const handleSend = async () => {
   }
 };
 
+
   return (
     <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
     {showPricing && (
@@ -1100,9 +1116,23 @@ const handleSend = async () => {
                 />
                 
                 <div className="flex justify-between items-center mt-auto">
-                  <span className="text-[11px] font-bold text-white/70 tracking-widest uppercase">
-                    GPT 5.1
-                  </span>
+                <Select value={selectedModel} onValueChange={setSelectedModel}>
+  <SelectTrigger className=" border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70  hover:text-white transition-colors outline-none">
+    <SelectValue />
+  </SelectTrigger>
+  
+  <SelectContent side="top" sideOffset={8} align="start" position="popper"  className="text-white ">
+    {models.map((model) => (
+      <SelectItem 
+        key={model.id} 
+        value={model.id}
+        className="text-[11px] font-semibold focus:text-white cursor-pointer transition-colors"
+      >
+        {model.name}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
                   <button 
                     onClick={handleSend}
                     disabled={!prompt.trim() || isSearching}
