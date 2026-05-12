@@ -45,13 +45,31 @@ async def get_live_price(symbol: str):
 
 @router.post("/api/chat")
 async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
-    # 1. Fetch and Validate User Credits
     user = users_collection.find_one({"email": email})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    if int(user.get("credits", 0)) < 1:
-        raise HTTPException(status_code=403, detail="Credits exhausted")
+    if not user: raise HTTPException(status_code=404, detail="User not found")
+    if int(user.get("credits", 0)) < 1: raise HTTPException(status_code=403, detail="Credits exhausted")
+
+    # Get existing memory
+    short_term_memory = user.get("memory", "No previous context.")
+
+    # Define the "Memory Tool"
+    tools = [{
+        "type": "function",
+        "function": {
+            "name": "update_memory",
+            "description": "Updates the short-term memory with key facts. Max 100 words.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "new_memory": {
+                        "type": "string", 
+                        "description": "A very short, bulleted summary of important user facts."
+                    }
+                },
+                "required": ["new_memory"]
+            }
+        }
+    }]
 
     try:
         response = openai_client.chat.completions.create(
@@ -59,21 +77,37 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
             messages=[
                 {
                     "role": "system", 
-                    "content": "You are a Richacle AI (the Oracle of vibe trading, a research trading platform) Assistent."
+                    "content": f"You are Richacle AI. Current Memory: {short_term_memory}. "
+                               "IMPORTANT: If the user shares new personal info, habits, or preferences, "
+                               "call 'update_memory' to save it concisely (e.g., 'User: daytrader')."
                 },
                 {"role": "user", "content": prompt},
             ],
+            tools=tools,
+            tool_choice="auto" 
         )
 
-        chat_res = response.choices[0].message.content
+        message = response.choices[0].message
+        chat_res = message.content
+        
+        # 1. Extract Memory from Function Call (if GPT decided to update it)
+        updated_mem_value = short_term_memory # Default to old memory
+        if message.tool_calls:
+            for tool_call in message.tool_calls:
+                if tool_call.function.name == "update_memory":
+                    arg_data = json.loads(tool_call.function.arguments)
+                    updated_mem_value = arg_data.get("new_memory")
 
-        # STEP 4: Deduct Credit Only on Success
-        users_collection.update_one({"email": email}, {"$inc": {"credits": -1}})
+        # 2. Update DB (One trip to the DB)
+        users_collection.update_one(
+            {"email": email}, 
+            {
+                "$inc": {"credits": -1},
+                "$set": {"memory": updated_mem_value[:500]} # Hard character limit
+            }
+        )
 
-        return {
-            "status": "success",
-            "chat_res": chat_res
-        }
+        return {"status": "success", "chat_res": chat_res}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
