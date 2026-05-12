@@ -11,6 +11,7 @@ import {
   Repeat2,
   TrendingUp,
   Check,
+  LoaderCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -95,12 +96,14 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
   const seriesRef = useRef<LightweightCharts.ISeriesApi<"Candlestick"> | null>(null);
   const tpFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
   const slFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
+  
 
   const container = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const activeLinesRef = useRef<LightweightCharts.IPriceLine[]>([]);
   const [interval, setInterval] = useState("15m");
   const [isChartReady, setIsChartReady] = useState(false);
+  const [futureCandlesBox, setFutureCandlesBox] = useState(44);
 
   const timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"];
 
@@ -122,8 +125,8 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
     // 3. Use the imported LightweightCharts directly
     tpFillRef.current = chartInstance.current.addBaselineSeries({
       baseValue: { type: 'price', price: entry },
-      topFillColor1: isBuy ? 'rgba(0, 230, 118, 0.25)' : 'rgba(0,0,0,0)',
-      topFillColor2: isBuy ? 'rgba(0, 230, 118, 0.05)' : 'rgba(0,0,0,0)',
+topFillColor1: isBuy ? 'rgba(0, 230, 118, 0.30)' : 'rgba(0,0,0,0)',
+topFillColor2: isBuy ? 'rgba(0, 230, 118, 0.20)' : 'rgba(0,0,0,0)',
       bottomFillColor1: !isBuy ? 'rgba(0, 230, 118, 0.25)' : 'rgba(0,0,0,0)',
       bottomFillColor2: !isBuy ? 'rgba(0, 230, 118, 0.05)' : 'rgba(0,0,0,0)',
       lineVisible: false, 
@@ -134,8 +137,8 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
 
     slFillRef.current = chartInstance.current.addBaselineSeries({
       baseValue: { type: 'price', price: entry },
-      topFillColor1: !isBuy ? 'rgba(255, 23, 68, 0.25)' : 'rgba(0,0,0,0)',
-      topFillColor2: !isBuy ? 'rgba(255, 23, 68, 0.05)' : 'rgba(0,0,0,0)',
+      topFillColor1: !isBuy ? 'rgba(255, 23, 68, 0.30)' : 'rgba(0,0,0,0)',
+      topFillColor2: !isBuy ? 'rgba(255, 23, 68, 0.20)' : 'rgba(0,0,0,0)',
       bottomFillColor1: isBuy ? 'rgba(255, 23, 68, 0.25)' : 'rgba(0,0,0,0)',
       bottomFillColor2: isBuy ? 'rgba(255, 23, 68, 0.05)' : 'rgba(0,0,0,0)',
       lineVisible: false,
@@ -146,11 +149,18 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
 
     const candleData = (seriesRef.current.data() as any);
     if (candleData.length > 0) {
-      const firstTime = candleData[0].time;
-      const lastTime = candleData[candleData.length - 1].time;
+      const intervalMap: Record<string, number> = {
+  "1m": 60, "5m": 300, "15m": 900,
+  "1h": 3600, "4h": 14400, "1d": 86400
+};
+const intervalSecs = intervalMap[interval] || 900;
+const candleData = seriesRef.current.data() as any[];
+const lastRealCandle = candleData.filter((c: any) => c.time <= Math.floor(Date.now() / 1000)).pop();
+const startTime = (lastRealCandle?.time || Math.floor(Date.now() / 1000)) as LightweightCharts.UTCTimestamp;
+const endTime = (startTime + intervalSecs * futureCandlesBox) as LightweightCharts.UTCTimestamp;
 
-      tpFillRef.current.setData([{ time: firstTime, value: tp }, { time: lastTime, value: tp }]);
-      slFillRef.current.setData([{ time: firstTime, value: sl }, { time: lastTime, value: sl }]);
+tpFillRef.current.setData([{ time: startTime, value: tp }, { time: endTime, value: tp }]);
+slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, value: sl }]);
     }
 
     const eLine = seriesRef.current.createPriceLine({ 
@@ -243,7 +253,14 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
       }));
       
       if (seriesRef.current) {
-        seriesRef.current.setData(data);
+        const intervalSecs2 = ({ "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 })[interval] || 900;
+const lastCandle = data[data.length - 1];
+const futureCandles = Array.from({ length: futureCandlesBox }, (_, i) => ({
+  time: (lastCandle.time + intervalSecs2 * (i + 1)) as LightweightCharts.UTCTimestamp,
+  open: lastCandle.close, high: lastCandle.close,
+  low: lastCandle.close, close: lastCandle.close,
+}));
+seriesRef.current.setData([...data, ...futureCandles]);
         chartInstance.current?.timeScale().fitContent();
       }
 
@@ -260,13 +277,21 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
         
         if (seriesRef.current && isChartReady) {
           try {
-            seriesRef.current.update({
-              time: (k.t / 1000) as LightweightCharts.UTCTimestamp, 
-              open: parseFloat(k.o), 
-              high: parseFloat(k.h), 
-              low: parseFloat(k.l), 
-              close: parseFloat(k.c),
-            });
+            const candleTime = (k.t / 1000) as LightweightCharts.UTCTimestamp;
+const currentData = seriesRef.current.data() as any[];
+const realData = currentData.filter((c: any) => c.time <= candleTime);
+const intervalSecs3 = ({ "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 })[interval] || 900;
+const futureCandles2 = Array.from({ length: futureCandlesBox }, (_, i) => ({
+  time: (candleTime + intervalSecs3 * (i + 1)) as LightweightCharts.UTCTimestamp,
+  open: parseFloat(k.c), high: parseFloat(k.c),
+  low: parseFloat(k.c), close: parseFloat(k.c),
+}));
+seriesRef.current.setData([...realData, ...futureCandles2]);
+seriesRef.current.update({
+  time: candleTime,
+  open: parseFloat(k.o), high: parseFloat(k.h),
+  low: parseFloat(k.l), close: parseFloat(k.c),
+});
           } catch (e) {
             console.warn("Socket update skipped: Chart re-loading");
           }
@@ -671,6 +696,9 @@ const [lastResearch, setLastResearch] = useState<any>(null);
 const [activeTradeParams, setActiveTradeParams] = useState<any>(null);
 const [tradeResult, setTradeResult] = useState<TradeResultState | null>(null);
 const [selectedModel, setSelectedModel] = useState("grok-4.2");
+// 1. Add state
+const [showDemoWidget, setShowDemoWidget] = useState(false);
+const [loading, setLoading] = useState(false)
 
 const models = [
   { id: "claude-4.7", name: "Claude Opus 4.7" },
@@ -909,6 +937,80 @@ useEffect(() => {
   }, [messages, isSearching]);
 
 const handleSend = async () => {
+  if (!prompt.trim() || !email) return;
+  setLoading(true)
+
+  const currentPrompt = prompt;
+  setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
+  setPrompt("");
+  setIsSearching(true);
+
+  try {
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("prompt", currentPrompt);
+
+    const response = await fetch("https://api.richacle.com/api/chat", {
+      method: "POST",
+      body: formData,
+    });
+
+    // 1. Handle Credits Exhausted
+    if (response.status === 403) {
+      setIsSearching(false);
+      setMessages(prev => [...prev, { 
+        role: "ai", 
+        content: (
+            <div>
+              You run out of credits. Please <span onClick={()=> setShowPricing(true)} className="underline cursor-pointer text-zinc-100"> upgrade your plan </span> to continue trading.
+            </div>
+        ),
+      }]);
+      toast("You've run out of credits. Please upgrade your plan to continue trading.")
+      setShowPricing(true);
+      return;
+    }
+
+    // 2. Handle Other Server Errors (404, 500, etc.)
+    if (!response.ok) {
+      setIsSearching(false);
+      toast.error("Failed to fetch prediction");
+      return; // STOP execution here
+    }
+
+    // 3. Process Successful Response
+    const result = await response.json();
+    console.log(result)
+    const aiData = result.chat_res; 
+
+    setIsSearching(false);
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "ai",
+        content: (
+          <div className="space-y-2 flex flex-col">
+            <div className="p-3.5 text-zinc-200">
+              {aiData}
+            </div>
+          </div>
+        ),
+      },
+    ]);
+
+  } catch (error) {
+    console.error("Error:", error);
+    setIsSearching(false);
+    setMessages((prev) => [
+      ...prev,
+      { role: "ai", content: "Error: Could not connect to the research server." },
+    ]);
+  } finally {
+    setLoading(false)
+  }
+};
+
+const handleAgent = async () => {
   if (!prompt.trim() || isSearching || !email) return;
 
   const currentPrompt = prompt;
@@ -1076,20 +1178,47 @@ const handleSend = async () => {
               </motion.div>
             ))}
             
+{showDemoWidget && (
+  <TradeWidget
+    initialData={{
+      side: "BUY",
+      symbol: "BTC/USDT",
+      leverage: 10,
+      take_profit: 82000,
+      stop_loss: 80500,
+    }}
+    onPriceChange={setActiveLines}
+    onReset={() => setShowDemoWidget(false)}
+    onAccept={handleAccept}
+    disabled={false}
+    price={currentPrice}
+  />
+)}
             {isSearching && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
-                <span className="uppercase text-white/40 animate-pulse">RESEARCHING</span>
+                <span class="relative flex size-3">
+  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+  <span class="relative inline-flex size-3 rounded-full bg-white"></span>
+</span>
               </motion.div>
             )}
 
             {isTrading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
-                <span className="uppercase text-white/40 animate-pulse">TRADING</span>
+              <span class="relative flex size-3">
+  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+  <span class="relative inline-flex size-3 rounded-full bg-white"></span>
+</span> 
+                <span className=" text-white/40 animate-pulse">Trading</span>
               </motion.div>
             )}
             {isClosing && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
-                <span className="uppercase text-white/40 animate-pulse">CLOSING</span>
+              <span class="relative flex size-3">
+  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+  <span class="relative inline-flex size-3 rounded-full bg-white"></span>
+</span> 
+                <span className=" text-white/40 animate-pulse">Closing</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1097,7 +1226,7 @@ const handleSend = async () => {
         </div>
 
         <AnimatePresence>
-          {(!isSearching && messages.length === 0) && (
+          {(messages.length === 0) && (
             <motion.div 
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -1116,12 +1245,14 @@ const handleSend = async () => {
                 />
                 
                 <div className="flex justify-between items-center mt-auto">
+
+
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
-  <SelectTrigger className=" border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70  hover:text-white transition-colors outline-none">
+  <SelectTrigger className=" border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70  hover:text-white transition-colors cursor-pointer outline-none">
     <SelectValue />
   </SelectTrigger>
   
-  <SelectContent side="top" sideOffset={8} align="start" position="popper"  className="text-white ">
+  <SelectContent side="top" sideOffset={3} align="start" position="popper"  className="text-white ">
     {models.map((model) => (
       <SelectItem 
         key={model.id} 
@@ -1135,10 +1266,10 @@ const handleSend = async () => {
 </Select>
                   <button 
                     onClick={handleSend}
-                    disabled={!prompt.trim() || isSearching}
-                    className="p-1.5 bg-white text-black rounded-full hover:opacity-80 transition-all active:scale-90 shadow-xl"
+                    disabled={!prompt.trim() || loading}
+                    className={`p-1.5 bg-white cursor-pointer text-black rounded-full  transition-all active:scale-90 shadow-xl ${!prompt.trim() ? "opacity-50 hover:opacity-50" : "hover:opacity-80"}`}
                   >
-                    <ArrowUp size={16} strokeWidth={2.5} />
+                    {loading ? <LoaderCircle className="animate-spin" size={16} strokeWidth={2.5} /> :  <ArrowUp size={16} strokeWidth={2.5} />}
                   </button>
                 </div>
               </div>

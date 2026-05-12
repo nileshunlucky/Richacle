@@ -43,6 +43,43 @@ async def get_live_price(symbol: str):
         print(f"CCXT Error fetching price for {symbol}: {e}")
         return None
 
+@router.post("/api/chat")
+async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
+    # 1. Fetch and Validate User Credits
+    user = users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if int(user.get("credits", 0)) < 1:
+        raise HTTPException(status_code=403, detail="Credits exhausted")
+
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system", 
+                    "content": "You are a Richacle AI (the Oracle of vibe trading, a research trading platform) Assistent."
+                },
+                {"role": "user", "content": prompt},
+            ],
+            # Use 'response_format' if you still want the structured CryptoPrediction object
+            response_format={"type": "json_object"}
+        )
+
+        chat_res = response.choices[0].message.content
+
+        # STEP 4: Deduct Credit Only on Success
+        users_collection.update_one({"email": email}, {"$inc": {"credits": -1}})
+
+        return {
+            "status": "success",
+            "chat_res": chat_res
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/api/search")
 async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
     # 1. Fetch and Validate User Credits

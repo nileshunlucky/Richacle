@@ -216,7 +216,7 @@ export default function AILandingPage() {
            <span className="font-light theseason">
         RICHACLE
       </span> realtime research AI agent,<br/> 
-       Built to make you extraordinarily wealthy.
+       Built to make you extraordinarily trader.
           </motion.p>
 
         </div>
@@ -231,7 +231,7 @@ export default function AILandingPage() {
           
 
           <div className="relative group max-w-3xl mx-auto">
-            {/* Glow effect behind prompt */}
+
             
             
             <div className="relative bg-[#0a0a0a] border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl">

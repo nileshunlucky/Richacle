@@ -18,7 +18,7 @@ export default function Home() {
       period: "/month",
       features: [
         "Realtime Research",
-        "Quant Agent",
+        "Oracle Agent",
         "Binance Intergration",
         "Tradingview Chart",
       ],
@@ -32,7 +32,7 @@ export default function Home() {
       period: "/month",
       features: [
         "Everything in Hobby, Plus",
-        "3x usage on GPT5.1 model",
+        "3x usage on OpenAI, Claude, Gemini, Grok, DeepSeek models",
         "Exclusive support"
       ],
       cta: "Get Pro",
@@ -45,7 +45,7 @@ export default function Home() {
       period: "/month",
       features: [
         "Everything in Pro, Plus",
-        "10x usage on GPT5.1 model",
+        "10x usage on OpenAI, Claude, Gemini, Grok, DeepSeek models",
         "Priority access to new features",
       ],
       cta: "Get Premium",
