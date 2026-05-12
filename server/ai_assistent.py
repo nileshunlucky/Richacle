@@ -50,65 +50,36 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
     if not user: raise HTTPException(status_code=404, detail="User not found")
     if int(user.get("credits", 0)) < 1: raise HTTPException(status_code=403, detail="Credits exhausted")
 
-    # Get existing memory
     short_term_memory = user.get("memory", "No previous context.")
-
-    # Define the "Memory Tool"
-    tools = [{
-        "type": "function",
-        "function": {
-            "name": "update_memory",
-            "description": "Updates the short-term memory with key facts. Max 100 words.",
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "new_memory": {
-                        "type": "string", 
-                        "description": "A very short, bulleted summary of important user facts."
-                    }
-                },
-                "required": ["new_memory"]
-            }
-        }
-    }]
 
     try:
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
+            response_format={"type": "json_object"},  # ✅ Forces clean JSON output
             messages=[
-            {
-                "role": "system", 
-                "content": (
-                    f"You are Richacle AI. Current Memory: {short_term_memory}. "
-                    "1. ALWAYS provide a direct, helpful and simple text response to the user. "
-                    "2. If the user provides new info, use 'update_memory' quietly in the background. "
-                    "DO NOT leave the message content empty." 
-                    "3. reply to user simply short usefull as frenindly."
-                )
-            },
-            {"role": "user", "content": prompt},
-        ],
-            tools=tools,
-            tool_choice="auto" 
+                {
+                    "role": "system",
+                    "content": (
+                        f"You are Richacle AI. Current Memory: {short_term_memory}.\n"
+                        "Always respond with a JSON object with exactly two keys:\n"
+                        '- "reply": your short, friendly, helpful response to the user.\n'
+                        '- "new_memory": updated bullet-point summary of key user facts (max 100 words). '
+                        "If nothing new, return the existing memory unchanged."
+                    )
+                },
+                {"role": "user", "content": prompt},
+            ]
         )
 
-        message = response.choices[0].message
-        chat_res = message.content
-        
-        # 1. Extract Memory from Function Call (if GPT decided to update it)
-        updated_mem_value = short_term_memory # Default to old memory
-        if message.tool_calls:
-            for tool_call in message.tool_calls:
-                if tool_call.function.name == "update_memory":
-                    arg_data = json.loads(tool_call.function.arguments)
-                    updated_mem_value = arg_data.get("new_memory")
+        data = json.loads(response.choices[0].message.content)
+        chat_res = data.get("reply", "")
+        updated_memory = data.get("new_memory", short_term_memory)
 
-        # 2. Update DB (One trip to the DB)
         users_collection.update_one(
-            {"email": email}, 
+            {"email": email},
             {
                 "$inc": {"credits": -1},
-                "$set": {"memory": updated_mem_value[:500]} # Hard character limit
+                "$set": {"memory": updated_memory[:500]}
             }
         )
 
