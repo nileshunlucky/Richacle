@@ -63,8 +63,6 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                 },
                 {"role": "user", "content": prompt},
             ],
-            # Use 'response_format' if you still want the structured CryptoPrediction object
-            response_format={"type": "json_object"}
         )
 
         chat_res = response.choices[0].message.content

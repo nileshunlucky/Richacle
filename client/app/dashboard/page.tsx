@@ -955,6 +955,8 @@ const handleSend = async () => {
       body: formData,
     });
 
+    console.log(response)
+
     // 1. Handle Credits Exhausted
     if (response.status === 403) {
       setIsSearching(false);
@@ -1196,27 +1198,27 @@ const handleAgent = async () => {
 )}
             {isSearching && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
-                <span class="relative flex size-3">
-  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
-  <span class="relative inline-flex size-3 rounded-full bg-white"></span>
+                <span className="relative flex size-3">
+  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+  <span className="relative inline-flex size-3 rounded-full bg-white"></span>
 </span>
               </motion.div>
             )}
 
             {isTrading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
-              <span class="relative flex size-3">
-  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
-  <span class="relative inline-flex size-3 rounded-full bg-white"></span>
+              <span className="relative flex size-3">
+  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+  <span className="relative inline-flex size-3 rounded-full bg-white"></span>
 </span> 
                 <span className=" text-white/40 animate-pulse">Trading</span>
               </motion.div>
             )}
             {isClosing && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
-              <span class="relative flex size-3">
-  <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
-  <span class="relative inline-flex size-3 rounded-full bg-white"></span>
+              <span className="relative flex size-3">
+  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
+  <span className="relative inline-flex size-3 rounded-full bg-white"></span>
 </span> 
                 <span className=" text-white/40 animate-pulse">Closing</span>
               </motion.div>
