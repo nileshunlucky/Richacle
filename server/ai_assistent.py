@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 from db import users_collection
 from cryptography.fernet import Fernet
+import json
 
 load_dotenv()
 
