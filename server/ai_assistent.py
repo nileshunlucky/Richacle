@@ -82,7 +82,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                     f"You are Richacle AI. Current Memory: {short_term_memory}. "
                     "1. ALWAYS provide a direct, helpful and simple text response to the user. "
                     "2. If the user provides new info, use 'update_memory' quietly in the background. "
-                    "DO NOT leave the message content empty."
+                    "DO NOT leave the message content empty." 
                     "3. reply to user simply short usefull as frenindly."
                 )
             },
