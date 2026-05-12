@@ -87,7 +87,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                 )
             },
             {"role": "user", "content": prompt},
-        ]
+        ],
             tools=tools,
             tool_choice="auto" 
         )
