@@ -26,7 +26,6 @@ exchange = ccxt.binance({
 })
 
 class CryptoPrediction(BaseModel):
-    research_summary: str = Field(description="Short real-time research summary of the crypto asset.")
     symbol: str = Field(description="Trading pair in capital, e.g., 'BTC/USDT'.")
     side: str = Field(description="Prediction based on market condition: 'BUY' or 'SELL'.")
     leverage: int = Field(description="Leverage value between 1 and 125.")
@@ -67,6 +66,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                         '- "reply": your short, friendly, helpful response to the user.\n'
                         '- "new_memory": updated bullet-point summary of key user facts (max 100 words).\n'
                         '- "wants_to_trade": true if the user wants to open/enter a trade on any crypto, false otherwise.'
+                        '- "symbol": if wants_to_trade is true, the trading pair in BASE/USDT format (e.g. "BTC/USDT"). Otherwise null.'
                     )
                 },
                 {"role": "user", "content": prompt},
@@ -77,6 +77,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         chat_res = data.get("reply", "")
         updated_memory = data.get("new_memory", short_term_memory)
         wants_to_trade = data.get("wants_to_trade", False)
+        detected_symbol = (data.get("symbol") or "BTC/USDT").strip().upper()
 
         # Update memory
         users_collection.update_one(
@@ -88,17 +89,6 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         trade_data = None
         if wants_to_trade:
             try:
-                # Extract symbol
-                symbol_res = openai_client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[
-                        {"role": "system", "content": "Extract the crypto trading pair from the user prompt. Return ONLY the symbol in BASE/USDT format. Example: 'BTC/USDT'. Default to 'BTC/USDT' if unclear."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=0
-                )
-                detected_symbol = symbol_res.choices[0].message.content.strip().upper()
-
                 # Get live price
                 live_price = await get_live_price(detected_symbol)
                 price_context = f"The current live price for {detected_symbol} is {live_price}." if live_price else "Use recent 2026 technical levels."
@@ -115,6 +105,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                             f"3. Leverage: 1-125 based on volatility.\n"
                             f"4. TP/SL: Calculate based on a 1:3 Risk-to-Reward ratio relative to the live price ({live_price}).\n"
                             f"5. Confidence: 0-100 score based on technical strength."
+                            f" : give reply with Short real-time research summary of the crypto asset.\n"
                         )},
                         {"role": "user", "content": prompt},
                     ],
@@ -133,86 +124,6 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/api/search")
-async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
-    # 1. Fetch and Validate User Credits
-    user = users_collection.find_one({"email": email})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    # Ensure credits are treated as an integer to prevent comparison errors
-    try:
-        current_credits = int(user.get("credits", 0))
-    except (ValueError, TypeError):
-        current_credits = 0
-
-    if current_credits < 1:
-        # This will be caught by the status 403 logic in your frontend
-        raise HTTPException(status_code=403, detail="Credits exhausted")
-
-    try:
-        # STEP 1: AI Symbol Extraction (Handles typos like "btcoin" -> "BTC/USDT")
-        extraction_msg = [
-            {"role": "system", "content": "Extract the crypto trading pair from the user prompt. Return ONLY the symbol in BASE/USDT format. Example: 'BTC/USDT'. If mention of a coin is vague, default to 'BTC/USDT' and its 1min timeframe remember give accurate takeprofit and stoploss. if Buy then takeprofit: To be upper than the current price. if sell then takeprofit: To be lower than the current price.and stoploss. if buy then Stop Loss: To be lower than the current price. if sell then Stop Loss: To be upper than the current price."},
-            {"role": "user", "content": prompt}
-        ]
-        
-        symbol_res = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=extraction_msg,
-            temperature=0
-        )
-        detected_symbol = symbol_res.choices[0].message.content.strip().upper()
-
-        # STEP 2: Fetch Dynamic Market Price
-        live_price = await get_live_price(detected_symbol)
-        
-        price_context = ""
-        if live_price:
-            price_context = f"The current live price for {detected_symbol} is {live_price}."
-        else:
-            # Fallback if CCXT fails
-            price_context = "Market price is currently volatile. Use the most recent 2026 technical levels."
-
-        # STEP 3: Generate Final Structured Prediction
-        system_instructions = (
-            f"You are a real-time crypto research and prediction AI. \n"
-            f"Context: {price_context} \n"
-            f"Analyze the user's prompt and provide a precise trading setup. \n"
-            f"1. Symbol: Use {detected_symbol}. \n"
-            f"2. Side: Predict BUY or SELL. \n"
-            f"3. Leverage: 1-125 based on volatility. \n"
-            f"4. TP/SL: Calculate based on a 1:3 Risk-to-Reward ratio relative to the live price ({live_price})."
-            f"5. Confidence: Provide a score from 0-100 based on technical strength and data clarity."
-        )
-
-        completion = openai_client.beta.chat.completions.parse(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_instructions},
-                {"role": "user", "content": prompt},
-            ],
-            response_format=CryptoPrediction,
-        )
-
-        prediction_data = completion.choices[0].message.parsed
-
-        # STEP 4: Deduct Credit Only on Success
-        users_collection.update_one({"email": email}, {"$inc": {"credits": -1}})
-
-        return {
-            "status": "success",
-            "data": prediction_data.dict()
-        }
-
-    except HTTPException as he:
-        # Re-raise HTTP exceptions so 403/404 are not turned into 500s
-        raise he
-    except Exception as e:
-        print(traceback.format_exc())
-        # Generic error handling
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/api/execute-trade")

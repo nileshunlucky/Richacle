@@ -698,6 +698,8 @@ const [activeTradeParams, setActiveTradeParams] = useState<any>(null);
 const [tradeResult, setTradeResult] = useState<TradeResultState | null>(null);
 const [selectedModel, setSelectedModel] = useState("grok-4.2");
 const [loading, setLoading] = useState(false)
+const [isWidgetActive, setIsWidgetActive] = useState(false);
+const [isPositionClosed, setIsPositionClosed] = useState(false);
 
 const models = [
   { id: "claude-4.7", name: "Claude Opus 4.7" },
@@ -775,11 +777,6 @@ useEffect(() => {
       toast.error(`STOP LOSS HIT ${sl}`)
     }
 
-
-    // 3. Reset the UI so the user can trade again
-    setTimeout(() => {
-      handleReset();
-    }, 3000);
   }
 }, [currentPrice, isExecuted, activeLines, activeSymbol]);
 
@@ -834,6 +831,7 @@ const handleAccept = async (tradeParams: TradeParams) => {
     // Success state
     setConfirmedEntryPrice(result.entryPrice);
     setIsExecuted(true);
+    setIsPositionClosed(false)
     setMessages(prev => [
       ...prev,
       {
@@ -845,9 +843,13 @@ const handleAccept = async (tradeParams: TradeParams) => {
             </div>
             <button 
                 onClick={() => handleCloseOrder(tradeParams.symbol)} 
-                className="underline text-left cursor-pointer mt-1"
+                disabled={isPositionClosed || isClosing}
+                className={cn(
+    " text-left mt-1 transition-opacity",
+    (isPositionClosed || isClosing) ? "opacity-40 cursor-not-allowed" : "cursor-pointer underline text-zinc-300 hover:text-zinc-100"
+  )}
               >
-                Click here to close position now.
+                {isPositionClosed ? " Position for {symbol} has been closed." : "Click here to close position now."}
               </button>
           </motion.div>
         )
@@ -866,13 +868,22 @@ const handleAccept = async (tradeParams: TradeParams) => {
   }
 };
 
-  const handleReset = () => {
-    setMessages([]);
-    setIsSearching(false);
-    setPrompt("");
-    setIsExecuted(false);
-    setActiveLines(null);
-  };
+
+const handleReject = () => {
+  setIsWidgetActive(false);
+  setActiveLines(null);
+};
+
+// Called on full reset (trade closed, new session)
+const handleReset = () => {
+  setMessages([]);
+  setIsSearching(false);
+  setPrompt("");
+  setIsExecuted(false);
+  setActiveLines(null);
+  setIsWidgetActive(false);
+};
+
 
   // Inside VibeTradingUI component
 const handleCloseOrder = async (symbol: string) => {
@@ -893,26 +904,22 @@ const handleCloseOrder = async (symbol: string) => {
     if (!response.ok) {
       throw new Error(result.detail || "Failed to close position");
     }
-
-    toast(`Position closed: ${symbol}`);
     
     // Add a "Closed" message to the chat
+    setIsPositionClosed(true)
     setMessages(prev => [
       ...prev,
       {
         role: "ai",
         content: (
-          <div className="p-4 text-zinc-500">
+          <div className="text-left">
             Position for {symbol} has been closed.
           </div>
         )
       }
     ]);
 
-    // Cleanup: Reset UI states so user can search again
-    setTimeout(() => {
-      handleReset();
-    }, 3000);
+    setIsWidgetActive(false);
 
   } catch (error) {
     console.error("Close Error:", error);
@@ -1013,6 +1020,8 @@ if (wants_to_trade && trade_data) {
     });
   }
 
+  setIsWidgetActive(true);
+
   setMessages(prev => [
     ...prev,
     {
@@ -1030,7 +1039,7 @@ if (wants_to_trade && trade_data) {
         <TradeWidget
           initialData={trade_data}
           onPriceChange={setActiveLines}
-          onReset={handleReset}
+          onReset={handleReject}
           onAccept={handleAccept}
           disabled={false}
           price={currentPrice}
@@ -1052,105 +1061,6 @@ if (wants_to_trade && trade_data) {
   }
 };
 
-const handleAgent = async () => {
-  if (!prompt.trim() || isSearching || !email) return;
-
-  const currentPrompt = prompt;
-  setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
-  setPrompt("");
-  setIsSearching(true);
-
-  try {
-    const formData = new FormData();
-    formData.append("email", email);
-    formData.append("prompt", currentPrompt);
-
-    const response = await fetch("https://api.richacle.com/api/search", {
-      method: "POST",
-      body: formData,
-    });
-
-    // 1. Handle Credits Exhausted
-    if (response.status === 403) {
-      setIsSearching(false);
-      setMessages(prev => [...prev, { 
-        role: "ai", 
-        content: (
-            <div>
-              You run out of credits. Please <span onClick={()=> setShowPricing(true)} className="underline cursor-pointer text-zinc-100"> upgrade your plan </span> to continue trading.
-            </div>
-        ),
-      }]);
-      toast("You've run out of credits. Please upgrade your plan to continue trading.")
-      setShowPricing(true);
-      return;
-    }
-
-    // 2. Handle Other Server Errors (404, 500, etc.)
-    if (!response.ok) {
-      setIsSearching(false);
-      toast.error("Failed to fetch prediction");
-      return; // STOP execution here
-    }
-
-    // 3. Process Successful Response
-    const result = await response.json();
-    console.log(result)
-    const aiData = result.data; 
-    setLastResearch(aiData);
-
-    if (aiData?.symbol) {
-      setActiveSymbol(aiData.symbol);
-      // Automatically draw the TP/SL lines based on AI prediction
-      setActiveLines({
-        entry: parseFloat(aiData.entry_price || currentPrice || "0"),
-        tp: parseFloat(aiData.take_profit),
-        sl: parseFloat(aiData.stop_loss),
-        side: aiData.side
-      });
-    }
-
-    setIsSearching(false);
-    setMessages((prev) => [
-      ...prev,
-      {
-        role: "ai",
-        content: (
-          <div className="space-y-2 flex flex-col">
-            <div className="p-3.5 text-zinc-200">
-              {aiData?.research_summary}
-            </div>
-            <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
-              <h1 className=" font-semibold text-zinc-200">Win Rate {aiData?.confidence}%</h1>
-              <h1 className=" text-zinc-200 font-light theseason">RICHACLE</h1>
-            </div>
-          </div>
-        ),
-      },
-      {
-        role: "ai",
-        content: (
-          <TradeWidget
-            initialData={aiData}
-            onPriceChange={setActiveLines}
-            onReset={handleReset}
-            onAccept={handleAccept}
-            disabled={false} 
-            price={currentPrice}
-          />
-        ),
-      },
-    ]);
-
-  } catch (error) {
-    console.error("Error:", error);
-    setIsSearching(false);
-    setMessages((prev) => [
-      ...prev,
-      { role: "ai", content: "Error: Could not connect to the research engine." },
-    ]);
-  }
-};
 
 
   return (
@@ -1173,6 +1083,7 @@ const handleAgent = async () => {
       <div className="flex-[7] flex flex-col min-w-0">
         <AdvancedChart isDemo={isDemo} symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
+      
 
       <button 
   onClick={() => setShowAgent(!showAgent)}
@@ -1293,10 +1204,10 @@ const handleAgent = async () => {
 </Select>
                   <button 
                     onClick={handleSend}
-                    disabled={!prompt.trim() || loading}
-                    className={`p-1.5 bg-white cursor-pointer text-black rounded-full  transition-all active:scale-90 shadow-xl ${!prompt.trim() ? "opacity-50 hover:opacity-50" : "hover:opacity-80"}`}
+                    disabled={!prompt.trim() || loading || isWidgetActive || isTrading || isClosing}
+                    className={`p-1.5 bg-white cursor-pointer text-black rounded-full  transition-all active:scale-90 shadow-xl ${!prompt.trim() || loading|| isWidgetActive || isTrading || isClosing ? "opacity-50 hover:opacity-50" : "hover:opacity-80"}`}
                   >
-                    {loading ? <LoaderCircle className="animate-spin" size={16} strokeWidth={2.5} /> :  <ArrowUp size={16} strokeWidth={2.5} />}
+                    {loading || isWidgetActive || isTrading || isClosing ? <LoaderCircle className="animate-spin" size={16} strokeWidth={2.5} /> :  <ArrowUp size={16} strokeWidth={2.5} />}
                   </button>
                 </div>
               </div>
