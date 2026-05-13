@@ -1134,7 +1134,7 @@ const handleClearMemory = async () => {
 <h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right"><Plus size={20}/></h1>
 {showAgent && <button 
   onClick={() => setShowAgent(false)}
-  className="cursor-pointer relative group"
+  className="cursor-pointer relative group md:hidden"
 >
 <X size={20}/>
 </button>}
@@ -1143,7 +1143,7 @@ const handleClearMemory = async () => {
 {messages.length === 0 && (
   <div className="w-full justify-center items-center flex h-full">
     <h1 
-      className="text-2xl theseason  "
+      className="text-3xl theseason animate-pulse "
     >
       RICHACLE
     </h1>

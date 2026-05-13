@@ -90,7 +90,9 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         if wants_price and not wants_to_trade:
             live_price = await get_live_price(detected_symbol)
             if live_price:
+                chat_res = chat_res.replace("{{LIVE_PRICE}}", f"${live_price:,.2f}")
                 chat_res = chat_res.replace("{LIVE_PRICE}", f"${live_price:,.2f}")
+                chat_res = chat_res.replace("LIVE_PRICE", f"${live_price:,.2f}")
             else:
                 chat_res = f"Sorry, I couldn't fetch the live price for {detected_symbol} right now."
 
