@@ -53,18 +53,20 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
     short_term_memory = user.get("memory", "No previous context.")
 
     try:
+        # STEP 1: Detect intent + get reply in one call
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
-            response_format={"type": "json_object"},  # ✅ Forces clean JSON output
+            response_format={"type": "json_object"},
+            max_tokens=600,
             messages=[
                 {
                     "role": "system",
                     "content": (
                         f"You are Richacle AI. Current Memory: {short_term_memory}.\n"
-                        "Always respond with a JSON object with exactly two keys:\n"
+                        "Always respond with a JSON object with exactly three keys:\n"
                         '- "reply": your short, friendly, helpful response to the user.\n'
-                        '- "new_memory": updated bullet-point summary of key user facts (max 100 words). '
-                        "If nothing new, return the existing memory unchanged."
+                        '- "new_memory": updated bullet-point summary of key user facts (max 100 words).\n'
+                        '- "wants_to_trade": true if the user wants to open/enter a trade on any crypto, false otherwise.'
                     )
                 },
                 {"role": "user", "content": prompt},
@@ -74,16 +76,61 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         data = json.loads(response.choices[0].message.content)
         chat_res = data.get("reply", "")
         updated_memory = data.get("new_memory", short_term_memory)
+        wants_to_trade = data.get("wants_to_trade", False)
 
+        # Update memory
         users_collection.update_one(
             {"email": email},
-            {
-                "$inc": {"credits": -1},
-                "$set": {"memory": updated_memory[:500]}
-            }
+            {"$inc": {"credits": -1}, "$set": {"memory": updated_memory[:500]}}
         )
 
-        return {"status": "success", "chat_res": chat_res}
+        # STEP 2: If trade intent, run prediction (same logic as api/search)
+        trade_data = None
+        if wants_to_trade:
+            try:
+                # Extract symbol
+                symbol_res = openai_client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": "Extract the crypto trading pair from the user prompt. Return ONLY the symbol in BASE/USDT format. Example: 'BTC/USDT'. Default to 'BTC/USDT' if unclear."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0
+                )
+                detected_symbol = symbol_res.choices[0].message.content.strip().upper()
+
+                # Get live price
+                live_price = await get_live_price(detected_symbol)
+                price_context = f"The current live price for {detected_symbol} is {live_price}." if live_price else "Use recent 2026 technical levels."
+
+                # Generate prediction
+                completion = openai_client.beta.chat.completions.parse(
+                    model="gpt-4o-mini",
+                    messages=[
+                        {"role": "system", "content": (
+                            f"You are a real-time crypto research and prediction AI.\n"
+                            f"Context: {price_context}\n"
+                            f"1. Symbol: Use {detected_symbol}.\n"
+                            f"2. Side: Predict BUY or SELL.\n"
+                            f"3. Leverage: 1-125 based on volatility.\n"
+                            f"4. TP/SL: Calculate based on a 1:3 Risk-to-Reward ratio relative to the live price ({live_price}).\n"
+                            f"5. Confidence: 0-100 score based on technical strength."
+                        )},
+                        {"role": "user", "content": prompt},
+                    ],
+                    response_format=CryptoPrediction,
+                )
+                trade_data = completion.choices[0].message.parsed.dict()
+            except Exception as trade_err:
+                print(f"Trade prediction failed: {trade_err}")
+                # Non-fatal — still return chat reply
+
+        return {
+            "status": "success",
+            "chat_res": chat_res,
+            "wants_to_trade": wants_to_trade,
+            "trade_data": trade_data  # None if no trade intent
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

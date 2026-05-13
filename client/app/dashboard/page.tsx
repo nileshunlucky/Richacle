@@ -11,6 +11,7 @@ import {
   Repeat2,
   TrendingUp,
   Check,
+  Plus,
   LoaderCircle
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
@@ -696,8 +697,6 @@ const [lastResearch, setLastResearch] = useState<any>(null);
 const [activeTradeParams, setActiveTradeParams] = useState<any>(null);
 const [tradeResult, setTradeResult] = useState<TradeResultState | null>(null);
 const [selectedModel, setSelectedModel] = useState("grok-4.2");
-// 1. Add state
-const [showDemoWidget, setShowDemoWidget] = useState(false);
 const [loading, setLoading] = useState(false)
 
 const models = [
@@ -983,7 +982,7 @@ const handleSend = async () => {
     // 3. Process Successful Response
     const result = await response.json();
     console.log(result)
-    const aiData = result.chat_res; 
+    const { chat_res, wants_to_trade, trade_data } = result;
 
     setIsSearching(false);
     setMessages((prev) => [
@@ -993,12 +992,53 @@ const handleSend = async () => {
         content: (
           <div className="space-y-2 flex flex-col">
             <div className="p-3.5 text-zinc-200">
-              {aiData}
+              {chat_res}
             </div>
           </div>
         ),
       },
     ]);
+
+    // If Oracle detected trade intent, show analysis + widget
+if (wants_to_trade && trade_data) {
+  setLastResearch(trade_data);
+
+  if (trade_data.symbol) {
+    setActiveSymbol(trade_data.symbol);
+    setActiveLines({
+      entry: parseFloat(trade_data.entry_price || currentPrice || "0"),
+      tp: parseFloat(trade_data.take_profit),
+      sl: parseFloat(trade_data.stop_loss),
+      side: trade_data.side,
+    });
+  }
+
+  setMessages(prev => [
+    ...prev,
+    {
+      role: "ai",
+      content: (
+        <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
+          <h1 className="font-semibold">Win Rate {trade_data.confidence}%</h1>
+          <h1 className="font-light theseason">RICHACLE</h1>
+        </div>
+      ),
+    },
+    {
+      role: "ai",
+      content: (
+        <TradeWidget
+          initialData={trade_data}
+          onPriceChange={setActiveLines}
+          onReset={handleReset}
+          onAccept={handleAccept}
+          disabled={false}
+          price={currentPrice}
+        />
+      ),
+    },
+  ]);
+}
 
   } catch (error) {
     console.error("Error:", error);
@@ -1165,6 +1205,7 @@ const handleAgent = async () => {
                   </div>
                 ) : (
                   <div className="w-full">
+                  
 {React.isValidElement(msg.content) && msg.content.type === TradeWidget 
   ? React.cloneElement(msg.content as React.ReactElement<TradeWidgetProps>, { 
       disabled: isTrading || isExecuted, 
@@ -1180,22 +1221,6 @@ const handleAgent = async () => {
               </motion.div>
             ))}
             
-{showDemoWidget && (
-  <TradeWidget
-    initialData={{
-      side: "BUY",
-      symbol: "BTC/USDT",
-      leverage: 10,
-      take_profit: 82000,
-      stop_loss: 80500,
-    }}
-    onPriceChange={setActiveLines}
-    onReset={() => setShowDemoWidget(false)}
-    onAccept={handleAccept}
-    disabled={false}
-    price={currentPrice}
-  />
-)}
             {isSearching && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
                 <span className="relative flex size-3">
@@ -1239,13 +1264,13 @@ const handleAgent = async () => {
                 <textarea
                   ref={textareaRef}
                   rows={2}
+                  maxLength={500}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
                   placeholder="Ask Richacle"
                   className="w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none placeholder:text-white/50 text-white font-medium"
                 />
-                
                 <div className="flex justify-between items-center mt-auto">
 
 
