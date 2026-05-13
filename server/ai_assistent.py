@@ -63,10 +63,11 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                     "content": (
                         f"You are Richacle AI. Current Memory: {short_term_memory}.\n"
                         "Always respond with a JSON object with exactly three keys:\n"
-                        '- "reply": your short, friendly, helpful response to the user.\n'
+                        '- "reply": short, friendly response. If user asks for a price, write "The current price of {symbol} is {{LIVE_PRICE}}" — use exactly {{LIVE_PRICE}} as placeholder.\n'
                         '- "new_memory": updated bullet-point summary of key user facts (max 100 words).\n'
                         '- "wants_to_trade": true if the user wants to open/enter a trade on any crypto, false otherwise.'
-                        '- "symbol": if wants_to_trade is true, the trading pair in BASE/USDT format (e.g. "BTC/USDT"). Otherwise null.'
+                        '- "wants_price": true if user is asking for the current/live price of any crypto, false otherwise.\n'
+                        '- "symbol": trading pair in BASE/USDT format if wants_to_trade or wants_price is true (e.g. "BTC/USDT"), otherwise null.'
                     )
                 },
                 {"role": "user", "content": prompt},
@@ -77,6 +78,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         chat_res = data.get("reply", "")
         updated_memory = data.get("new_memory", short_term_memory)
         wants_to_trade = data.get("wants_to_trade", False)
+        wants_price    = data.get("wants_price", False)
         detected_symbol = (data.get("symbol") or "BTC/USDT").strip().upper()
 
         # Update memory
@@ -84,6 +86,20 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
             {"email": email},
             {"$inc": {"credits": -1}, "$set": {"memory": updated_memory[:500]}}
         )
+
+         if wants_price and not wants_to_trade:
+            live_price = await get_live_price(detected_symbol)
+            if live_price:
+                chat_res = chat_res.replace("{LIVE_PRICE}", f"${live_price:,.2f}")
+            else:
+                chat_res = f"Sorry, I couldn't fetch the live price for {detected_symbol} right now."
+
+            return {
+                "status": "success",
+                "chat_res": chat_res,
+                "wants_to_trade": False,
+                "trade_data": None
+            }
 
         # STEP 2: If trade intent, run prediction (same logic as api/search)
         trade_data = None

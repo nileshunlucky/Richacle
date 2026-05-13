@@ -1130,15 +1130,25 @@ const handleClearMemory = async () => {
   // Mobile logic: Cover screen if shown, hide if not
   !showAgent ? "hidden md:flex" : "fixed inset-0 z-40 md:relative md:inset-auto"
 )}>
-<div className="bg-black flex justify-end ites-center p-2 px-4 gap-2">
-<h1 onClick={handleClearMemory} className=" p-2 text-right"><Plus size={20}/></h1>
+<div className="bg-black flex justify-end items-center p-2 px-4 gap-2">
+<h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right"><Plus size={20}/></h1>
 {showAgent && <button 
   onClick={() => setShowAgent(false)}
-  className=""
+  className="cursor-pointer relative group"
 >
 <X size={20}/>
 </button>}
 </div>
+
+{messages.length === 0 && (
+  <div className="w-full justify-center items-center flex h-full">
+    <h1 
+      className="text-2xl theseason  "
+    >
+      RICHACLE
+    </h1>
+  </div>
+)}
         <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
           <AnimatePresence>
             {messages.map((msg, i) => (
@@ -1221,7 +1231,7 @@ const handleClearMemory = async () => {
                   onChange={(e) => setPrompt(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
                   placeholder="Ask Richacle"
-                  className="w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none placeholder:text-white/50 text-white font-medium"
+                  className="w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none placeholder:text-white/50 text-white "
                 />
                 <div className="flex justify-between items-center mt-auto">
 
