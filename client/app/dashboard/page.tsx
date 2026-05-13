@@ -12,7 +12,9 @@ import {
   TrendingUp,
   Check,
   Plus,
-  LoaderCircle
+  LoaderCircle,
+  MessageCircle,
+  X
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -399,6 +401,7 @@ const { toWin, roiPercentage } = React.useMemo(() => {
   
 
 useEffect(() => {
+  if (disabled) return; 
   if (onPriceChange) {
     onPriceChange({ entry, tp: parseFloat(tp), sl: parseFloat(sl), side });
   }
@@ -700,6 +703,7 @@ const [selectedModel, setSelectedModel] = useState("grok-4.2");
 const [loading, setLoading] = useState(false)
 const [isWidgetActive, setIsWidgetActive] = useState(false);
 const [isPositionClosed, setIsPositionClosed] = useState(false);
+const [isRejected, setIsRejected] = useState(false);
 
 const models = [
   { id: "claude-4.7", name: "Claude Opus 4.7" },
@@ -872,6 +876,7 @@ const handleAccept = async (tradeParams: TradeParams) => {
 const handleReject = () => {
   setIsWidgetActive(false);
   setActiveLines(null);
+  setIsRejected(true);
 };
 
 // Called on full reset (trade closed, new session)
@@ -882,11 +887,26 @@ const handleReset = () => {
   setIsExecuted(false);
   setActiveLines(null);
   setIsWidgetActive(false);
+  setIsRejected(false);
 };
 
 
   // Inside VibeTradingUI component
 const handleCloseOrder = async (symbol: string) => {
+  if(isPositionClosed){
+    setMessages(prev => [
+      ...prev,
+      {
+        role: "ai",
+        content: (
+          <div className="text-left p-4">
+            Position for {symbol} has already closed.
+          </div>
+        )
+      }
+    ]);
+    return;
+  }
   setIsClosing(true); // Re-use the trading loading state
   
   try {
@@ -912,7 +932,7 @@ const handleCloseOrder = async (symbol: string) => {
       {
         role: "ai",
         content: (
-          <div className="text-left">
+          <div className="text-left p-4">
             Position for {symbol} has been closed.
           </div>
         )
@@ -920,6 +940,7 @@ const handleCloseOrder = async (symbol: string) => {
     ]);
 
     setIsWidgetActive(false);
+    setActiveLines(null);
 
   } catch (error) {
     console.error("Close Error:", error);
@@ -1009,6 +1030,8 @@ const handleSend = async () => {
     // If Oracle detected trade intent, show analysis + widget
 if (wants_to_trade && trade_data) {
   setLastResearch(trade_data);
+  setIsRejected(false);
+  setIsWidgetActive(true);
 
   if (trade_data.symbol) {
     setActiveSymbol(trade_data.symbol);
@@ -1020,7 +1043,6 @@ if (wants_to_trade && trade_data) {
     });
   }
 
-  setIsWidgetActive(true);
 
   setMessages(prev => [
     ...prev,
@@ -1061,7 +1083,17 @@ if (wants_to_trade && trade_data) {
   }
 };
 
-
+const handleClearMemory = async () => {
+  if (!email) return;
+  try {
+    const formData = new FormData();
+    formData.append("email", email);
+    await fetch("https://api.richacle.com/api/clear-memory", { method: "POST", body: formData });
+    setMessages([])
+  } catch {
+    toast.error("Failed to New Chat.");
+  }
+};
 
   return (
     <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
@@ -1084,13 +1116,13 @@ if (wants_to_trade && trade_data) {
         <AdvancedChart isDemo={isDemo} symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
       
-
-      <button 
-  onClick={() => setShowAgent(!showAgent)}
+{!showAgent && <button 
+  onClick={() => setShowAgent(true)}
   className="md:hidden fixed bottom-2 right-6 z-45 p-2 px-3 bg-black text-white border rounded-xl transition-transform"
 >
-  {showAgent ? "chart" : "agent"}
-</button>
+  <MessageCircle />
+</button>}
+      
 
       {/* RIGHT SIDE: 30% (Exactly as you wanted it) */}
   <div className={cn(
@@ -1098,6 +1130,15 @@ if (wants_to_trade && trade_data) {
   // Mobile logic: Cover screen if shown, hide if not
   !showAgent ? "hidden md:flex" : "fixed inset-0 z-40 md:relative md:inset-auto"
 )}>
+<div className="bg-black flex justify-end ites-center p-2 px-4 gap-2">
+<h1 onClick={handleClearMemory} className=" p-2 text-right"><Plus size={20}/></h1>
+{showAgent && <button 
+  onClick={() => setShowAgent(false)}
+  className=""
+>
+<X size={20}/>
+</button>}
+</div>
         <div className="flex-1 overflow-y-auto p-4 space-y-6 custom-scrollbar">
           <AnimatePresence>
             {messages.map((msg, i) => (
@@ -1119,7 +1160,7 @@ if (wants_to_trade && trade_data) {
                   
 {React.isValidElement(msg.content) && msg.content.type === TradeWidget 
   ? React.cloneElement(msg.content as React.ReactElement<TradeWidgetProps>, { 
-      disabled: isTrading || isExecuted, 
+      disabled: isTrading || isExecuted || isRejected, 
       onAccept: handleAccept, 
       price: isExecuted && confirmedEntryPrice 
              ? confirmedEntryPrice.toString() 
@@ -1169,7 +1210,7 @@ if (wants_to_trade && trade_data) {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="p-4 mb-10 md:mb-0"
+              className="p-4 "
             >
               <div className="relative bg-[#0d0d0d] rounded-2xl border border-white/10 p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
                 <textarea
