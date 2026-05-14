@@ -1120,7 +1120,7 @@ const handleClearMemory = async () => {
 
       {/* LEFT SIDE: 70% (Exactly as you wanted it) */}
       <div className="flex-[7] flex flex-col min-w-0 relative">
-<div className="hidden md:absolute md:block bg-black p-3 text-white text-2xl theseason rounded-xl left-2 bottom-10 z-50 cursor-pointer">
+<div className="hidden md:absolute md:block bg-black p-3 text-white text-2xl theseason rounded-xl left-2 bottom-5 z-50 cursor-pointer">
   RICHACLE
 </div>
 

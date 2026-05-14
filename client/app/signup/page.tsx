@@ -102,13 +102,13 @@ export default function SignupPage() {
               <div className="text-xl font-bold text-gray-700">OpenAI</div>
             </div>
             <div className="flex items-center justify-center">
-              <div className="text-xl font-serif text-gray-700">TIME</div>
+              <div className="text-xl font-bold text-gray-700">Claude</div>
             </div>
             <div className="flex items-center justify-center">
-              <div className="text-xl font-bold text-gray-700">airbnb</div>
+              <div className="text-xl font-bold text-gray-700">Binance</div>
             </div>
             <div className="flex items-center justify-center">
-              <div className="text-xl font-bold text-gray-700">SAP</div>
+              <div className="text-xl font-bold text-gray-700">TradingView</div>
             </div>
           </div>
         </div>
