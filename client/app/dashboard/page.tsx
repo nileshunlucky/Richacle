@@ -318,22 +318,29 @@ seriesRef.current.update({
 
   return (
     <div className="flex-1 w-full bg-black relative overflow-hidden flex flex-col"> 
-      <div className="absolute top-4 left-4 z-20 flex flex-col gap-1 pointer-events-none">
-        <h2 className="text-xl font-bold text-white tracking-tighter">{symbol}</h2>
-        <div className="flex gap-2 pointer-events-auto">
-          {timeframes.map(tf => (
-            <button
-              key={tf}
-              onClick={() => setInterval(tf)}
-              className={cn(
-                "text-[10px] px-2 py-0.5 rounded border transition-all",
-                interval === tf ? "bg-white text-black border-white" : "bg-black/40 text-white/50 border-white/10 hover:border-white/30"
-              )}
-            >
-              {tf.toUpperCase()}
-            </button>
-          ))}
-        </div>
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-3 gap-1 pointer-events-none bg-black p-2 rounded-xl">
+        <h2 className="font-semibold text-white ">{symbol}</h2>
+        
+        <div className="pointer-events-auto">
+        
+        <Select value={interval} onValueChange={setInterval}>
+  <SelectTrigger className="border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70  hover:text-white transition-colors cursor-pointer outline-none">
+    <SelectValue />
+  </SelectTrigger>
+  <SelectContent side="top" sideOffset={3} align="start" position="popper" className="text-white">
+    {timeframes.map((tf) => (
+      <SelectItem
+        key={tf}
+        value={tf}
+        className="text-[11px] font-semibold focus:text-white cursor-pointer transition-colors"
+      >
+        {tf.toUpperCase()}
+      </SelectItem>
+    ))}
+  </SelectContent>
+</Select>
+
+      </div>
       </div>
       <div className="absolute inset-0 h-full w-full" ref={container} />
     </div>
@@ -1113,7 +1120,16 @@ const handleClearMemory = async () => {
 
       {/* LEFT SIDE: 70% (Exactly as you wanted it) */}
       <div className="flex-[7] flex flex-col min-w-0 relative">
-      {!showAgent && <div className="absolute bg-black p-3 text-white md:text-2xl text-xl theseason rounded-xl left-2 bottom-10 z-50">RICHACLE</div>}
+<div className="hidden md:absolute md:block bg-black p-3 text-white text-2xl theseason rounded-xl left-2 bottom-10 z-50 cursor-pointer">
+  RICHACLE
+</div>
+
+{!showAgent && (
+  <div className="absolute block md:hidden bg-black p-3 text-white text-xl theseason rounded-xl left-0 bottom-5 z-50 cursor-pointer">
+    RICHACLE
+  </div>
+)}
+
         <AdvancedChart isDemo={isDemo} symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
       

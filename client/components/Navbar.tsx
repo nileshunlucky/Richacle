@@ -177,7 +177,7 @@ const toggleMobileTip = () => {
 
   return (
     // Set to absolute and top-0 so it doesn't push the Dashboard content down
-    <nav className="w-full ">
+    <nav className="w-full bg-black">
       <div>
         {/* Changed bg-black to bg-transparent */}
         <div className={`flex justify-between md:px-12 px-3 py-3 h-12 items-center ${mobileOpen ? "bg-black" : "bg-transparent"}`}>
