@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { Menu, X } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { 
-  Plus, 
   ShieldCheck,
   Info,
   Copy,
@@ -190,9 +189,9 @@ const toggleMobileTip = () => {
            <ul className="flex space-x-6 items-center text-sm font-semibold">
            <li> <button 
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"
+                    className="flex cursor-pointer items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"
                   >
-                    <Plus size={14} />Broker
+                    Broker
                   </button></li>
            <li>$ {new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,
@@ -296,14 +295,14 @@ const toggleMobileTip = () => {
           <div className="pt-4 flex gap-3">
             <button 
               onClick={() => setIsModalOpen(false)}
-              className="flex-1 px-4 py-3 rounded-xl text-sm font-medium text-zinc-400 hover:text-white transition-colors"
+              className="flex-1 px-4 py-3 cursor-pointer rounded-xl text-sm font-medium text-zinc-400 hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button 
               onClick={handleBinance}
               disabled={loading}
-              className="flex-1 flex items-center justify-center bg-zinc-100 text-zinc-950 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-white transition-all active:scale-95"
+              className="flex-1 flex items-center justify-center bg-zinc-100 text-zinc-950 px-4 py-3 rounded-xl text-sm font-semibold hover:bg-white transition-all active:scale-95 cursor-pointer"
             >
               {loading ? <Loader2 size={16} className="animate-spin" /> : "Connect"}
             </button>

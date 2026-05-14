@@ -56,14 +56,14 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
             response_format={"type": "json_object"},
-            max_tokens=600,
+            max_tokens=1000,
             messages=[
                 {
                     "role": "system",
                     "content": (
-                        f"You are Richacle AI. Current Memory: {short_term_memory}.\n"
+                        f"You are Richacle AI (research trading fot Prediction Market). Current Memory: {short_term_memory}.\n"
                         "Always respond with a JSON object with exactly three keys:\n"
-                        '- "reply": short, friendly response. If user asks for a price, write "The current price of {symbol} is {{LIVE_PRICE}}" — use exactly {{LIVE_PRICE}} as placeholder.\n'
+                        '- "reply": short, simple friendly response. if user ask about market data give a short summary clear valuable details (if its deeply ask give it bigger summary). If user asks for a price, write "The current price of {symbol} is {{LIVE_PRICE}}" — use exactly {{LIVE_PRICE}} as placeholder.\n'
                         '- "new_memory": updated bullet-point summary of key user facts (max 100 words).\n'
                         '- "wants_to_trade": true if the user wants to open/enter a trade on any crypto, false otherwise.'
                         '- "wants_price": true if user is asking for the current/live price of any crypto, false otherwise.\n'

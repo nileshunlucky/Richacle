@@ -1112,7 +1112,8 @@ const handleClearMemory = async () => {
 )}
 
       {/* LEFT SIDE: 70% (Exactly as you wanted it) */}
-      <div className="flex-[7] flex flex-col min-w-0">
+      <div className="flex-[7] flex flex-col min-w-0 relative">
+      {!showAgent && <div className="absolute bg-black p-3 text-white md:text-2xl text-xl theseason rounded-xl left-2 bottom-10 z-50">RICHACLE</div>}
         <AdvancedChart isDemo={isDemo} symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
       
@@ -1143,7 +1144,7 @@ const handleClearMemory = async () => {
 {messages.length === 0 && (
   <div className="w-full justify-center items-center flex h-full">
     <h1 
-      className="text-3xl theseason animate-pulse "
+      className="text-3xl theseason  "
     >
       RICHACLE
     </h1>
