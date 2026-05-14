@@ -1,5 +1,6 @@
 import { Metadata } from "next";
-import { redirect } from "next/navigation";
+import PromptUI from "../PromptUI"
+
 
 type Props = {
   params: Promise<{ slug: string }>;
@@ -23,6 +24,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: event?.description,
       images: [`https://richacle.com/events/${slug}.png`], 
     },
+    openGraph: {
+      title: event.title,
+      description: event.description,
+      images: [`https://richacle.com/events/${slug}.png`],
+    },
   };
 }
 
@@ -30,9 +36,12 @@ export default async function Page({ params }: Props) {
   const { slug } = await params;
   const event = EVENTS[slug];
 
-  if (event) {
-    redirect("/");
-  }
+  return (
+    <div className="h-screen flex items-center justify-center bg-black">
 
-  return ;
-}
+    <div>
+      <PromptUI/>
+    </div>
+    </div>
+  );
+} 
