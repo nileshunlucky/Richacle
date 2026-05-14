@@ -18,7 +18,7 @@ import { useRouter } from "next/navigation";
 export default function Home() {
 
   const router = useRouter();
-  const textareaRef = useRef(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [selectedModel, setSelectedModel] = useState("claude-4.7");
   const [inputValue, setInputValue] = useState("");
 
