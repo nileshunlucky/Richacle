@@ -40,7 +40,7 @@ const handleRedirect = () => {
     router.push("/dashboard");
   };
 
-const handleSuggestionClick = (label) => {
+const handleSuggestionClick = (label: string) => {
     setInputValue(label);
     setTimeout(() => textareaRef.current?.focus(), 0);
   };
@@ -55,7 +55,7 @@ const handleSuggestionClick = (label) => {
               exit={{ opacity: 0, y: 10 }}
               className="p-4 w-[92vw] sm:w-[70vw] md:w-[50vw] lg:w-[38vw] xl:w-[30vw] relative z-50"
             >
-    <h1 className="theseason text-[3.5rem] xs:text-[4.5rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] absolute -top-8 md:-top-25 left-8  md:-left-25  text-white/10">RICHACLE</h1>
+    <h1 className="theseason text-[3.5rem] xs:text-[4.5rem] sm:text-[6rem] md:text-[8rem] lg:text-[10rem] absolute -top-8 md:-top-25 left-8  md:-left-28  text-white/10">RICHACLE</h1>
               <div className="relative bg-[#0d0d0d] rounded-2xl border border-white/10 p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
                 <textarea
                   ref={textareaRef}
