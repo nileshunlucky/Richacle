@@ -65,7 +65,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                         "Always respond with a JSON object with exactly three keys:\n"
                         '- "reply": short, simple friendly response. if user ask about market data give a short summary clear valuable details (if its deeply ask give it bigger summary). If user asks for a price, write "The current price of {symbol} is {{LIVE_PRICE}}" — use exactly {{LIVE_PRICE}} as placeholder.\n'
                         '- "new_memory": updated bullet-point summary of key user facts (max 100 words).\n'
-                        '- "wants_to_trade": true if the user wants to open/enter a trade on any crypto, false otherwise.'
+                        '- "wants_to_trade": true if the user wants to open/enter or /trade (command) to trade on any crypto, false otherwise.'
                         '- "wants_price": true if user is asking for the current/live price of any crypto, false otherwise.\n'
                         '- "symbol": trading pair in BASE/USDT format if wants_to_trade or wants_price is true (e.g. "BTC/USDT"), otherwise null.'
                     )
