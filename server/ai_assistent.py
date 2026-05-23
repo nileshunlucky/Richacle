@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 from db import users_collection
 from cryptography.fernet import Fernet
 import json
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -326,5 +327,69 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
     except Exception as e:
         print(traceback.format_exc())
         raise HTTPException(status_code=400, detail=f"Close Error: {str(e)}")
+    finally:
+        await client.close()
+
+@router.post("/api/trade-history")
+async def trade_history(email: str = Form(...)):
+    user = users_collection.find_one({"email": email})
+    if not user: raise HTTPException(status_code=404, detail="User not found")
+
+    binance_data = user.get("binance", {})
+    api_key = binance_data.get("apiKey")
+    encrypted_secret = binance_data.get("apiSecret")
+    is_demo = binance_data.get("demo", False)
+
+    if not api_key or not encrypted_secret:
+        raise HTTPException(status_code=400, detail="Binance API keys missing.")
+
+    decrypted_secret = fernet.decrypt(encrypted_secret.encode()).decode()
+
+    client = ccxt.binance({
+        'apiKey': api_key,
+        'secret': decrypted_secret,
+        'options': {'defaultType': 'future'}
+    })
+    if is_demo: client.enable_demo_trading(True)
+
+    try:
+        # Fetch ALL realized PnL across every coin
+        income = await client.fapiPrivateGetIncome({
+            'incomeType': 'REALIZED_PNL',
+            'limit': 1000
+        })
+
+        # Group by date for calendar
+        by_date = {}
+        for entry in income:
+            pnl = float(entry.get('income', 0))
+            symbol = entry.get('symbol', '')
+            date = datetime.fromtimestamp(entry['time'] / 1000, tz=timezone.utc).strftime('%Y-%m-%d')
+
+            if date not in by_date:
+                by_date[date] = {
+                    "date": date,
+                    "pnl": 0,
+                    "trades": 0,
+                    "symbols": []
+                }
+
+            by_date[date]["pnl"] += pnl
+            by_date[date]["trades"] += 1
+            if symbol not in by_date[date]["symbols"]:
+                by_date[date]["symbols"].append(symbol)
+
+        # Round PnL
+        for d in by_date.values():
+            d["pnl"] = round(d["pnl"], 2)
+
+        return {
+            "status": "success",
+            "calendar": list(by_date.values())   # list of days, ready for calendar
+        }
+
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=400, detail=f"Binance Error: {str(e)}")
     finally:
         await client.close()

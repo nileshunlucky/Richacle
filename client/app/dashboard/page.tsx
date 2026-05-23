@@ -1304,59 +1304,7 @@ const handleClearMemory = async () => {
                   className="w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none placeholder:text-white/50 text-white "
                 />
                 <div className="flex justify-between items-center mt-auto">
-                <button
-  onClick={() => {
-    const fakeTradeData = {
-      symbol: "BTC/USDT",
-      side: "BUY",
-      leverage: 10,
-      take_profit: (parseFloat(currentPrice || "104800") * 1.012).toFixed(2),
-      stop_loss: (parseFloat(currentPrice || "104800") * 0.994).toFixed(2),
-      entry_price: currentPrice || "104800",
-      confidence: Math.floor(68 + Math.random() * 20),
-      research_summary: "Fake AI signal triggered manually for demo purposes.",
-    };
-
-    setLastResearch(fakeTradeData);
-    setIsRejected(false);
-    setIsWidgetActive(true);
-    setActiveSymbol(fakeTradeData.symbol);
-    setActiveLines({
-      entry: parseFloat(fakeTradeData.entry_price),
-      tp: parseFloat(fakeTradeData.take_profit),
-      sl: parseFloat(fakeTradeData.stop_loss),
-      side: fakeTradeData.side,
-    });
-
-    setMessages(prev => [
-      ...prev,
-      {
-        role: "ai",
-        content: (
-          <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
-            <h1 className="font-semibold">Win Rate {fakeTradeData.confidence}%</h1>
-            <h1 className="font-light theseason">RICHACLE</h1>
-          </div>
-        ),
-      },
-      {
-        role: "ai",
-        content: (
-          <TradeWidget
-            initialData={fakeTradeData}
-            onPriceChange={setActiveLines}
-            onReset={handleReject}
-            onAccept={handleAccept}
-            disabled={false}
-            price={currentPrice}
-          />
-        ),
-      },
-    ]);
-  }}
->
-  Fake Trade
-</button>
+                
 
 
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
