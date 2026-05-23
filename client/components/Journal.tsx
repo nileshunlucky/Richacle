@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, X, TrendingUp, TrendingDown, Calendar, BarChart2, LoaderCircle } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, Calendar, LoaderCircle } from "lucide-react";
 
 const cn = (...classes: (string | boolean | undefined | null)[]) =>
   classes.filter(Boolean).join(" ");
@@ -51,7 +51,6 @@ export default function Journal({ email, onClose }: JournalProps) {
         body: formData,
       });
       const json = await res.json();
-      console.log(json)
       setCalendarData(json.calendar || []);
       setFetched(true);
     } catch (e) {
@@ -127,7 +126,7 @@ export default function Journal({ email, onClose }: JournalProps) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-3 md:p-6"
+      className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
@@ -135,13 +134,13 @@ export default function Journal({ email, onClose }: JournalProps) {
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.96, y: 20, opacity: 0 }}
         transition={{ type: "spring", damping: 28, stiffness: 180 }}
-        className="bg-[#0d0d0d] border border-white/[0.07] rounded-2xl w-full max-w-5xl max-h-[92vh] overflow-y-auto flex flex-col"
+        className="bg-[#0d0d0d] border border-white/[0.07] rounded-2xl w-full max-w-5xl max-h-[96vh] md:max-h-[92vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/[0.06] sticky top-0 bg-[#0d0d0d] z-10">
-          <div className="flex items-center gap-3">
+        <div className="flex items-center justify-between p-4 md:p-5 border-b border-white/[0.06] sticky top-0 bg-[#0d0d0d] z-20">
+          <div className="flex items-center gap-2 md:gap-3">
             <Calendar size={18} className="text-white/40" />
-            <h2 className="text-white font-semibold text-sm tracking-wide">PnL Journal</h2>
+            <h2 className="text-white font-semibold text-sm md:text-base">PnL Calendar</h2>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
             <X size={16} className="text-white/60" />
@@ -153,16 +152,15 @@ export default function Journal({ email, onClose }: JournalProps) {
             <LoaderCircle size={22} className="animate-spin text-white/30" />
           </div>
         ) : (
-          <div className="p-4 md:p-5 flex flex-col gap-4">
+          <div className="p-4 md:p-5 flex flex-col gap-5 md:gap-6">
 
             {/* Stats Row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-3">
               {[
                 {
                   label: "Net P&L",
                   value: formatPnlFull(monthStats.netPnl),
-                  color: monthStats.netPnl >= 0 ? "text-emerald-400" : "text-red-400",
-                  icon: monthStats.netPnl >= 0 ? <TrendingUp size={14}/> : <TrendingDown size={14}/>,
+                  color: monthStats.netPnl >= 0 ? "text-green-400" : "text-red-400",
                 },
                 {
                   label: "Day win %",
@@ -185,139 +183,152 @@ export default function Journal({ email, onClose }: JournalProps) {
                     const best = Math.max(...days.map(d => d.pnl));
                     return `+$${best.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   })(),
-                  color: "text-emerald-400",
+                  color: "text-green-400",
                 },
               ].map((s, i) => (
-                <div key={i} className="bg-[#141414] border border-white/[0.05] rounded-xl p-4">
-                  <div className="text-[10px] uppercase tracking-wider text-white/30 mb-2">{s.label}</div>
-                  <div className={cn("text-xl font-bold tabular-nums", s.color)}>
-                    {s.icon && <span className="inline mr-1">{s.icon}</span>}{s.value}
+                <div key={i} className="bg-[#141414] border border-white/[0.05] rounded-xl p-3 md:p-4">
+                  <div className="text-[9px] md:text-[10px] uppercase tracking-wider text-white/30 mb-1 md:mb-2">{s.label}</div>
+                  <div className={cn("text-lg md:text-xl font-bold tabular-nums ", s.color)}>
+                    {s.value}
                   </div>
-                  {s.sub && <div className="text-[11px] text-white/30 mt-1">{s.sub}</div>}
+                  {s.sub && <div className="text-[10px] md:text-[11px] text-white/30 mt-0.5 md:mt-1 ">{s.sub}</div>}
                 </div>
               ))}
             </div>
 
             {/* Month Nav */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <button onClick={goPrev} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2 md:gap-3">
+                <button onClick={goPrev} className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
                   <ChevronLeft size={16} className="text-white/60" />
                 </button>
-                <h3 className="text-white font-semibold text-sm min-w-[140px] text-center">
+                <h3 className="text-white font-semibold text-sm md:text-base min-w-[120px] md:min-w-[140px] text-center">
                   {MONTHS[viewMonth]} {viewYear}
                 </h3>
-                <button onClick={goNext} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
+                <button onClick={goNext} className="p-1.5 md:p-2 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
                   <ChevronRight size={16} className="text-white/60" />
                 </button>
                 <button
                   onClick={goToday}
-                  className="text-[11px] px-3 py-1 rounded-lg bg-white/[0.06] hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer"
+                  className="text-[10px] md:text-[11px] px-2.5 py-1.5 md:px-3 md:py-1 rounded-lg bg-white/[0.06] hover:bg-white/10 text-white/60 hover:text-white transition-colors cursor-pointer ml-1"
                 >
                   This month
                 </button>
               </div>
-              <div className="flex items-center gap-2 text-[11px] text-white/30">
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-emerald-500/60 inline-block"/>Profit</span>
-                <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm bg-red-500/60 inline-block"/>Loss</span>
-              </div>
             </div>
 
-            {/* Calendar + Weekly */}
-            <div className="flex gap-3">
-              {/* Calendar Grid */}
-              <div className="flex-1 min-w-0">
-                {/* Day headers */}
-                <div className="grid grid-cols-7 mb-1">
-                  {DAYS.map(d => (
-                    <div key={d} className="text-center text-[10px] uppercase tracking-wider text-white/20 py-1.5">
-                      {d}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Weeks */}
-                <div className="flex flex-col gap-1">
-                  {Array.from({ length: calendarGrid.length / 7 }, (_, wi) => (
-                    <div key={wi} className="grid grid-cols-7 gap-1">
-                      {calendarGrid.slice(wi * 7, wi * 7 + 7).map((day, di) => {
-                        if (!day) return <div key={di} className="rounded-lg h-[72px] md:h-[80px] bg-[#0a0a0a]" />;
-
-                        const key = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-                        const d = dataByDate[key];
-                        const isToday = key === todayKey;
-                        const hasData = d && d.trades > 0;
-                        const isWin = hasData && d.pnl > 0;
-                        const isLoss = hasData && d.pnl < 0;
-
-                        return (
-                          <motion.div
-                            key={di}
-                            whileHover={{ scale: 1.02 }}
-                            className={cn(
-                              "rounded-lg h-[72px] md:h-[80px] p-1.5 flex flex-col justify-between relative overflow-hidden transition-colors",
-                              isWin && "bg-emerald-500/10 border border-emerald-500/20",
-                              isLoss && "bg-red-500/10 border border-red-500/20",
-                              !hasData && "bg-[#111] border border-white/[0.04]",
-                              isToday && !hasData && "border-white/20",
-                            )}
-                          >
-                            <span className={cn(
-                              "text-[10px] font-medium self-end",
-                              isWin && "text-emerald-500/60",
-                              isLoss && "text-red-500/60",
-                              !hasData && "text-white/20",
-                              isToday && "text-white/70"
-                            )}>
-                              {day}
-                            </span>
-                            {hasData && (
-                              <div className="space-y-0.5">
-                                <div className={cn(
-                                  "text-[11px] md:text-[12px] font-bold tabular-nums leading-none",
-                                  isWin ? "text-emerald-400" : "text-red-400"
-                                )}>
-                                  {formatPnl(d.pnl)}
-                                </div>
-                                <div className="text-[9px] text-white/25">
-                                  {d.trades} trade{d.trades !== 1 ? "s" : ""}
-                                </div>
-                              </div>
-                            )}
-                          </motion.div>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Weekly Summary */}
-              <div className="w-[90px] md:w-[110px] flex flex-col gap-1 pt-[28px]">
-                {weeks.map((w) => (
-                  <div
-                    key={w.week}
-                    className={cn(
-                      "h-[72px] md:h-[80px] rounded-lg p-2 flex flex-col justify-between border",
-                      w.pnl > 0 && "bg-emerald-500/5 border-emerald-500/15",
-                      w.pnl < 0 && "bg-red-500/5 border-red-500/15",
-                      w.pnl === 0 && "bg-[#111] border-white/[0.04]"
-                    )}
-                  >
-                    <span className="text-[9px] uppercase tracking-wide text-white/25">Week {w.week}</span>
-                    <div>
-                      <div className={cn(
-                        "text-[11px] font-bold tabular-nums",
-                        w.pnl > 0 ? "text-emerald-400" : w.pnl < 0 ? "text-red-400" : "text-white/20"
-                      )}>
-                        {w.pnl !== 0 ? formatPnl(w.pnl) : "$0"}
+            {/* Calendar + Weekly Container (Horizontal Scroll on Mobile) */}
+            <div className="overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+              <div className="flex gap-2 md:gap-3 min-w-[500px] md:min-w-0">
+                {/* Calendar Grid */}
+                <div className="flex-1 min-w-0">
+                  {/* Day headers */}
+                  <div className="grid grid-cols-7 mb-1">
+                    {DAYS.map(d => (
+                      <div key={d} className="text-center text-[9px] md:text-[10px] uppercase tracking-wider text-white/20 py-1.5">
+                        {d}
                       </div>
-                      <div className="text-[9px] text-white/20">{w.days} day{w.days !== 1 ? "s" : ""}</div>
-                    </div>
+                    ))}
                   </div>
-                ))}
+
+                  {/* Weeks */}
+                  <div className="flex flex-col gap-1 md:gap-1.5">
+                    {Array.from({ length: calendarGrid.length / 7 }, (_, wi) => (
+                      <div key={wi} className="grid grid-cols-7 gap-1 md:gap-1.5">
+                        {calendarGrid.slice(wi * 7, wi * 7 + 7).map((day, di) => {
+                          if (!day) return <div key={di} className="rounded-lg h-[64px] sm:h-[72px] md:h-[100px] bg-[#0a0a0a]" />;
+
+                          const key = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+                          const d = dataByDate[key];
+                          const isToday = key === todayKey;
+                          const hasData = d && d.trades > 0;
+                          const isWin = hasData && d.pnl > 0;
+                          const isLoss = hasData && d.pnl < 0;
+
+                          return (
+                            <motion.div
+                              key={di}
+                              whileHover={{ scale: 1.02 }}
+                              className={cn(
+                                "rounded-lg h-[64px] sm:h-[72px] md:h-[100px] p-1 md:p-1.5 flex flex-col justify-between relative overflow-hidden transition-colors",
+                                isWin && "bg-green-700/20 border border-green-500/20",
+                                isLoss && "bg-red-700/20 border border-red-500/20",
+                                !hasData && "bg-[#111] border border-white/[0.04]",
+                                isToday && !hasData && "border-white/20",
+                              )}
+                            >
+                              <span className={cn(
+                                "text-[9px] md:text-[10px] font-medium self-end",
+                                isWin && "text-green-500/60",
+                                isLoss && "text-red-500/60",
+                                !hasData && "text-white/20",
+                                isToday && "text-white"
+                              )}>
+                                {day}
+                              </span>
+                              {hasData && (
+                                <div className="space-y-0.5">
+                                  <div className={cn(
+                                    "text-[10px] sm:text-[11px] md:text-[12px] font-bold tabular-nums leading-none ",
+                                    isWin ? "text-green-400" : "text-red-400"
+                                  )}>
+                                    {formatPnl(d.pnl)}
+                                  </div>
+                                  <div className="text-[8px] sm:text-[9px] text-white ">
+                                    {d.trades} trade{d.trades !== 1 ? "s" : ""}
+                                  </div>
+                                </div>
+                              )}
+                            </motion.div>
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Weekly Summary */}
+                <div className="w-[75px] md:w-[110px] flex flex-col gap-1 md:gap-1.5 pt-[26px] md:pt-[28px]">
+                  {weeks.map((w) => {
+                    const isActive = w.days > 0;
+                    
+                    return (
+                      <div
+                        key={w.week}
+                        className={cn(
+                          "h-[64px] sm:h-[72px] md:h-[100px] rounded-lg p-1.5 md:p-2 flex flex-col justify-between border",
+                          w.pnl > 0 && "bg-green-700/20 border-green-500/15",
+                          w.pnl < 0 && "bg-red-700/20 border-red-500/15",
+                          w.pnl === 0 && "bg-[#111] border-white/[0.04]"
+                        )}
+                      >
+                        <span className={cn(
+                          "text-[8px] md:text-[9px] uppercase tracking-wide",
+                          isActive ? "text-white" : "text-white/25"
+                        )}>
+                          Week {w.week}
+                        </span>
+                        <div>
+                          <div className={cn(
+                            "text-[10px] md:text-[11px] font-bold tabular-nums ",
+                            w.pnl > 0 ? "text-green-400" : w.pnl < 0 ? "text-red-400" : "text-white/20"
+                          )}>
+                            {w.pnl !== 0 ? formatPnl(w.pnl) : "$0"}
+                          </div>
+                          <div className={cn(
+                            "text-[8px] md:text-[9px]",
+                            isActive ? "text-white" : "text-white/20"
+                          )}>
+                            {w.days} day{w.days !== 1 ? "s" : ""}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
+
           </div>
         )}
       </motion.div>
