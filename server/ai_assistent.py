@@ -151,7 +151,7 @@ async def clear_memory(email: str = Form(...)):
     user = users_collection.find_one({"email": email})
     if not user: raise HTTPException(status_code=404, detail="User not found")
     
-    users_collection.update_one({"email": email}, {"$set": {"memory": ""}})
+    users_collection.update_one({"email": email}, {"$set": {"history": []}})
     
     return {"status": "success", "message": "Memory cleared."}
 
