@@ -362,9 +362,9 @@ async def trade_history(email: str = Form(...)):
         # Group by date for calendar
         by_date = {}
         for entry in income:
-            pnl = float(entry.get('income', 0))
+            pnl = float(entry.get('income', 0) or 0)
             symbol = entry.get('symbol', '')
-            date = datetime.fromtimestamp(entry['time'] / 1000, tz=timezone.utc).strftime('%Y-%m-%d')
+            date = datetime.fromtimestamp(int(entry['time']) / 1000, tz=timezone.utc).strftime('%Y-%m-%d')
 
             if date not in by_date:
                 by_date[date] = {

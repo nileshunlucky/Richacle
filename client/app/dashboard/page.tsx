@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Journal from "@/components/Journal";
 import { 
   ArrowUp, 
   Terminal, 
@@ -14,7 +15,8 @@ import {
   Plus,
   LoaderCircle,
   MessageCircle,
-  X
+  X,
+  BarChart2
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -764,6 +766,7 @@ const [loading, setLoading] = useState(false)
 const [isWidgetActive, setIsWidgetActive] = useState(false);
 const [isPositionClosed, setIsPositionClosed] = useState(false);
 const [isRejected, setIsRejected] = useState(false);
+const [showJournal, setShowJournal] = useState(false);
 
 const models = [
   { id: "claude-4.7", name: "Claude Opus 4.7" },
@@ -1176,6 +1179,10 @@ const handleClearMemory = async () => {
 <div className="hidden md:absolute md:block bg-black p-3 text-white text-2xl theseason rounded-xl left-2 bottom-5 z-50 cursor-pointer">
   RICHACLE
 </div>
+<button onClick={() => setShowJournal(true)} className="cursor-pointer p-2">
+  <BarChart2 size={20} />
+</button>
+
 
 {!showAgent && (
   <div className="absolute block md:hidden bg-black p-3 text-white text-xl theseason rounded-xl left-0 bottom-5 z-50 cursor-pointer">
@@ -1192,6 +1199,12 @@ const handleClearMemory = async () => {
 >
   <MessageCircle />
 </button>}
+
+<AnimatePresence>
+  {showJournal && (
+    <Journal email={email} onClose={() => setShowJournal(false)} />
+  )}
+</AnimatePresence>
       
 
       {/* RIGHT SIDE: 30% (Exactly as you wanted it) */}
@@ -1201,6 +1214,7 @@ const handleClearMemory = async () => {
   !showAgent ? "hidden md:flex" : "fixed inset-0 z-40 md:relative md:inset-auto"
 )}>
 <div className="bg-black flex justify-end items-center p-2 px-4 gap-2">
+
 <h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right"><Plus size={20}/></h1>
 {showAgent && <button 
   onClick={() => setShowAgent(false)}
