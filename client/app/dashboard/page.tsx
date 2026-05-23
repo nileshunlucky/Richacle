@@ -511,18 +511,71 @@ useEffect(() => {
               />
             </div>
           </div>
-          <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Leverage</label>
-            <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
-              <input 
-                disabled={disabled}
-                type="number" 
-                value={leverage} 
-                onChange={(e) => setLeverage(e.target.value)}
-                className="bg-transparent border-none outline-none text-white text-[13px] w-full p-0 focus:ring-0"
-              />
-            </div>
-          </div>
+          <div className="space-y-3">
+  <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Leverage</label>
+
+  {/* Value display with – and + */}
+  <div className="flex items-center gap-2">
+    <button
+      disabled={disabled}
+      onClick={() => setLeverage(v => String(Math.max(1, parseInt(v) - 1)))}
+      className="w-8 h-8 rounded bg-white/10 text-white text-lg flex items-center justify-center hover:bg-white/20 disabled:opacity-30 cursor-pointer"
+    >−</button>
+
+    <div className="flex-1 text-center text-white font-bold text-xl tracking-tight">
+      {leverage}<span className="text-white text-base font-normal">x</span>
+    </div>
+
+    <button
+      disabled={disabled}
+      onClick={() => setLeverage(v => String(Math.min(125, parseInt(v) + 1)))}
+      className="w-8 h-8 rounded bg-white/10 text-white text-lg flex items-center justify-center hover:bg-white/20 disabled:opacity-30 cursor-pointer"
+    >+</button>
+  </div>
+
+  {/* Slider track with dot markers */}
+  <div className="relative px-1 py-2">
+    {/* Track */}
+    <div className="relative h-[3px] rounded-full bg-white/15 mx-1">
+      <div
+        className="absolute left-0 top-0 h-full rounded-full bg-white transition-all"
+        style={{ width: `${((parseInt(leverage) - 1) / 124) * 100}%` }}
+      />
+      {/* Thumb dot */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-black shadow transition-all"
+        style={{ left: `${((parseInt(leverage) - 1) / 124) * 100}%` }}
+      />
+      {/* Tick dots */}
+      {[1, 25, 50, 75, 100, 125].map(v => (
+        <div
+          key={v}
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full border border-white/30"
+          style={{
+            left: `${((v - 1) / 124) * 100}%`,
+            background: '#ffffff' 
+          }}
+        />
+      ))}
+    </div>
+
+    {/* Invisible range input */}
+    <input
+      disabled={disabled}
+      type="range" min={1} max={125} step={1}
+      value={leverage}
+      onChange={(e) => setLeverage(e.target.value)}
+      className="absolute inset-0 w-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+    />
+  </div>
+
+  {/* Tick labels */}
+  <div className="flex justify-between text-[9px] text-white/25 px-1">
+    {[1, 25, 50, 75, 100, 125].map(v => (
+      <span key={v}>{v}x</span>
+    ))}
+  </div>
+</div>
         </div>
 
         <div className="pt-2">
@@ -706,7 +759,7 @@ const [confirmedEntryPrice, setConfirmedEntryPrice] = useState<number | null>(nu
 const [lastResearch, setLastResearch] = useState<any>(null);
 const [activeTradeParams, setActiveTradeParams] = useState<any>(null);
 const [tradeResult, setTradeResult] = useState<TradeResultState | null>(null);
-const [selectedModel, setSelectedModel] = useState("grok-4.2");
+const [selectedModel, setSelectedModel] = useState("claude-4.7");
 const [loading, setLoading] = useState(false)
 const [isWidgetActive, setIsWidgetActive] = useState(false);
 const [isPositionClosed, setIsPositionClosed] = useState(false);
@@ -1251,6 +1304,59 @@ const handleClearMemory = async () => {
                   className="w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none placeholder:text-white/50 text-white "
                 />
                 <div className="flex justify-between items-center mt-auto">
+                <button
+  onClick={() => {
+    const fakeTradeData = {
+      symbol: "BTC/USDT",
+      side: "BUY",
+      leverage: 10,
+      take_profit: (parseFloat(currentPrice || "104800") * 1.012).toFixed(2),
+      stop_loss: (parseFloat(currentPrice || "104800") * 0.994).toFixed(2),
+      entry_price: currentPrice || "104800",
+      confidence: Math.floor(68 + Math.random() * 20),
+      research_summary: "Fake AI signal triggered manually for demo purposes.",
+    };
+
+    setLastResearch(fakeTradeData);
+    setIsRejected(false);
+    setIsWidgetActive(true);
+    setActiveSymbol(fakeTradeData.symbol);
+    setActiveLines({
+      entry: parseFloat(fakeTradeData.entry_price),
+      tp: parseFloat(fakeTradeData.take_profit),
+      sl: parseFloat(fakeTradeData.stop_loss),
+      side: fakeTradeData.side,
+    });
+
+    setMessages(prev => [
+      ...prev,
+      {
+        role: "ai",
+        content: (
+          <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
+            <h1 className="font-semibold">Win Rate {fakeTradeData.confidence}%</h1>
+            <h1 className="font-light theseason">RICHACLE</h1>
+          </div>
+        ),
+      },
+      {
+        role: "ai",
+        content: (
+          <TradeWidget
+            initialData={fakeTradeData}
+            onPriceChange={setActiveLines}
+            onReset={handleReject}
+            onAccept={handleAccept}
+            disabled={false}
+            price={currentPrice}
+          />
+        ),
+      },
+    ]);
+  }}
+>
+  Fake Trade
+</button>
 
 
                 <Select value={selectedModel} onValueChange={setSelectedModel}>

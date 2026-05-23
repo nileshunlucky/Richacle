@@ -49,7 +49,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
     if not user: raise HTTPException(status_code=404, detail="User not found")
     if int(user.get("credits", 0)) < 1: raise HTTPException(status_code=403, detail="Credits exhausted")
 
-    short_term_memory = user.get("memory", "No previous context.")
+    history = user.get("history", [])
 
     try:
         # STEP 1: Detect intent + get reply in one call
@@ -61,30 +61,32 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                 {
                     "role": "system",
                     "content": (
-                        f"You are Richacle AI (research trading fot Prediction Market). Current Memory: {short_term_memory}.\n"
+                        f"You are Richacle AI (research trading fot Prediction Market).\n"
                         "Always respond with a JSON object with exactly three keys:\n"
                         '- "reply": short, simple friendly response. if user ask about market data give a short summary clear valuable details (if its deeply ask give it bigger summary). If user asks for a price, write "The current price of {symbol} is {{LIVE_PRICE}}" — use exactly {{LIVE_PRICE}} as placeholder.\n'
-                        '- "new_memory": updated bullet-point summary of key user facts (max 100 words).\n'
                         '- "wants_to_trade": true if the user wants to open/enter or /trade (command) to trade on any crypto, false otherwise.'
                         '- "wants_price": true if user is asking for the current/live price of any crypto, false otherwise.\n'
                         '- "symbol": trading pair in BASE/USDT format if wants_to_trade or wants_price is true (e.g. "BTC/USDT"), otherwise null.'
                     )
                 },
+                 *history,
                 {"role": "user", "content": prompt},
             ]
         )
 
         data = json.loads(response.choices[0].message.content)
         chat_res = data.get("reply", "")
-        updated_memory = data.get("new_memory", short_term_memory)
         wants_to_trade = data.get("wants_to_trade", False)
         wants_price    = data.get("wants_price", False)
         detected_symbol = (data.get("symbol") or "BTC/USDT").strip().upper()
 
         # Update memory
+        history.append({"role": "user", "content": prompt})
+        history.append({"role": "assistant", "content": chat_res})
+        history = history[-20:]  # keep last 20 messages (10 exchanges)
         users_collection.update_one(
             {"email": email},
-            {"$inc": {"credits": -1}, "$set": {"memory": updated_memory[:500]}}
+            {"$inc": {"credits": -1}, "$set": {"history": history}}
         )
 
         if wants_price and not wants_to_trade:
