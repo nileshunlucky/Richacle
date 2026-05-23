@@ -7,7 +7,7 @@ type Props = {
 };
 
 const EVENTS: Record<string, any> = {
-  "xcard": {
+  "research": {
 title:"Richacle AI",
   description: "The Oracle of Vibe Trading for Market Research Prediction Platform with OpenAI, Cluade, Grok, Gemini, DeepSeek AI models by Binance Integration and TradingView Chart support to Make Trading & Investing Simple, Fast and Extraodinary smart",
 }

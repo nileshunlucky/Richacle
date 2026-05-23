@@ -166,7 +166,7 @@ export default function Journal({ email, onClose }: JournalProps) {
                   label: "Day win %",
                   value: `${monthStats.dayWinPct}%`,
                   color: "text-white",
-                  sub: `${monthStats.winDays}W / ${monthStats.lossDays}L`,
+                  sub: `${monthStats.winDays} Win / ${monthStats.lossDays} Loss`,
                 },
                 {
                   label: "Trading days",
