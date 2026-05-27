@@ -8,6 +8,8 @@ from backtest import router as backtest_router
 from binance import router as binance_router
 from algo import router as algo_router
 from datetime import datetime
+import random
+import re
 
 app = FastAPI()
 
@@ -40,23 +42,58 @@ def get_user(email: str):
         return user
     raise HTTPException(status_code=404, detail="User not found")
 
+def generate_unique_username(email: str, collection) -> str:
+    # Extract the part before the '@'
+    base_username = email.split("@")[0].lower()
+    # Remove any character that isn't a letter, number, or underscore
+    base_username = re.sub(r"[^a-z0-9_]", "", base_username)
+    
+    username = base_username
+    # Loop to ensure the username is unique in the DB
+    while collection.find_one({"username": username}):
+        # If it exists, append a random 3-digit number and check again
+        username = f"{base_username}{random.randint(100, 999)}"
+        
+    return username
+
+def generate_name_from_email(email: str) -> str:
+    # Extract the part before the '@'
+    raw_name = email.split("@")[0]
+    # Replace common separators with spaces
+    clean_name = re.sub(r"[._-]", " ", raw_name)
+    # Capitalize words (e.g., "john status" -> "John Status")
+    return clean_name.title()
+
+
 @app.post("/add-user")
 def save_referral(email: str = Form(...)):
-
     # 1. Check if user exists with email
     user = users_collection.find_one({"email": email})
     
     if user:
         return {"message": "User already exists"}
 
-    # 3. If user doesn't exist, insert as new user
+    # 2. Generate unique username and a clean name
+    username = generate_unique_username(email, users_collection)
+    name = generate_name_from_email(email)
+
+    # 3. Insert as new user
     user_data = {
         "email": email,
+        "name": name,
+        "username": username,
         "credits": 20,
     }
 
     users_collection.insert_one(user_data)
-    return {"message": "User added successfully"}
+    
+    return {
+        "message": "User added successfully", 
+        "data": {
+            "name": name,
+            "username": username
+        }
+    }
 
 @app.get("/users-full")
 def get_users_full():

@@ -9,6 +9,7 @@ from db import users_collection
 from cryptography.fernet import Fernet
 import json
 from datetime import datetime, timezone
+import re
 
 load_dotenv()
 
@@ -84,7 +85,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         # Update memory
         history.append({"role": "user", "content": prompt})
         history.append({"role": "assistant", "content": chat_res})
-        history = history[-20:]  # keep last 20 messages (10 exchanges)
+        history = history[-10:]  # keep last 10 messages (10 exchanges)
         users_collection.update_one(
             {"email": email},
             {"$inc": {"credits": -1}, "$set": {"history": history}}
@@ -329,6 +330,25 @@ async def close_position(email: str = Form(...), symbol: str = Form(...)):
         raise HTTPException(status_code=400, detail=f"Close Error: {str(e)}")
     finally:
         await client.close()
+
+@router.get("/api/user/{username}")
+async def get_user_by_username(username: str):
+    # Case-insensitive lookup for the username
+    user = users_collection.find_one(
+        {"username": re.compile(f"^{username}$", re.IGNORECASE)}
+    )
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    return {
+        "status": "success",
+        "email": user.get("email"), # Passing this back so frontend can fetch trades
+        "name": user.get("name"),
+        "username": user.get("username"),
+        "bio": user.get("bio"),
+        "avatar": user.get("avatar")
+    }
 
 @router.post("/api/trade-history")
 async def trade_history(email: str = Form(...)):
