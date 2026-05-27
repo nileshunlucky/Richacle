@@ -23,7 +23,7 @@ const pageVariants = {
   exit: {
     opacity: 0,
     y: -16,
-    transition: { duration: 0.25, ease: "easeIn" },
+    transition: { duration: 0.25, ease: "easeIn" as const },
   },
 };
 
