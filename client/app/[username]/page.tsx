@@ -163,7 +163,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           const tradeData = await tradeResponse.json();
           if (tradeData.status === "success" && tradeData.calendar?.length > 0) {
             const calendar = [...tradeData.calendar].sort(
-              (a, b) => new Date(a.date) - new Date(b.date)
+             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
             );
             const totalPnL = calendar.reduce((sum, day) => sum + (day.pnl || 0), 0);
             displayNetWorth = `$${totalPnL.toLocaleString(undefined, {
