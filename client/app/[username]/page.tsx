@@ -92,8 +92,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [isSaving, setIsSaving] = useState(false);
 
   const [editForm, setEditForm] = useState({ name: "", username: "", bio: "" });
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef(null);
   const [copied, setCopied] = useState(false);
 
