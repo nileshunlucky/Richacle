@@ -96,6 +96,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [copied, setCopied] = useState(false);
+  
 
   // ── Share handler ──────────────────────────────────────────────────────────
   const handleShare = async () => {
@@ -397,8 +398,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   <Input
                     type="text"
                     value={editForm.username}
-                    onChange={(e) => setEditForm({ ...editForm, username: e.target.value })}
-                    className="bg-transparent border-0  rounded p-2 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-zinc-400 transition-colors duration-200 h-8"
+                    onChange={(e) => setEditForm({ ...editForm, username: e.target.value.toLowerCase() })}
+                    className="bg-transparent border-0  rounded p-2 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-zinc-400 transition-colors duration-200 h-8 lowercase"
                   />
                 </div>
 
@@ -512,7 +513,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     onClick={() => setIsEditing(true)}
                     className="
                       cursor-pointer h-8 px-5 text-xs font-semibold 
-                      bg-zinc-900 hover:bg-zinc-800
+                      bg-zinc-700 hover:bg-zinc-600
                       text-zinc-100 hover:text-white
                       
                       rounded
@@ -532,7 +533,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     onClick={handleShare}
                     className="
                       cursor-pointer h-8 px-5 text-xs font-semibold 
-                      bg-zinc-900 hover:bg-zinc-800
+                      bg-zinc-700 hover:bg-zinc-600
                       text-zinc-300 hover:text-zinc-100
                       
                       rounded
@@ -550,7 +551,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               variants={fadeUp}
               className="flex items-center justify-between  gap-5"
             >
-              <div className="text-4xl font-bold font-sans text-neutral-900 mb-1 text-left">
+              <div className="text-4xl font-bold font-sans text-white mb-1 text-left">
                 {user.netWorth}
                 <span
                   className={`font-light flex text-xs items-center gap-0.5 mt-0.5 ${
@@ -562,7 +563,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               </div>
 
               <div className="flex flex-col gap-0.5 mt-1 text-left gap-2">
-                <div className="text-[11px] text-neutral-800 font-medium tracking-wider">
+                <div className="text-[11px] text-zinc-300 font-medium tracking-wider">
                   Real Time Net Worth
                   <br />
                 <span className="text-xs text-zinc-500">
@@ -572,7 +573,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
                 <motion.span
                   whileHover={{ x: 1 }}
-                  className="text-zinc-400 italic text-[11px] underline cursor-pointer transition-all duration-150"
+                  className="text-zinc-400 text-[11px] underline cursor-pointer transition-all duration-150"
                 >
                   #{user.rank} in the{" "}
                   <span className="theseason">RICHACLE</span> today
