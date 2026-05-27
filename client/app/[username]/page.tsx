@@ -81,7 +81,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const resolvedParams = React.use(params);
   const username = resolvedParams.username;
 
-  const [user, setUser] = <UserProfile | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const router = useRouter();
