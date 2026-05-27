@@ -204,14 +204,14 @@ export default function ProfilePage({ params }) {
     if (file) {
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
-    }
+    }  
   };
 
   async function handleSaveProfile() {
     try {
       setIsSaving(true);
       const formData = new FormData();
-      formData.append("email", targetEmail);
+      formData.append("email", targetEmail); 
       if (editForm.name) formData.append("name", editForm.name);
       if (editForm.username) formData.append("username", editForm.username);
       if (editForm.bio) formData.append("bio", editForm.bio);

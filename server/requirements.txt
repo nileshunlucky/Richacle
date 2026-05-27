@@ -12,3 +12,5 @@ uvicorn
 python-multipart
 docker
 cryptography
+boto3
+python-multipart
