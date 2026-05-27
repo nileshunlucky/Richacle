@@ -64,13 +64,24 @@ interface ProfilePageProps {
   }>;
 }
 
+interface UserProfile {
+  name: string;
+  username: string;
+  bio: string;
+  netWorth: string;
+  netWorthChange: string;
+  isChangeNegative: boolean;
+  rank: string;
+  avatar: string;
+}
+
 // ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function ProfilePage({ params }: ProfilePageProps) {
   const resolvedParams = React.use(params);
   const username = resolvedParams.username;
 
-  const [user, setUser] = useState(null);
+  const [user, setUser] = <UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const router = useRouter();
