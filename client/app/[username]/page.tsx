@@ -58,9 +58,15 @@ const avatarVariants = {
   },
 };
 
+interface ProfilePageProps {
+  params: Promise<{
+    username: string;
+  }>;
+}
+
 // ─── Component ─────────────────────────────────────────────────────────────────
 
-export default function ProfilePage({ params }) {
+export default function ProfilePage({ params }: ProfilePageProps) {
   const resolvedParams = React.use(params);
   const username = resolvedParams.username;
 
@@ -222,7 +228,11 @@ export default function ProfilePage({ params }) {
         body: formData,
       });
 
+      console.log("response", response)
+
+
       const result = await response.json();
+      console.log(result)
       if (response.ok) {
         setUser((prev) => ({
           ...prev,
@@ -289,7 +299,7 @@ export default function ProfilePage({ params }) {
             variants={cardVariants}
             initial="initial"
             animate="animate"
-            className="w-full max-w-sm overflow-hidden rounded-lg  shadow-2xl relative "
+            className="w-full max-w-sm overflow-hidden rounded-lg relative "
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4">
@@ -302,7 +312,7 @@ export default function ProfilePage({ params }) {
                 <X size={24} />
               </Button>
 
-              <h2 className="text-white theseason text-lg tracking-wider">RICHACLE</h2>
+              <h2 className="text-white theseason text-lg">RICHACLE</h2>
 
               <Button
                 variant="ghost"
@@ -327,34 +337,24 @@ export default function ProfilePage({ params }) {
               className="p-7 flex flex-col items-center gap-7"
             >
               {/* Avatar Upload */}
-              <motion.div variants={avatarVariants}>
-                <div
-                  className="relative group cursor-pointer"
-                  onClick={() => fileInputRef.current.click()}
-                >
-                  {/* Subtle ring on hover */}
-                  <motion.div
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                    className="w-28 h-28 overflow-hidden rounded "
-                  >
-                    <img
-                      src={imagePreview}
-                      alt="Preview"
-                      className="object-cover w-full h-full opacity-70 group-hover:opacity-40 transition-opacity duration-300"
-                    />
-                  </motion.div>
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <Camera className="text-zinc-200" size={28} />
-                  </div>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    className="hidden"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                  />
-                </div>
-              </motion.div>
+             <motion.div variants={avatarVariants}>
+  <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
+    <div style={{
+      width: "144px",
+      height: "144px",
+      borderRadius: "50%",
+      backgroundImage: `url(${imagePreview})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      flexShrink: 0,
+      opacity: 0.7,
+    }} className="group-hover:opacity-40 transition-opacity duration-300" />
+    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+      <Camera className="text-zinc-200" size={28} />
+    </div>
+    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
+  </div>
+</motion.div>
 
 
               {/* Inputs */}
@@ -434,20 +434,19 @@ export default function ProfilePage({ params }) {
           </motion.button>
 
           {/* Top Half — Avatar */}
-          <div className="bg-neutral-950 p-6 flex justify-center pt-10 pb-0">
-            <motion.div
-              variants={avatarVariants}
-              initial="initial"
-              animate="animate"
-              className="w-48 h-48 overflow-hidden rounded ring-1 ring-zinc-700/40"
-            >
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="object-cover w-full h-full"
-              />
-            </motion.div>
-          </div>
+<div className="p-6 flex justify-center pt-10 pb-0">
+  <motion.div variants={avatarVariants} initial="initial" animate="animate">
+    <div style={{
+      width: "192px",
+      height: "192px",
+      borderRadius: "50%",
+      backgroundImage: `url(${user.avatar})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      flexShrink: 0,
+    }} />
+  </motion.div>
+</div>
 
           {/* Bottom Half — Details */}
           <motion.div
