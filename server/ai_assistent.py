@@ -1,7 +1,7 @@
 import os
 import traceback
 import ccxt.async_support as ccxt
-from fastapi import APIRouter, Form, HTTPException
+from fastapi import APIRouter, Form, HTTPException, File, UploadFile
 from openai import OpenAI
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -10,6 +10,17 @@ from cryptography.fernet import Fernet
 import json
 from datetime import datetime, timezone
 import re
+import uuid
+import boto3
+
+# Initialize AWS S3 Client
+s3_client = boto3.client(
+    's3',
+    aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+    region_name=os.getenv("AWS_REGION", "us-east-1")
+)
+AWS_BUCKET_NAME = os.getenv("AWS_BUCKET_NAME")
 
 load_dotenv()
 
@@ -411,5 +422,76 @@ async def trade_history(email: str = Form(...)):
     except Exception as e:
         print(traceback.format_exc())
         raise HTTPException(status_code=400, detail=f"Binance Error: {str(e)}")
-    finally:
+    finally: 
         await client.close()
+
+@router.post("/api/user/edit")
+async def edit_profile(
+    email: str = Form(...), # We use email to identify the user making the edit
+    name: str = Form(None),
+    username: str = Form(None),
+    bio: str = Form(None),
+    profile_image: UploadFile = File(None)
+):
+    # 1. Verify the user exists
+    user = users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    update_data = {}
+
+    # 2. Check if the new username is already taken by someone else
+    if username and username != user.get("username"):
+        # Case-insensitive check
+        existing_username = users_collection.find_one(
+            {"username": {"$regex": f"^{username}$", "$options": "i"}}
+        )
+        if existing_username:
+            raise HTTPException(status_code=400, detail="Username is already taken")
+        update_data["username"] = username
+
+    # 3. Handle standard text fields
+    if name:
+        update_data["name"] = name
+    if bio:
+        update_data["bio"] = bio
+
+    # 4. Handle S3 Image Upload if a file is provided
+    if profile_image:
+        try:
+            # Generate a unique secure filename (e.g., 123e4567-e89b-12d3.png)
+            file_extension = profile_image.filename.split(".")[-1]
+            unique_filename = f"avatars/{uuid.uuid4()}.{file_extension}"
+
+            # Upload to S3
+            s3_client.upload_fileobj(
+                profile_image.file,
+                AWS_BUCKET_NAME,
+                unique_filename,
+                ExtraArgs={"ContentType": profile_image.content_type}
+            )
+
+            # Construct the public URL (Ensure your S3 bucket allows public reads for this folder)
+            region = os.getenv("AWS_REGION", "us-east-1")
+            image_url = f"https://{AWS_BUCKET_NAME}.s3.{region}.amazonaws.com/{unique_filename}"
+            
+            update_data["avatar"] = image_url
+
+        except Exception as e:
+            print(f"S3 Upload Error: {e}")
+            raise HTTPException(status_code=500, detail="Failed to upload image")
+
+    # 5. Commit changes to the database
+    if not update_data:
+        return {"status": "success", "message": "No changes were requested."}
+
+    users_collection.update_one(
+        {"email": email},
+        {"$set": update_data}
+    )
+
+    return {
+        "status": "success",
+        "message": "Profile updated successfully",
+        "updated_fields": update_data
+    }
