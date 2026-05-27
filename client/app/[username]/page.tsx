@@ -247,13 +247,18 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       const result = await response.json();
       console.log(result)
       if (response.ok) {
-        setUser((prev) => ({
-          ...prev,
-          name: editForm.name,
-          username: editForm.username,
-          bio: editForm.bio,
-          avatar: result.updated_fields?.avatar || prev.avatar,
-        }));
+        
+        setUser((prev) => {
+    if (!prev) return null;
+    
+    return {
+      ...prev,
+      name: editForm.name,
+      username: editForm.username,
+      bio: editForm.bio,
+      avatar: result.updated_fields?.avatar || prev.avatar,
+    };
+  });
         if (editForm.username !== username) {
           router.replace(`/${editForm.username}`);
         }
