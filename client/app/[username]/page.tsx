@@ -216,8 +216,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   }, [username]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
