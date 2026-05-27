@@ -356,7 +356,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             >
               {/* Avatar Upload */}
              <motion.div variants={avatarVariants}>
-  <div className="relative group cursor-pointer" onClick={() => fileInputRef.current.click()}>
+  <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
     <div style={{
       width: "144px",
       height: "144px",
