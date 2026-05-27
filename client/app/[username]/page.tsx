@@ -94,7 +94,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [editForm, setEditForm] = useState({ name: "", username: "", bio: "" });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [copied, setCopied] = useState(false);
 
   // ── Share handler ──────────────────────────────────────────────────────────
@@ -330,7 +330,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 <X size={24} />
               </Button>
 
-              <h2 className="text-white theseason text-lg">RICHACLE</h2>
+              
 
               <Button
                 variant="ghost"
