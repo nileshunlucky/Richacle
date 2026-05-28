@@ -123,6 +123,24 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     }
   };
 
+  function formatShortCurrency(value: number): string {
+  const isNegative = value < 0;
+  const absValue = Math.abs(value);
+
+  let formatted = "";
+  if (absValue >= 1.0e9) {
+    formatted = `${(absValue / 1.0e9).toFixed(2).replace(/\.00$/, "")}b`;
+  } else if (absValue >= 1.0e6) {
+    formatted = `${(absValue / 1.0e6).toFixed(2).replace(/\.00$/, "")}m`;
+  } else if (absValue >= 1.0e3) {
+    formatted = `${(absValue / 1.0e3).toFixed(2).replace(/\.00$/, "")}k`;
+  } else {
+    formatted = absValue.toFixed(2);
+  }
+
+  return `${isNegative ? "-" : ""}$${formatted}`;
+}
+
   // ── Data fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
     async function getProfileData() {
@@ -156,6 +174,15 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           body: formData,
         });
 
+        const form = new FormData();
+        form.append("email", profileEmail);
+        const balRes = await fetch("https://api.richacle.com/api/balance", {
+          method: "POST",
+          body: form,
+        });
+        const balData = await balRes.json();
+
+
         let displayNetWorth = "$0.00";
         let displayNetWorthChange = "$0.00 (0.00%)";
         let isNegative = false;
@@ -167,10 +194,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
             );
             const totalPnL = calendar.reduce((sum, day) => sum + (day.pnl || 0), 0);
-            displayNetWorth = `$${totalPnL.toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}`;
+            displayNetWorth = formatShortCurrency(balData?.equity)
             const latestPnL = calendar[calendar.length - 1].pnl || 0;
             isNegative = latestPnL < 0;
             const historicBaseline = totalPnL - latestPnL;
@@ -513,8 +537,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     onClick={() => setIsEditing(true)}
                     className="
                       cursor-pointer h-8 px-5 text-xs font-semibold 
-                      bg-zinc-700 hover:bg-zinc-600
-                      text-zinc-100 hover:text-white
+                      bg-zinc-800 hover:bg-zinc-700
+                      text-zinc-200 hover:text-white
                       
                       rounded
                       transition-all duration-200
@@ -533,8 +557,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     onClick={handleShare}
                     className="
                       cursor-pointer h-8 px-5 text-xs font-semibold 
-                      bg-zinc-700 hover:bg-zinc-600
-                      text-zinc-300 hover:text-zinc-100
+                      bg-zinc-800 hover:bg-zinc-700
+                      text-zinc-200 hover:text-white
                       
                       rounded
                       transition-all duration-200
@@ -553,13 +577,20 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             >
               <div className="text-4xl font-bold font-sans text-white mb-1 text-left">
                 {user.netWorth}
+                <div className="flex items-center gap-2">
                 <span
-                  className={`font-light flex text-xs items-center gap-0.5 mt-0.5 ${
+                  className={`font-semibold flex text-xs items-center gap-0.5 mt-0.5 ${
                     user.isChangeNegative ? "text-red-600" : "text-green-600"
                   }`}
                 >
-                  {user.isChangeNegative ? "▼" : "▲"} {user.netWorthChange}
+                  {user.isChangeNegative ? "▼" : "▲"} 
                 </span>
+                <span
+                  className={`font-semibold flex text-xs items-center gap-0.5 mt-0.5 `}
+                >
+                {user.netWorthChange}
+                </span>
+                </div>
               </div>
 
               <div className="flex flex-col gap-0.5 mt-1 text-left gap-2">
@@ -573,7 +604,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
                 <motion.span
                   whileHover={{ x: 1 }}
-                  className="text-zinc-400 text-[11px] underline cursor-pointer transition-all duration-150"
+                  className="text-zinc-400 text-[11px] transition-all duration-150"
                 >
                   #{user.rank} in the{" "}
                   <span className="theseason">RICHACLE</span> today

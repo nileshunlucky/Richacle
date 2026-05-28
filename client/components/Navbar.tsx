@@ -26,14 +26,25 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
+const avatarVariants = {
+  initial: { opacity: 0, scale: 0.88 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+  },
+};
+
 export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [email, setEmail] = useState("");
    const [isModalOpen, setIsModalOpen] = useState(false)
     const [isDemo, setIsDemo] = useState(false)
+    const [avatar, setAvatar] = useState("")
     const [apiKey, setApiKey] = useState("")
   const [apiSecret, setApiSecret] = useState("")
+  const [username, setUsername] = useState("")
   const [loading, setLoading] = useState(false)
   const [totalPnl, setTotalPnl] = useState(0)
 const [strategiesPerf, setStrategiesPerf] = useState(0)
@@ -60,6 +71,8 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
       setApiKey(userData?.binance?.apiKey);
       setApiSecret(userData?.binance?.apiSecret);
       setIsDemo(userData?.binance?.demo);
+      setAvatar(userData?.avatar);
+      setUsername(userData?.username)
 
     } catch (error) {
       console.error("Poll error:", error);
@@ -201,6 +214,22 @@ const toggleMobileTip = () => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(strategiesPerf)}</li>
+
+  <li>
+  <Link href={`/${username}`}> <div className=" flex justify-center  pb-0 cursor-pointer">
+  <motion.div variants={avatarVariants} initial="initial" animate="animate">
+    <div style={{
+      width: "40px",
+      height: "40px",
+      borderRadius: "50%",
+      backgroundImage: `url(${avatar})`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      flexShrink: 0,
+    }} />
+  </motion.div>
+</div> </Link >
+  </li>
            </ul>
 
 
@@ -216,27 +245,24 @@ const toggleMobileTip = () => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={() => setIsModalOpen(false)}
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0  backdrop-blur-sm"
       />
       <motion.div 
         initial={{ scale: 0.95, opacity: 0, y: 20 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
         exit={{ scale: 0.95, opacity: 0, y: 20 }}
-        className="relative w-full max-w-md bg-zinc-950 border border-zinc-800 rounded-3xl p-8 shadow-2xl text-white"
+        className="relative w-full max-w-md bg-zinc-950 rounded-3xl p-8 bg-black text-white"
       >
         {/* Header with Switch */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10  flex items-center justify-center">
-              <img className="h-7 w-7" src="https://www.pngall.com/wp-content/uploads/10/Binance-Coin-Crypto-Logo-Transparent.png" alt="binance"/>
-            </div>
-            <div>
               <h2 className="text-xl font-semibold">Binance</h2>
-              <p className="text-sm text-zinc-500">{isDemo ? 'Demo Trading' : 'Live Trading'}</p>
-            </div>
+
           </div>
           <div className="flex flex-col items-center gap-1">
-            <Switch 
+              <p className="text-sm text-zinc-500">{isDemo ? 'Demo' : 'Real'}</p>
+            <Switch
+            className="cursor-pointer" 
               checked={isDemo} 
               onCheckedChange={setIsDemo} 
             />
@@ -244,32 +270,32 @@ const toggleMobileTip = () => {
         </div>
 
         <div className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1">API Key</label>
+          <div className="space-y-2 gap-1 flex flex-col">
+            <label className="text-xs text-zinc-400 ml-1">API Key</label>
             <input 
               type="text" 
               value={apiKey}
               onChange={(e)=> setApiKey(e.target.value)}
               placeholder="Enter your API Key"
-              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
+              className="w-full bg-black rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
             />
           </div>
           
-          <div className="space-y-2">
-            <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1">Secret Key</label>
+          <div className="space-y-2 gap-1 flex flex-col">
+            <label className="text-xs text-zinc-400 ml-1">Secret Key</label>
             <input 
               value={apiSecret}
               onChange={(e)=> setApiSecret(e.target.value)}
               type="password" 
               placeholder="Enter your API Secret"
-              className="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
+              className="w-full bg-black  rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-zinc-100 transition-colors placeholder:text-zinc-700"
             />
           </div>
 
           {/* IP Address - HIDDEN IF DEMO */}
           {!isDemo && (
             <div className="space-y-2">
-              <label className="text-[10px] uppercase tracking-widest text-zinc-500 ml-1 flex items-center gap-2">
+              <label className="text-xs text-zinc-400 ml-1 flex items-center gap-2">
                 Public IPv4 address
                 <Tooltip open={showMobileTip || undefined}>
                   <TooltipTrigger asChild>
@@ -284,9 +310,9 @@ const toggleMobileTip = () => {
               </label>
               <div 
                 onClick={()=> navigator.clipboard.writeText("65.2.153.133")} 
-                className="w-full flex justify-between items-center bg-black border border-zinc-800 rounded-xl px-4 py-3 text-sm cursor-pointer hover:border-zinc-700 transition-colors"
+                className="w-full flex justify-between items-center bg-black rounded-xl px-4 py-3 text-sm cursor-pointer hover:border-zinc-700 transition-colors"
               >
-                <span className="text-zinc-400">65.2.153.133</span>
+                <span className="text-zinc-100">65.2.153.133</span>
                 <Copy size={16} className="text-zinc-500" />
               </div>
             </div>
