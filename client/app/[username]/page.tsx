@@ -102,7 +102,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const handleShare = async () => {
     const shareData = {
       title: `${user?.name || "User"}'s Profile | Richacle`,
-      text: `Check out ${user?.name || "this"} profile on Richacle!`,
+      text: `Check out ${user?.name || "My"} profile on Richacle!`,
       url: window.location.href,
     };
 
@@ -457,7 +457,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         initial="initial"
         animate="animate"
         exit="exit"
-        className="min-h-screen bg-neutral-900 flex items-center justify-center p-4"
+        className="min-h-screen bg-black flex items-center justify-center p-4"
       >
         <motion.div
           variants={cardVariants}
@@ -510,7 +510,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             {/* Name */}
             <motion.h1
               variants={fadeUp}
-              className="font-serif text-3xl font-medium text-neutral-900 mb-1 theseason"
+              className="font-serif text-3xl font-medium text-white mb-1 theseason"
             >
               {user.name}
             </motion.h1>
@@ -573,9 +573,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             {/* Net Worth Row */}
             <motion.div
               variants={fadeUp}
-              className="flex items-center justify-between  gap-5"
+              className="flex items-center justify-between gap-3"
             >
-              <div className="text-4xl font-bold font-sans text-white mb-1 text-left">
+              <div className="text-4xl font-bold font-sans text-white mb-1 ">
                 {user.netWorth}
                 <div className="flex items-center gap-2">
                 <span
@@ -593,8 +593,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                 </div>
               </div>
 
-              <div className="flex flex-col gap-0.5 mt-1 text-left gap-2">
-                <div className="text-[11px] text-zinc-300 font-medium tracking-wider">
+              <div className="flex flex-col gap-0.5 mt-1 text-left gap-2 ">
+                <div className="text-[11px] text-zinc-300 font-medium">
                   Real Time Net Worth
                   <br />
                 <span className="text-xs text-zinc-500">
