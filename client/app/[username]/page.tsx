@@ -213,9 +213,10 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           "https://upload.wikimedia.org/wikipedia/commons/0/0e/Elon_Musk_%2854816836217%29_%28cropped_2%29_%28b%29.jpg";
 
         setUser({
-          name: apiData.name || "Nilesh Shinde",
+          name: apiData.name || "",
           username: apiData.username || username,
-          bio: apiData.bio || "Founder & CEO, Richacle",
+          verified: apiData.active || false,
+          bio: apiData.bio || "",
           netWorth: displayNetWorth,
           netWorthChange: displayNetWorthChange,
           isChangeNegative: isNegative,
@@ -224,9 +225,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         });
 
         setEditForm({
-          name: apiData.name || "Nilesh Shinde",
+          name: apiData.name || "",
           username: apiData.username || username,
-          bio: apiData.bio || "Founder & CEO, Richacle",
+          bio: apiData.bio || "",
         });
         setImagePreview(fetchedAvatar);
       } catch (err) {
@@ -505,6 +506,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             >
               <img className="h-5" src="/logo.png" alt="logo" />
               @{user.username}
+              {user.verified && (
+              <img className="h-4" src="https://cdn-icons-png.magnific.com/256/18984/18984328.png?semt=ais_white_label" alt="logo" />
+              )}
             </motion.div>
 
             {/* Name */}

@@ -10,6 +10,7 @@ import {
   Info,
   Copy,
   Loader2,
+  Search
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import {Switch} from "@/components/ui/switch"
@@ -199,7 +200,8 @@ const toggleMobileTip = () => {
             <img src="/logo.png" alt="Logo" className="h-7 w-7 object-cover" />
           </Link>
 
-           <ul className="flex space-x-6 items-center text-sm font-semibold">
+           <ul className="flex gap-5 items-center text-sm font-semibold">
+            <Link href="/explore"><li><Search className="cursor-pointer font-bold" size={20} /></li></Link>
            <li> <button 
                     onClick={() => setIsModalOpen(true)}
                     className="flex cursor-pointer items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"

@@ -358,7 +358,8 @@ async def get_user_by_username(username: str):
         "name": user.get("name"),
         "username": user.get("username"),
         "bio": user.get("bio"),
-        "avatar": user.get("avatar")
+        "avatar": user.get("avatar"),
+        "active": user.get("active"),
     }
 
 @router.post("/api/trade-history")
@@ -442,13 +443,21 @@ async def edit_profile(
 
     # 2. Check if the new username is already taken by someone else
     if username and username != user.get("username"):
-        # Case-insensitive check
-        existing_username = users_collection.find_one(
-            {"username": {"$regex": f"^{username}$", "$options": "i"}}
+    # Enforce allowed characters: only letters, numbers, periods (.), and underscores (_)
+    if not re.match(r"^[a-zA-Z0-9._]+$", username):
+        raise HTTPException(
+            status_code=400, 
+            detail="Username can only contain letters, numbers, periods, and underscores"
         )
-        if existing_username:
-            raise HTTPException(status_code=400, detail="Username is already taken")
-        update_data["username"] = username
+
+    # Case-insensitive check
+    existing_username = users_collection.find_one(
+        {"username": {"$regex": f"^{username}$", "$options": "i"}}
+    )
+    if existing_username:
+        raise HTTPException(status_code=400, detail="Username is already taken")
+        
+    update_data["username"] = username
 
     # 3. Handle standard text fields
     if name:
