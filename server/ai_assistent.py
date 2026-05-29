@@ -443,12 +443,12 @@ async def edit_profile(
 
     # 2. Check if the new username is already taken by someone else
     if username and username != user.get("username"):
-    # Enforce allowed characters: only letters, numbers, periods (.), and underscores (_)
-    if not re.match(r"^[a-zA-Z0-9._]+$", username):
-        raise HTTPException(
-            status_code=400, 
-            detail="Username can only contain letters, numbers, periods, and underscores"
-        )
+        # Indented 4 spaces inside the first IF statement 👇
+        if not re.match(r"^[a-zA-Z0-9._]+$", username):
+            raise HTTPException(
+                status_code=400, 
+                detail="Username can only contain letters, numbers, periods, and underscores"
+            )
 
     # Case-insensitive check
     existing_username = users_collection.find_one(

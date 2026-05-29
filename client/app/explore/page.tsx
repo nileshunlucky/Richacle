@@ -125,7 +125,7 @@ export default function Home() {
             {searchQuery && (
               <button 
                 onClick={() => setSearchQuery("")} 
-                className="bg-[#262626] text-[#a8a8a8] hover:text-white transition-colors rounded-full p-0.5"
+                className="cursor-pointer text-[#a8a8a8] hover:text-white transition-colors rounded-full p-0.5"
               >
                 <X size={16} />
               </button>
@@ -134,7 +134,7 @@ export default function Home() {
         </div>
 
         {/* Table Header Row */}
-        <div className="flex items-center justify-between gap-3 px-6 py-2 text-[11px] font-semibold text-zinc-500 border-b border-neutral-900">
+        <div className="flex items-center justify-between gap-3 px-6 py-2 text-[13px] font-semibold text-zinc-500 border-b border-neutral-900">
           <div className="flex items-center gap-4">
             <span>Rank</span>
             <span>Trader</span>
@@ -170,10 +170,10 @@ export default function Home() {
                         className="flex justify-between items-center gap-3 py-2 px-2 rounded-xl cursor-pointer hover:bg-zinc-900/40 active:scale-[0.99] transition-all"
                       >
                         <div className="flex items-center gap-5 min-w-0">
-                          <span className="text-[14px] font-bold text-zinc-400 w-5 text-center">
+                          <span className="text-[15px] font-bold text-zinc-400 w-5 text-center">
                             {globalRank}
                           </span>
-                          <Avatar className="h-10 w-10">
+                          <Avatar className="h-12 w-12">
                             <AvatarImage src={user.avatar} alt={user.username} className="object-cover" />
                             <AvatarFallback className="bg-zinc-800 text-xs font-semibold text-zinc-400">
                               {user.username.slice(0, 2).toUpperCase()}
@@ -181,16 +181,16 @@ export default function Home() {
                           </Avatar>
 
                           <div className="flex flex-col min-w-0">
-                            <span className="text-[14px] font-semibold leading-tight text-white truncate">
+                            <span className="text-[15px] font-semibold leading-tight text-white truncate">
                               {user.username}
                             </span>
-                            <span className="text-[13px] text-zinc-400 leading-tight mt-0.5 truncate">
+                            <span className="text-[14px] text-zinc-400 leading-tight mt-0.5 truncate">
                               {user.name}
                             </span>
                           </div>
                         </div>
 
-                        <span className="text-[14px] text-white font-semibold whitespace-nowrap">
+                        <span className="text-[15px] text-white font-semibold whitespace-nowrap">
                           {formatNetWorth(user.networth)}
                         </span>
                       </motion.li>

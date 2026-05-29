@@ -750,7 +750,7 @@ export default function VibeTradingUI() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const [activeLines, setActiveLines] = useState<TradeLines | null>(null);
-  const [showAgent, setShowAgent] = useState(true);
+  const [showAgent, setShowAgent] = useState(false);
   const [currentPrice, setCurrentPrice] = useState<string | null>(null);
     const [email, setEmail] = useState("");
     const [activeSymbol, setActiveSymbol] = useState("BTC/USDT");
