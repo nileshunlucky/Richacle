@@ -67,6 +67,7 @@ interface ProfilePageProps {
 interface UserProfile {
   name: string;
   username: string;
+  verified: boolean;
   bio: string;
   netWorth: string;
   netWorthChange: string;
