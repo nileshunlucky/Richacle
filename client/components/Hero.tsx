@@ -179,13 +179,12 @@ export default function AILandingPage() {
   <div 
     className="absolute inset-0 opacity-60"
     style={{
-      background: `radial-gradient(100% 50% at 50% 100%, #ff0080 0%, #3b001d 40%, transparent 100%)`
+     background: `radial-gradient(100% 50% at 50% 100%, #2cfbcd 0%, #0e7490 35%, #082f49 70%, transparent 100%)`
     }}
   />
   {/* Optional: Subtle top-down fade to keep the top of the site dark */}
   <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-transparent opacity-90" />
 </div>
-
 
 
       <div className="relative z-50 mt-10">
@@ -263,7 +262,7 @@ export default function AILandingPage() {
             className="flex items-center justify-center gap-3 mb-5 text-xs md:text-xl z-50"
           >
             <Link href="/dashboard">
-              <Button >Sign up and get Free Credits 🎁</Button>
+              <Button >Sign up & get Free Credits</Button>
             </Link>
           </motion.div>
       </section>
@@ -414,7 +413,7 @@ export default function AILandingPage() {
               <div className="mt-6 space-y-2">
                 <h3 className="text-lg md:text-xl font-medium text-white">Trade in 1 click</h3>
                 <p className="text-sm  leading-relaxed">
-                  Go Demo/Live trading with one click. Directly connected to Binance API.
+                  Go Demo/Real trading with one click connected to Binance.
                 </p>
               </div>
             </motion.div>

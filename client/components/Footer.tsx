@@ -61,9 +61,9 @@ export default function Footer() {
               href="https://X.com/richacleai"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2  hover:text-white transition"
+              className="flex items-center gap-2 text-xl  hover:text-white transition"
             >
-              <Twitter  size={20} />
+              𝕏
             </a>
 
           </div>
