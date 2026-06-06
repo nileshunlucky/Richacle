@@ -174,17 +174,7 @@ export default function AILandingPage() {
   return (
     <div className="min-h-screen  font-sans ">
 
-{/* Fixed Glow Background - Full Width Horizon */}
-<div className="fixed inset-0 z-0 bg-[#050505]">
-  <div 
-    className="absolute inset-0 opacity-60"
-    style={{
-     background: `radial-gradient(100% 50% at 50% 100%, #2cfbcd 0%, #0e7490 35%, #082f49 70%, transparent 100%)`
-    }}
-  />
-  {/* Optional: Subtle top-down fade to keep the top of the site dark */}
-  <div className="absolute inset-0 bg-gradient-to-b from-[#050505] via-transparent to-transparent opacity-90" />
-</div>
+
 
 
       <div className="relative z-50 mt-10">
@@ -427,11 +417,11 @@ export default function AILandingPage() {
       {/* Footer CTA */}
       <section className="my-10 px-6 text-center">
         <div className="max-w-3xl mx-auto">
-          <h2 className="text-3xl md:text-7xl font-bold er mb-8 bg-gradient-to-r from-zinc-400 via-white to-zinc-400 bg-clip-text text-transparent">
-            Ready to beat the market?
+          <h2 className="text-2xl md:text-7xl font-bold er mb-8 ">
+            Artificial intelligence Realtime <span className="theseason">Research</span>
           </h2>
           <div className="flex items-center justify-center gap-3 text-xs md:text-xl">
-             <Link href="/dashboard"> <Button >Get Access Now</Button></Link>
+             <Link href="/dashboard"> <Button >Get Started</Button></Link>
           </div>
         </div>
       </section>

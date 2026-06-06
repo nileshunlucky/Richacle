@@ -1,30 +1,29 @@
 "use client";
 import React from "react";
-import { Send, Twitter } from "lucide-react";
 import Link from "next/link";
 
 export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="w-full py-6 z-50 relative">
-      <div className="max-w-6xl mx-auto px-4 ">
+    <footer className="w-full py-6 z-50 relative px-10">
+      <div className="  p-5 spacemono text-black bg-white rounded-lg">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
 
           {/* Copyright */}
           <p className="text-sm  text-center">
-            © {year} <span className="theseason">RICHACLE</span> Inc. All rights reserved.
+            © {year} <span className="">RICHACLE</span> Inc. All rights reserved.
           </p>
 
           {/* Links + social */}
-          <div className="flex items-center flex-wrap gap-6 justify-center">
+          <div className="flex md:flex-row flex-col items-center flex-wrap md:gap-6 gap-3 justify-center">
 
             {/* Links */}
             <ul className="flex items-center gap-4">
               <li>
                 <Link
                   href="/policy"
-                  className="text-sm  hover:text-white transition"
+                  className="text-sm  hover:text-black transition"
                 >
                   Policy
                 </Link>
@@ -32,7 +31,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/terms"
-                  className="text-sm  hover:text-white transition"
+                  className="text-sm  hover:text-black transition"
                 >
                   Terms
                 </Link>
@@ -40,31 +39,41 @@ export default function Footer() {
               <li>
                 <a
                   href="https://richacle.lemonsqueezy.com/affiliates"
-                  className="text-sm  hover:text-white transition"
+                  className="text-sm  hover:text-black transition"
                 >
-                  Affiliate Program
+                  Affiliate
                 </a>
               </li>
             </ul>
 
+            <div className="flex text-center text-sm items-center gap-4">
             {/* Telegram */}
             <a
               href="https://t.me/richacle"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2  hover:text-white transition"
+              className="flex items-center gap-2  hover:text-black transition"
             >
-              <Send size={20} />
+              Telegram
             </a>
             {/* X */}
             <a
               href="https://X.com/richacleai"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-xl  hover:text-white transition"
+              className="flex items-center gap-2  hover:text-black transition"
             >
-              𝕏
+              X
             </a>
+            <a
+              href="https://instagram.com/richaclee"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 hover:text-black transition"
+            >
+              Instagram
+            </a>
+            </div>
 
           </div>
         </div>
