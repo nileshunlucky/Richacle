@@ -185,29 +185,33 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
 
         let displayNetWorth = "$0.00";
-        let displayNetWorthChange = "$0.00 (0.00%)";
-        let isNegative = false;
+let displayNetWorthChange = "$0.00 (0.00%)";
+let isNegative = false;
 
-        if (tradeResponse.ok) {
-          const tradeData = await tradeResponse.json();
-          if (tradeData.status === "success" && tradeData.calendar?.length > 0) {
-            const calendar = [...tradeData.calendar].sort(
-             (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-            );
-            const totalPnL = calendar.reduce((sum, day) => sum + (day.pnl || 0), 0);
-            displayNetWorth = formatShortCurrency(balData?.equity)
-            const latestPnL = calendar[calendar.length - 1].pnl || 0;
-            isNegative = latestPnL < 0;
-            const historicBaseline = totalPnL - latestPnL;
-            const pct = historicBaseline !== 0
-              ? (latestPnL / Math.abs(historicBaseline)) * 100
-              : 0;
-            displayNetWorthChange = `$${Math.abs(latestPnL).toLocaleString(undefined, {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })} (${Math.abs(pct).toFixed(2)}%)`;
-          }
-        }
+// Net worth should just reflect current balance, regardless of trade history
+if (balData?.equity !== undefined && balData?.equity !== null) {
+  displayNetWorth = formatShortCurrency(balData.equity);
+}
+
+if (tradeResponse.ok) {
+  const tradeData = await tradeResponse.json();
+  if (tradeData.status === "success" && tradeData.calendar?.length > 0) {
+    const calendar = [...tradeData.calendar].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    const totalPnL = calendar.reduce((sum, day) => sum + (day.pnl || 0), 0);
+    const latestPnL = calendar[calendar.length - 1].pnl || 0;
+    isNegative = latestPnL < 0;
+    const historicBaseline = totalPnL - latestPnL;
+    const pct = historicBaseline !== 0
+      ? (latestPnL / Math.abs(historicBaseline)) * 100
+      : 0;
+    displayNetWorthChange = `$${Math.abs(latestPnL).toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} (${Math.abs(pct).toFixed(2)}%)`;
+  }
+}
 
         const fetchedAvatar =
           apiData.avatar ||

@@ -173,15 +173,9 @@ export default function AILandingPage() {
 
   return (
     <div className="min-h-screen  font-sans ">
-
-
-
-
       <div className="relative z-50 mt-10">
 
-      {/* Hero Section */}
       <section className="p-5 relative overflow-hidden flex flex-col items-center gap-5 ">
-      
 
         <div className="max-w-5xl mx-auto text-center z-10">
           <motion.h1 
@@ -191,7 +185,7 @@ export default function AILandingPage() {
 >
   {/* Top Line */}
   <div className="block mb-2">
-    the <span className="theseason">Oracle</span> of vibe trading
+    Research & <span className="theseason">Prediction</span> <br/> for Trading & Investing.
   </div>
 
 </motion.h1>
@@ -202,9 +196,7 @@ export default function AILandingPage() {
             transition={{ delay: 0.1 }}
             className="text-zinc-200 mb-10 max-w-2xl mx-auto md:text-xl"
           >
-           <span className="font-light theseason">
-        RICHACLE
-      </span> realtime research AI agent,<br/> 
+           the <span className="theseason">Oracle</span> of vibe trading<br/> 
        Built to make you extraordinarily trader.
           </motion.p>
 

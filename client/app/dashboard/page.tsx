@@ -43,6 +43,8 @@ interface TradeLines {
   tp: number;
   sl: number;
   side: string;
+  amount?: number;    // add this
+  leverage?: number;  // add this
 }
 
 interface AdvancedChartProps {
@@ -50,6 +52,10 @@ interface AdvancedChartProps {
   onPriceUpdate: (price: string) => void;
   symbol?: string;
   isDemo?: boolean;
+  isFakeData?: boolean;       
+  fakeStartPrice?: number;  
+  demoTargetPrice?: number | null; 
+  demoDurationSecs?: number;
 }
 
 interface TradeWidgetProps {
@@ -95,20 +101,57 @@ interface Message {
   content: string | React.ReactNode;
 }
 
-const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", isDemo = false }: AdvancedChartProps) {
+// Generates realistic-looking OHLC candles via a random walk
+function generateFakeCandles(count: number, startPrice: number, intervalSecs: number) {
+  const data = [];
+  let price = startPrice;
+  const now = Math.floor(Date.now() / 1000);
+  const startTime = now - intervalSecs * count;
+
+  for (let i = 0; i < count; i++) {
+    const open = price;
+    // Random walk with slight upward drift, tweak volatility to taste
+    const volatility = open * 0.002; // 0.2% per candle
+    const drift = (Math.random() - 0.48) * volatility * 2;
+    const close = Math.max(open + drift, 0.01);
+
+    const high = Math.max(open, close) + Math.random() * volatility * 0.5;
+    const low = Math.min(open, close) - Math.random() * volatility * 0.5;
+
+    data.push({
+      time: (startTime + i * intervalSecs) as LightweightCharts.UTCTimestamp,
+      open,
+      high,
+      low,
+      close,
+    });
+
+    price = close;
+  }
+  return data;
+}
+
+const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", isDemo = false,  isFakeData = false, fakeStartPrice = 62000 , demoTargetPrice = null, demoDurationSecs = 15}: AdvancedChartProps) {
   // 1. Properly typed refs using the imported library types
   const chartInstance = useRef<LightweightCharts.IChartApi | null>(null);
   const seriesRef = useRef<LightweightCharts.ISeriesApi<"Candlestick"> | null>(null);
   const tpFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
   const slFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
+
+  const simPriceRef = useRef<number>(fakeStartPrice);
+const demoTargetRef = useRef<number | null>(null);
+const demoStartRef = useRef<{ price: number; time: number } | null>(null);
+const demoDurationRef = useRef<number>(15);
   
 
   const container = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const activeLinesRef = useRef<LightweightCharts.IPriceLine[]>([]);
+  const [badgeY, setBadgeY] = useState<{ entry: number | null; tp: number | null; sl: number | null }>({ entry: null, tp: null, sl: null });
   const [interval, setInterval] = useState("15m");
   const [isChartReady, setIsChartReady] = useState(false);
   const [futureCandlesBox, setFutureCandlesBox] = useState(44);
+  const [livePrice, setLivePrice] = useState<number | null>(null);
 
   const timeframes = ["1m", "5m", "15m", "1h", "4h", "1d"];
 
@@ -170,19 +213,19 @@ slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, valu
 
     const eLine = seriesRef.current.createPriceLine({ 
       price: entry, color: isBuy ? '#1e3a8a' : '#FF1744', 
-      lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: side.toUpperCase() 
+      lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid
     });
     const tLine = seriesRef.current.createPriceLine({ 
-      price: tp, color: '#00E676', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'TAKE PROFIT' 
+      price: tp, color: '#00E676', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid
     });
     const sLine = seriesRef.current.createPriceLine({ 
-      price: sl, color: '#FF1744', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid, title: 'STOP LOSS' 
+      price: sl, color: '#FF1744', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid
     });
 
     activeLinesRef.current = [eLine, tLine, sLine];
   };
 
-  // 4. CLEAN EFFECT: No more script injection
+   // Effect 1: create the chart once on mount
   useEffect(() => {
     if (!container.current) return;
 
@@ -196,7 +239,7 @@ slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, valu
     });
 
     const candleSeries = chart.addCandlestickSeries({
-      upColor: "#00E676", downColor: "#FF1744", borderVisible: false, 
+      upColor: "#00E676", downColor: "#FF1744", borderVisible: false,
       wickUpColor: "#00E676", wickDownColor: "#FF1744", priceLineColor: "#FFFFFF",
     });
 
@@ -218,9 +261,167 @@ slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, valu
   }, []);
 
   useEffect(() => {
+  demoDurationRef.current = demoDurationSecs;
+  if (demoTargetPrice != null) {
+    demoTargetRef.current = demoTargetPrice;
+    demoStartRef.current = { price: simPriceRef.current, time: Date.now() };
+  } else {
+    demoTargetRef.current = null;
+    demoStartRef.current = null;
+  }
+}, [demoTargetPrice, demoDurationSecs]);
+
+  // Effect 2: track badge Y-positions, independent of chart creation
+  useEffect(() => {
+    if (!tradeLines || !seriesRef.current) {
+      setBadgeY({ entry: null, tp: null, sl: null });
+      return;
+    }
+
+    let rafId: number;
+    const update = () => {
+      if (seriesRef.current) {
+        setBadgeY({
+          entry: seriesRef.current.priceToCoordinate(tradeLines.entry),
+          tp: seriesRef.current.priceToCoordinate(tradeLines.tp),
+          sl: seriesRef.current.priceToCoordinate(tradeLines.sl),
+        });
+      }
+      rafId = requestAnimationFrame(update);
+    };
+    update();
+
+    return () => cancelAnimationFrame(rafId);
+  }, [tradeLines, isChartReady]);
+
+  useEffect(() => {
   if (!isChartReady || !seriesRef.current) return;
   
   let isCurrent = true; // Flag to prevent race conditions
+  const intervalMap: Record<string, number> = {
+    "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400
+  };
+  const intervalSecs = intervalMap[interval] || 900;
+
+  seriesRef.current.setData([]);
+
+  // --- FAKE DATA PATH ---
+  if (isFakeData) {
+    const data = generateFakeCandles(300, fakeStartPrice, intervalSecs);
+    const lastCandle = data[data.length - 1];
+
+    const futureCandles = Array.from({ length: futureCandlesBox }, (_, i) => ({
+      time: (lastCandle.time + intervalSecs * (i + 1)) as LightweightCharts.UTCTimestamp,
+      open: lastCandle.close, high: lastCandle.close,
+      low: lastCandle.close, close: lastCandle.close,
+    }));
+
+    seriesRef.current!.setData([...data, ...futureCandles]);
+    chartInstance.current?.timeScale().fitContent();
+    if (tradeLines) updateVisuals(tradeLines);
+    onPriceUpdate(lastCandle.close.toFixed(2));
+    setLivePrice(lastCandle.close);
+
+    let simPrice = lastCandle.close;
+simPriceRef.current = simPrice;
+let simTime = lastCandle.time as number;
+let candleOpen = simPrice;
+let historicalData = data.slice(0, -1);
+
+const fakeTimer = window.setInterval(() => {
+  if (!isCurrent || !seriesRef.current) return;
+
+  const target = demoTargetRef.current;
+  const start = demoStartRef.current;
+
+  if (target != null && start != null) {
+    // SCRIPTED MODE: drift toward target over demoDurationRef.current seconds
+    const elapsed = (Date.now() - start.time) / 1000;
+    const progress = Math.min(elapsed / demoDurationRef.current, 1);
+
+    // Ease toward target, with small noise so it still looks organic
+    const eased = 1 - Math.pow(1 - progress, 2); // ease-out
+    const basePrice = start.price + (target - start.price) * eased;
+    const noise = (Math.random() - 0.5) * Math.abs(target - start.price) * 0.04;
+
+    simPrice = progress >= 1 ? target : basePrice + noise; // land exactly on target at the end
+  } else {
+    // NORMAL MODE: pure random walk
+    const move = (Math.random() - 0.48) * simPrice * 0.0015;
+    simPrice = Math.max(simPrice + move, 0.01);
+  }
+
+  simPriceRef.current = simPrice;
+
+  const currentCandle = {
+    time: simTime as LightweightCharts.UTCTimestamp,
+    open: candleOpen,
+    high: Math.max(candleOpen, simPrice),
+    low: Math.min(candleOpen, simPrice),
+    close: simPrice,
+  };
+
+  const futureCandlesNow = Array.from({ length: futureCandlesBox }, (_, i) => ({
+    time: (simTime + intervalSecs * (i + 1)) as LightweightCharts.UTCTimestamp,
+    open: simPrice, high: simPrice, low: simPrice, close: simPrice,
+  }));
+
+  seriesRef.current.setData([...historicalData, currentCandle, ...futureCandlesNow]);
+
+  onPriceUpdate(simPrice.toFixed(2));
+  setLivePrice(simPrice);
+}, 300);
+
+// Demo candles roll every ~2s regardless of the chart's actual timeframe,
+// so a 15s scripted move produces ~7-8 visible candles instead of 1.
+
+const idleRollMs = 10000; 
+const desiredCandleCount = 10; // pick 5-10
+const demoRollMs = (demoDurationSecs * 1000) / desiredCandleCount;
+
+const rollTimer = window.setInterval(() => {
+  if (!isCurrent) return;
+  historicalData = [...historicalData, {
+    time: simTime as LightweightCharts.UTCTimestamp,
+    open: candleOpen,
+    high: Math.max(candleOpen, simPrice),
+    low: Math.min(candleOpen, simPrice),
+    close: simPrice,
+  }];
+  simTime += intervalSecs; // timestamps still spaced correctly for the chosen timeframe
+  candleOpen = simPrice;
+}, demoTargetRef.current != null ? demoRollMs : idleRollMs);
+
+let rollTimeoutId: ReturnType<typeof setTimeout>;
+
+const scheduleRoll = () => {
+  const delay = demoTargetRef.current != null ? demoRollMs : idleRollMs;
+
+  rollTimeoutId = setTimeout(() => {
+    if (!isCurrent) return;
+
+    historicalData = [...historicalData, {
+      time: simTime as LightweightCharts.UTCTimestamp,
+      open: candleOpen,
+      high: Math.max(candleOpen, simPrice),
+      low: Math.min(candleOpen, simPrice),
+      close: simPrice,
+    }];
+    simTime += intervalSecs;
+    candleOpen = simPrice;
+
+    scheduleRoll(); // re-check the mode and reschedule at the right speed
+  }, delay);
+};
+
+scheduleRoll(); // kick it off
+
+return () => {
+  isCurrent = false;
+  window.clearInterval(fakeTimer);
+  clearTimeout(rollTimeoutId);
+};
+  }
   const binanceSymbol = symbol.replace("/", "").toUpperCase();
 
   // 1. Immediate Cleanup of existing socket
@@ -279,6 +480,7 @@ seriesRef.current.setData([...data, ...futureCandles]);
         
         const k = JSON.parse(event.data).k;
         if (onPriceUpdate) onPriceUpdate(parseFloat(k.c).toFixed(2));
+        setLivePrice(parseFloat(k.c));
         
         if (seriesRef.current && isChartReady) {
           try {
@@ -312,11 +514,26 @@ seriesRef.current.update({
       wsRef.current = null;
     }
   };
-}, [isChartReady, symbol, interval, isDemo]);
+}, [isChartReady, symbol, interval, isDemo, isFakeData, fakeStartPrice]);
 
   useEffect(() => {
     if (isChartReady) updateVisuals(tradeLines);
   }, [tradeLines, isChartReady]);
+
+  const calcPnl = (target: number) => {
+  if (!tradeLines) return 0;
+  const { entry, side, amount = 0, leverage = 1 } = tradeLines;
+  const isBuy = side.toUpperCase() === "BUY";
+  const move = isBuy ? (target - entry) / entry : (entry - target) / entry;
+  return amount * leverage * move;
+};
+
+const calcQty = () => {
+  if (!tradeLines || !tradeLines.entry) return "0";
+  const { entry, amount = 0, leverage = 1 } = tradeLines;
+  const qty = (amount * leverage) / entry;
+  return qty.toFixed(4);
+};
 
   return (
     <div className="flex-1 w-full bg-black relative overflow-hidden flex flex-col"> 
@@ -345,6 +562,42 @@ seriesRef.current.update({
       </div>
       </div>
       <div className="absolute inset-0 h-full w-full" ref={container} />
+      {tradeLines && (
+  <div className="absolute inset-0 pointer-events-none z-10">
+    {badgeY.tp !== null && (
+      <div className="absolute right-28 -translate-y-1/2 flex items-center gap-2 bg-black border border-[#00E676] text-[#00E676] text-xs font-semibold px-3 py-1 rounded-lg"
+           style={{ top: badgeY.tp }}>
+        <span>{calcQty()}</span>
+        |
+        <span>{calcPnl(tradeLines.tp) >= 0 ? "+" : ""}{calcPnl(tradeLines.tp).toFixed(2)} USD</span>
+      </div>
+    )}
+    {badgeY.entry !== null && (
+      <div className={cn(
+        "absolute right-28 -translate-y-1/2 flex items-center gap-2 text-xs font-semibold rounded-lg pr-2 border bg-black",
+        tradeLines.side.toUpperCase() === "BUY" ? " border-blue-500 text-blue-400" : " border-[#FF1744] text-[#FF1744]"
+      )} style={{ top: badgeY.entry }}>
+        <span className={`${tradeLines.side.toUpperCase() === "BUY" ? "bg-blue-500" : " bg-[#FF1744]"} p-1 px-2
+        rounded-l-lg text-white`}>{calcQty()}</span>
+
+        <span>
+  {livePrice !== null
+    ? `${calcPnl(livePrice) >= 0 ? "+" : ""}${calcPnl(livePrice).toFixed(2)} USD`
+    : "0.00 USD"}
+</span>
+
+      </div>
+    )}
+    {badgeY.sl !== null && (
+      <div className="absolute right-28 -translate-y-1/2 flex items-center gap-2 bg-black border border-[#FF1744] text-[#FF1744] text-xs font-semibold px-3 py-1 rounded-lg"
+           style={{ top: badgeY.sl }}>
+        <span>{calcQty()}</span>
+        |
+        <span>{calcPnl(tradeLines.sl).toFixed(2)} USD</span>
+      </div>
+    )}
+  </div>
+)}
     </div>
   );
 });
@@ -361,9 +614,12 @@ const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onP
   const [sl, setSl] = useState(initialData?.stop_loss?.toString() || "");
   const [showMobileTip, setShowMobileTip] = useState(false);
 
-  
-const displayPrice = price || "0.00"; 
-const entry = parseFloat(displayPrice);
+// null = not yet captured, so we track live price. Once set, it's frozen forever.
+const [capturedEntry, setCapturedEntry] = useState<number | null>(null);
+
+const livePrice = price || "0.00";
+const displayPrice = capturedEntry !== null ? capturedEntry.toString() : livePrice;
+const entry = capturedEntry !== null ? capturedEntry : parseFloat(livePrice);
 
  const toggleMobileTip = () => {
     // Only show tooltip on small screens
@@ -412,10 +668,16 @@ const { toWin, roiPercentage } = React.useMemo(() => {
 useEffect(() => {
   if (disabled) return; 
   if (onPriceChange) {
-    onPriceChange({ entry, tp: parseFloat(tp), sl: parseFloat(sl), side });
+    onPriceChange({ 
+      entry, 
+      tp: parseFloat(tp), 
+      sl: parseFloat(sl), 
+      side,
+      amount: parseFloat(amount),
+      leverage: parseFloat(leverage)
+    });
   }
-}, [entry, tp, sl, side, onPriceChange]);
-
+}, [entry, tp, sl, side, amount, leverage, onPriceChange]);
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -474,7 +736,7 @@ useEffect(() => {
         <div className="flex justify-between items-center">
                   <div className="flex justify-between items-center w-full">
                   <div className="flex flex-col gap-1">
-    <span >To Win 💵</span>
+    <span >To Win</span>
     {/* Displaying the exact ROI percentage */}
     <span className="text-zinc-500">
       +{roiPercentage}% 
@@ -617,13 +879,15 @@ useEffect(() => {
         <div className="flex">
           <button 
             onClick={() => {
+              setCapturedEntry(entry);
     onAccept({
       symbol,
       side,
       leverage,
       amount,
       tp,
-      sl
+      sl,
+      entry
     });
   }}
             className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-green-700 bg-green-700/20 hover:bg-green-700/30 transition-colors text-green-200 text-xs rounded-l cursor-pointer"
@@ -644,13 +908,16 @@ useEffect(() => {
 
 const TradeResultOverlay = ({ 
   type, 
-  pnl, 
+  pnl,
+  pnlPercentage,
   symbol, 
   onClose,
-  details
+  details,
+  profile
 }: { 
   type: 'WIN' | 'LOSS', 
-  pnl: string, 
+  pnl: string,
+  pnlPercentage: string,
   symbol: string, 
   onClose: () => void,
   details: {
@@ -658,7 +925,14 @@ const TradeResultOverlay = ({
     amount: string,
     leverage: string,
     odds: string,
-    side: string
+    side: string,
+    entryPrice: string,
+    markPrice: string,
+  },
+  profile: {
+    avatarUrl: string,
+    username: string,
+    name: string,
   }
 }) => {
   const isWin = type === 'WIN';
@@ -678,63 +952,101 @@ const TradeResultOverlay = ({
         className="relative cursor-pointer w-full max-w-[650px] overflow-hidden rounded-[24px] md:rounded-[32px] shadow-[0_32px_120px_-15px_rgba(0,0,0,0.8)]"
         style={{
           backgroundColor: '#000000',
-          backgroundImage: isWin 
-            ? `radial-gradient(100% 100% at 50% 100%, #004A1A 0%, #001A08 40%, #000804 60%, #000000 90%, transparent 100%)`
-            : `radial-gradient(100% 90% at 50% 100%, #7A001B 0%, #4A0010 30%, #1A0508 60%, #000000 90%, transparent 100%)`
+          backgroundImage: "radial-gradient(100% 90% at 50% 100%, #7A001B 0%, #4A0010 30%, #1A0508 60%, #000000 90%, transparent 100%)"
         }}
       >
         <div className="relative z-10 p-5 flex flex-col items-center">
           
+          {/* USER PROFILE ROW — NEW */}
+          <div className="w-full flex items-center gap-3">
+            {profile.avatarUrl ? (
+              <img
+                src={profile.avatarUrl}
+                alt={profile.name || profile.username || "User"}
+                className="w-12 h-12 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white  font-semibold">
+                {(profile.name || profile.username || "U").charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="flex flex-col leading-tight">
+              <span className="text-white text-sm font-semibold">{profile.name || "Anonymous"}</span>
+              {profile.username && (
+                <span className="text-zinc-400 text-xs">@{profile.username}</span>
+              )}
+            </div>
+
+            
+          </div>
+          
+
           {/* Main Content Container: Mobile Stack, Desktop Row */}
           <div className="w-full flex flex-col md:flex-row items-stretch md:items-center overflow-hidden">
             
-            {/* LEFT SIDE: Logo & Prompt */}
+            {/* LEFT SIDE: Logo & Symbol/Side */}
             <div className="flex-1 p-4 md:p-8 text-left space-y-3">
-              <div className="flex items-center gap-3 mb-6 md:mb-10 w-full ">
-                <img className="h-6 w-6 md:h-8 md:w-8 opacity-90" src="/logo.png" alt="logo"/>
-                <p className="text-xl md:text-2xl text-white font-medium theseason tracking-tight">RICHACLE</p>
+              
+
+              <h4 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-white">
+                {symbol}
+              </h4>
+
+              <div className="flex gap-3 items-center text-sm font-semibold text-white">
+                <span>{details.side}</span>
+                <span className="tabular-nums font-bold text-white">{details.leverage}x</span>
               </div>
-              <p className="text-white text-xl md:text-2xl font-semibold leading-tight tracking-tight">
-                {details.prompt}
-              </p>
+
+              
+              
             </div>
 
-            {/* Separator: Vertical on Desktop, Horizontal on Mobile */}
-            <div className="h-px w-full md:h-40 md:w-px bg-white/10  my-2 md:my-0" />
+            
+
+            {/* Separator */}
+            <div className="h-px w-full md:h-40 md:w-px bg-white/10 my-2 md:my-0" />
 
             {/* RIGHT SIDE: Trade Details */}
             <div className="p-4 md:p-8 w-full md:w-64 text-left flex flex-col justify-center">
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <h4 className={`text-xl md:text-2xl font-bold tracking-tight uppercase ${isWin ? 'text-blue-700' : 'text-red-700'}`}>
-                    Traded {details.side}
-                  </h4>
                   <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
-                    <span>Amount</span>
-                    <span className="tabular-nums font-bold text-white">${details.amount}</span>
+                    <span>Entry Price</span>
+                    <span className="tabular-nums font-semibold text-white">${details.entryPrice}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
-                    <span>Leverage</span>
-                    <span className="tabular-nums font-bold text-white">{details.leverage}x</span>
+                    <span>Mark Price</span>
+                    <span className="tabular-nums font-semibold text-white">${details.markPrice}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
                     <span>Odds</span>
-                    <span className="tabular-nums font-bold text-white">{details.odds}</span>
+                    <span className="tabular-nums font-semibold text-white">{details.odds}%</span>
                   </div>
                 </div>
 
                 <div className="h-px w-full bg-white/10 border-dashed border-zinc-600/20" />
                 
                 <div className="space-y-1">
-                  <span className="text-zinc-200 text-xs font-medium">To {isWin ? 'Win' : 'Loss'}</span>
-                  <div className="text-4xl md:text-5xl font-bold tracking-tighter tabular-nums text-[#CFA968]">
-                    ${pnl}
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="text-4xl md:text-5xl font-bold tracking-tighter tabular-nums text-[#CFA968]">
+                      {isWin ? '+' : '-'}${pnl}
+                    </div>
+                    <span className={cn(
+                      "text-sm font-semibold tabular-nums bg-[#CFA968] p-1 px-3 rounded text-black",
+                      
+                    )}>
+                      {isWin ? '+' : '-'}{pnlPercentage}%
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+        <div className="flex items-center justify-center gap-3 mb-6 md:mb-10 w-full ">
+                <img className="h-6 w-6 md:h-8 md:w-8 opacity-90" src="/logo.png" alt="logo"/>
+                <p className="text-xl md:text-2xl text-white font-medium theseason">RICHACLE</p>
+              </div>
       </motion.div>
     </motion.div>
   );
@@ -761,15 +1073,23 @@ const [confirmedEntryPrice, setConfirmedEntryPrice] = useState<number | null>(nu
 const [lastResearch, setLastResearch] = useState<any>(null);
 const [activeTradeParams, setActiveTradeParams] = useState<any>(null);
 const [tradeResult, setTradeResult] = useState<TradeResultState | null>(null);
-const [selectedModel, setSelectedModel] = useState("claude-4.7");
+const [selectedModel, setSelectedModel] = useState("claude-fable-5");
 const [loading, setLoading] = useState(false)
 const [isWidgetActive, setIsWidgetActive] = useState(false);
 const [isPositionClosed, setIsPositionClosed] = useState(false);
 const [isRejected, setIsRejected] = useState(false);
 const [showJournal, setShowJournal] = useState(false);
+const [demoTargetPrice, setDemoTargetPrice] = useState<number | null>(null);
+const [isFakeData, setIsFakeData] = useState(false); // true while recording demos, set false for real trading
+const [userProfile, setUserProfile] = useState({
+  avatarUrl: "",
+  username: "",
+  name: "",
+});
 
 const models = [
-  { id: "claude-4.7", name: "Claude Opus 4.7" },
+  { id: "claude-fable-5", name: "Claude Fable 5" },
+  { id: "claude-4.8", name: "Claude Opus 4.8" },
   { id: "gpt-5.4", name: "GPT 5.4" },
   { id: "gemini-3.1", name: "Gemini 3.1 Pro" },
   { id: "grok-4.2", name: "Grok 4.2" },
@@ -793,21 +1113,28 @@ useEffect(() => {
     const exitPrice = tpHit ? tp : sl;
     const priceDiff = Math.abs(exitPrice - entry);
     const percentageChange = priceDiff / entry;
+    const leverageNum = parseFloat(activeTradeParams.leverage);          // ← make sure this line exists
     const calculatedPnl = (
-      parseFloat(activeTradeParams.amount) * parseFloat(activeTradeParams.leverage) * percentageChange
+      parseFloat(activeTradeParams.amount) * leverageNum * percentageChange
     ).toFixed(2);
+
+    const pnlPercentage = (percentageChange * leverageNum * 100).toFixed(2);
 
     setTradeResult({
       show: true,
       type: tpHit ? 'WIN' : 'LOSS',
       pnl: calculatedPnl,
+      pnlPercentage,  
       details: {
         prompt: lastResearch?.research_summary?.substring(0, 60) + "..." || "Trade Executed",
         amount: activeTradeParams.amount,
         leverage: activeTradeParams.leverage,
         odds: lastResearch?.confidence || "0",
-        side: side
-      }
+        side: side,
+        entryPrice: entry.toFixed(2),                   // FIXED — was reusing "amount"
+      markPrice: exitPrice.toFixed(2), 
+      },
+      profile: userProfile,
     });
   }
 }, [currentPrice, isExecuted, activeLines, activeSymbol, activeTradeParams]);
@@ -838,9 +1165,7 @@ useEffect(() => {
     handleCloseOrder(activeSymbol);
 
     // 2. Toast Notify
-    if(tpHit){
-      toast.success(`TAKE PROFIT HIT ${tp}`)
-    } else {
+    if(!tpHit){
       toast.error(`STOP LOSS HIT ${sl}`)
     }
 
@@ -856,6 +1181,12 @@ useEffect(() => {
       // 1. Fetch User Data (Binance Keys)
       const userRes = await fetch(`https://api.richacle.com/user/${email}`);
       const userData = await userRes.json();
+
+      setUserProfile({
+      avatarUrl: userData?.avatar || "",
+      username: userData?.username || "",
+      name: userData?.name || "",
+    });
       
       setIsDemo(userData?.binance?.demo);
       setIsConfigLoaded(true);
@@ -873,6 +1204,19 @@ useEffect(() => {
 const handleAccept = async (tradeParams: TradeParams) => {
   setActiveTradeParams(tradeParams);
   setIsTrading(true);
+
+  if (isFakeData) {
+    await new Promise(res => setTimeout(res, 600)); // fake "placing order" delay
+    setConfirmedEntryPrice(parseFloat(tradeParams.entry as any));
+    setIsExecuted(true);
+    setIsPositionClosed(false);
+    setDemoTargetPrice(parseFloat(tradeParams.tp));
+    setMessages(prev => [...prev, { role: "ai", content: (
+      <div className="p-2">Order placed (demo)</div>
+    )}]);
+    setIsTrading(false);
+    return;
+  }
   
   try {
     const formData = new FormData();
@@ -899,25 +1243,32 @@ const handleAccept = async (tradeParams: TradeParams) => {
     setConfirmedEntryPrice(result.entryPrice);
     setIsExecuted(true);
     setIsPositionClosed(false)
+    if (activeLines) {
+  setDemoTargetPrice(activeLines.tp);
+}
     setMessages(prev => [
       ...prev,
       {
         role: "ai",
         content: (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 flex flex-col gap-2">
-            <div className="text-sm font-bold flex items-center gap-2">
-              ORDER PLACED SUCCESSFULLY
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-2 flex flex-col gap-2">
+            <div className=" flex items-center">
+              Order placed
             </div>
-            <button 
-                onClick={() => handleCloseOrder(tradeParams.symbol)} 
-                disabled={isPositionClosed || isClosing}
-                className={cn(
-    " text-left mt-1 transition-opacity",
-    (isPositionClosed || isClosing) ? "opacity-40 cursor-not-allowed" : "cursor-pointer underline text-zinc-300 hover:text-zinc-100"
-  )}
-              >
-                {isPositionClosed ? " Position for {symbol} has been closed." : "Click here to close position now."}
-              </button>
+            {!isPositionClosed && (
+          <button 
+            onClick={() => handleCloseOrder(tradeParams.symbol)} 
+            disabled={isClosing}
+            className={cn(
+              "mt-1 self-start px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+              isClosing 
+                ? "opacity-40 cursor-not-allowed  bg-white text-black" 
+                : "cursor-pointer bg-white text-black"
+            )}
+          >
+            {isClosing ? "Closing" : "Close position"}
+          </button>
+        )}
           </motion.div>
         )
       }
@@ -940,6 +1291,7 @@ const handleReject = () => {
   setIsWidgetActive(false);
   setActiveLines(null);
   setIsRejected(true);
+  setDemoTargetPrice(null);
 };
 
 // Called on full reset (trade closed, new session)
@@ -951,6 +1303,7 @@ const handleReset = () => {
   setActiveLines(null);
   setIsWidgetActive(false);
   setIsRejected(false);
+  setDemoTargetPrice(null);
 };
 
 
@@ -971,6 +1324,28 @@ const handleCloseOrder = async (symbol: string) => {
     return;
   }
   setIsClosing(true); // Re-use the trading loading state
+
+  if (isFakeData) {
+    await new Promise(res => setTimeout(res, 500)); // small fake delay for realism
+
+    setIsPositionClosed(true);
+    setMessages(prev => [
+      ...prev,
+      {
+        role: "ai",
+        content: (
+          <div className="text-left p-4">
+            Position for {symbol} has been closed.
+          </div>
+        )
+      }
+    ]);
+
+    setIsWidgetActive(false);
+    setActiveLines(null);
+    setIsClosing(false);
+    return;
+  }
   
   try {
     const formData = new FormData();
@@ -1095,16 +1470,15 @@ if (wants_to_trade && trade_data) {
   setLastResearch(trade_data);
   setIsRejected(false);
   setIsWidgetActive(true);
-
-  if (trade_data.symbol) {
-    setActiveSymbol(trade_data.symbol);
-    setActiveLines({
-      entry: parseFloat(trade_data.entry_price || currentPrice || "0"),
-      tp: parseFloat(trade_data.take_profit),
-      sl: parseFloat(trade_data.stop_loss),
-      side: trade_data.side,
-    });
-  }
+if (trade_data.symbol) {
+  setActiveSymbol(trade_data.symbol);
+  setActiveLines({
+    entry: parseFloat(trade_data.entry_price || currentPrice || "0"),
+    tp: parseFloat(trade_data.take_profit),
+    sl: parseFloat(trade_data.stop_loss),
+    side: trade_data.side,
+  });
+}
 
 
   setMessages(prev => [
@@ -1188,7 +1562,9 @@ const handleClearMemory = async () => {
   </div>
 )}
 
-        <AdvancedChart isDemo={isDemo} symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
+        <AdvancedChart isDemo={isDemo}  isFakeData={isFakeData}
+  fakeStartPrice={65000} demoTargetPrice={demoTargetPrice}
+  demoDurationSecs={15}  symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
       
 {!showAgent && <button 
@@ -1246,7 +1622,7 @@ const handleClearMemory = async () => {
                 {typeof msg.content === 'string' ? (
                   <div className={cn(
                     "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg rounded-tr-none",
-                    msg.role === "user" ? "bg-[#2a2b2b] text-white" : "bg-transparent text-[#d1d1d1] pl-4"
+                    msg.role === "user" ? "bg-zinc-900 text-white" : "bg-transparent text-[#d1d1d1] pl-4"
                   )}>
                     {msg.content}
                   </div>
@@ -1274,6 +1650,8 @@ const handleClearMemory = async () => {
   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
   <span className="relative inline-flex size-3 rounded-full bg-white"></span>
 </span>
+                <span className=" text-white/40 animate-pulse">Researching</span>
+
               </motion.div>
             )}
 
@@ -1307,38 +1685,66 @@ const handleClearMemory = async () => {
               exit={{ opacity: 0, y: 10 }}
               className="p-4 "
             >
-              <div className="relative bg-[#0d0d0d] rounded-2xl border border-white/10 p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
-                <textarea
-                  ref={textareaRef}
-                  rows={2}
-                  maxLength={500}
-                  value={prompt}
-                  onChange={(e) => setPrompt(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
-                  placeholder="Ask Richacle"
-                  className="w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none placeholder:text-white/50 text-white "
-                />
-                <div className="flex justify-between items-center mt-auto">
-                
+              <div className="relative bg-[#0d0d0d] rounded-2xl  p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
+                <div className="relative w-full">
+  {/* Highlighted text layer — purely visual, sits behind the textarea */}
+  <div
+    aria-hidden="true"
+    className="absolute inset-0 w-full text-[14px] px-0 py-0 whitespace-pre-wrap break-words pointer-events-none"
+    style={{ fontFamily: "inherit", lineHeight: "inherit" }}
+  >
+    {prompt.split(/(\/trade)/gi).map((part, i) =>
+      part.toLowerCase() === "/trade" ? (
+        <span key={i} className="text-blue-500">{part}</span>
+      ) : (
+        <span key={i} className="text-white">{part}</span>
+      )
+    )}
+    {/* trailing space so caret has room to sit after last char */}
+    {prompt.length === 0 && <span className="text-white/50">Ask Richacle</span>}
+  </div>
 
+  {/* Actual textarea — text made transparent, only caret/selection visible */}
+  <textarea
+    ref={textareaRef}
+    rows={2}
+    maxLength={500}
+    value={prompt}
+    onChange={(e) => setPrompt(e.target.value)}
+    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
+    placeholder=""
+    className="relative w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none text-transparent caret-white"
+  />
+</div>
+                <div className="flex justify-between items-center mt-auto">
+                <div className="flex items-center gap-3">
+                <Plus 
+  size={40} 
+  onClick={() => {
+    setPrompt(prev => prev ? `${prev} /trade ` : "/trade ");
+    textareaRef.current?.focus();
+  }}
+  className="hover:bg-zinc-900 p-2 rounded-full cursor-pointer"
+/>
 
                 <Select value={selectedModel} onValueChange={setSelectedModel}>
   <SelectTrigger className=" border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70  hover:text-white transition-colors cursor-pointer outline-none">
     <SelectValue />
   </SelectTrigger>
   
-  <SelectContent side="top" sideOffset={3} align="start" position="popper"  className="text-white ">
+  <SelectContent side="top" sideOffset={3} align="start" position="popper"  className="text-white border-0 ">
     {models.map((model) => (
       <SelectItem 
         key={model.id} 
         value={model.id}
-        className="text-[11px] font-semibold focus:text-white cursor-pointer transition-colors"
+        className="text-[11px] font-semibold focus:text-white cursor-pointer transition-colors "
       >
         {model.name}
       </SelectItem>
     ))}
   </SelectContent>
 </Select>
+</div>
                   <button 
                     onClick={handleSend}
                     disabled={!prompt.trim() || loading || isWidgetActive || isTrading || isClosing}
@@ -1355,17 +1761,19 @@ const handleClearMemory = async () => {
       </div>
         <AnimatePresence>
       {tradeResult?.show && (
-        <TradeResultOverlay 
-          type={tradeResult.type}
-          pnl={tradeResult.pnl}
-          symbol={activeSymbol}
-          details={tradeResult.details}
-          onClose={() => {
-            setTradeResult(null);
-            handleReset(); // Reset the main UI after closing result
-          }}
-        />
-      )}
+  <TradeResultOverlay 
+    type={tradeResult.type}
+    pnl={tradeResult.pnl}
+    pnlPercentage={tradeResult.pnlPercentage}
+    symbol={activeSymbol}
+    details={tradeResult.details}
+    profile={tradeResult.profile}
+    onClose={() => {
+      setTradeResult(null);
+      handleReset();
+    }}
+  />
+)}
     </AnimatePresence>
 
       <style dangerouslySetInnerHTML={{ __html: `

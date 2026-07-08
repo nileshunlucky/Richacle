@@ -163,7 +163,7 @@ export default function Journal({ email, onClose }: JournalProps) {
                   color: monthStats.netPnl >= 0 ? "text-green-400" : "text-red-400",
                 },
                 {
-                  label: "Day win %",
+                  label: "PnL %",
                   value: `${monthStats.dayWinPct}%`,
                   color: "text-white",
                   sub: `${monthStats.winDays} Win / ${monthStats.lossDays} Loss`,
@@ -175,7 +175,7 @@ export default function Journal({ email, onClose }: JournalProps) {
                   sub: `${monthStats.totalTrades} trades`,
                 },
                 {
-                  label: "Best day",
+                  label: "Best Trade",
                   value: (() => {
                     const prefix = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
                     const days = calendarData.filter(d => d.date.startsWith(prefix) && d.pnl > 0);

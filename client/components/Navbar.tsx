@@ -218,7 +218,7 @@ const toggleMobileTip = () => {
   }).format(strategiesPerf)}</li>
 
   <li>
-  <Link href={`/${username}`}> <div className=" flex justify-center  pb-0 cursor-pointer">
+  <Link href={`/${username || "dashboard"}`}> <div className=" flex justify-center  pb-0 cursor-pointer">
   <motion.div variants={avatarVariants} initial="initial" animate="animate">
     <div style={{
       width: "40px",
