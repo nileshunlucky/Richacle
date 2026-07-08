@@ -1217,7 +1217,7 @@ const handleAccept = async (tradeParams: TradeParams) => {
 
   if (isFakeData) {
     await new Promise(res => setTimeout(res, 600)); // fake "placing order" delay
-    setConfirmedEntryPrice(parseFloat(tradeParams.entry));
+    setConfirmedEntryPrice(tradeParams.entry);
     setIsExecuted(true);
     setIsPositionClosed(false);
     setDemoTargetPrice(parseFloat(tradeParams.tp));
