@@ -78,12 +78,20 @@ interface TradeResultState {
   show: boolean;
   type: 'WIN' | 'LOSS';
   pnl: string;
+  pnlPercentage: string;              // ADD
   details: {
     prompt: string;
     amount: string;
     leverage: string;
     odds: string;
     side: string;
+    entryPrice: string;               // ADD
+    markPrice: string;                // ADD
+  };
+  profile: {                          // ADD
+    avatarUrl: string;
+    username: string;
+    name: string;
   };
 }
 
