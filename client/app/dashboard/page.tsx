@@ -102,7 +102,9 @@ interface TradeParams {
   amount: string;
   tp: string;
   sl: string;
+  entry: number;
 }
+
 
 interface Message {
   role: "user" | "ai";
@@ -1215,7 +1217,7 @@ const handleAccept = async (tradeParams: TradeParams) => {
 
   if (isFakeData) {
     await new Promise(res => setTimeout(res, 600)); // fake "placing order" delay
-    setConfirmedEntryPrice(parseFloat(tradeParams.entry as any));
+    setConfirmedEntryPrice(parseFloat(tradeParams.entry));
     setIsExecuted(true);
     setIsPositionClosed(false);
     setDemoTargetPrice(parseFloat(tradeParams.tp));
