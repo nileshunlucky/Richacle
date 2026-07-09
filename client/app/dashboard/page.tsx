@@ -141,12 +141,42 @@ function generateFakeCandles(count: number, startPrice: number, intervalSecs: nu
   return data;
 }
 
+// Generates a random walk from `start` to `target` over `steps` candles,
+// guaranteed to land exactly on target, with natural up/down movement in between.
+function generateBridgePath(start: number, target: number, steps: number, volatility = 2.8) {
+  const path: number[] = [start];
+  const totalMove = target - start;
+  const avgStep = totalMove / steps;
+
+  // Raw random walk (unconstrained)
+  const rawWalk: number[] = [0];
+  for (let i = 1; i <= steps; i++) {
+    const noise = (Math.random() - 0.5) * Math.abs(avgStep) * volatility * 4;
+    rawWalk.push(rawWalk[i - 1] + noise);
+  }
+
+  // Bridge correction: force rawWalk to end at 0, so we can add the linear trend after
+  const endValue = rawWalk[steps];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const corrected = rawWalk[i] - t * endValue; // pulls the random walk back to 0 at the end
+    path[i] = start + totalMove * t + corrected;
+  }
+
+  path[steps] = target; // force exact landing, no floating point drift
+  return path;
+}
+
 const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", isDemo = false,  isFakeData = false, fakeStartPrice = 62000 , demoTargetPrice = null, demoDurationSecs = 15}: AdvancedChartProps) {
   // 1. Properly typed refs using the imported library types
   const chartInstance = useRef<LightweightCharts.IChartApi | null>(null);
   const seriesRef = useRef<LightweightCharts.ISeriesApi<"Candlestick"> | null>(null);
   const tpFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
   const slFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
+
+  const pathRef = useRef<number[] | null>(null);
+const pathIndexRef = useRef(0);
+const candleDurationMsRef = useRef(2000);
 
   const simPriceRef = useRef<number>(fakeStartPrice);
 const demoTargetRef = useRef<number | null>(null);
@@ -270,14 +300,21 @@ slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, valu
     };
   }, []);
 
-  useEffect(() => {
+useEffect(() => {
   demoDurationRef.current = demoDurationSecs;
   if (demoTargetPrice != null) {
     demoTargetRef.current = demoTargetPrice;
     demoStartRef.current = { price: simPriceRef.current, time: Date.now() };
+
+    // Pre-plan the whole candle path right now — guarantees natural red/green mix
+    const steps = 15; // matches desiredCandleCount below — keep these equal
+    pathRef.current = generateBridgePath(simPriceRef.current, demoTargetPrice, steps, 2.8);
+    pathIndexRef.current = 0;
+    candleDurationMsRef.current = (demoDurationSecs * 1000) / steps;
   } else {
     demoTargetRef.current = null;
     demoStartRef.current = null;
+    pathRef.current = null;
   }
 }, [demoTargetPrice, demoDurationSecs]);
 
@@ -337,26 +374,26 @@ simPriceRef.current = simPrice;
 let simTime = lastCandle.time as number;
 let candleOpen = simPrice;
 let historicalData = data.slice(0, -1);
+const desiredCandleCount = 60;
 
 const fakeTimer = window.setInterval(() => {
   if (!isCurrent || !seriesRef.current) return;
 
-  const target = demoTargetRef.current;
-  const start = demoStartRef.current;
+  const path = pathRef.current;
 
-  if (target != null && start != null) {
-    // SCRIPTED MODE: drift toward target over demoDurationRef.current seconds
-    const elapsed = (Date.now() - start.time) / 1000;
-    const progress = Math.min(elapsed / demoDurationRef.current, 1);
+  if (path != null) {
+    // SCRIPTED MODE: interpolate smoothly between the current planned point and the next
+    const idx = pathIndexRef.current;
+    const from = path[idx];
+    const to = path[Math.min(idx + 1, path.length - 1)];
 
-    // Ease toward target, with small noise so it still looks organic
-    const eased = 1 - Math.pow(1 - progress, 2); // ease-out
-    const basePrice = start.price + (target - start.price) * eased;
-    const noise = (Math.random() - 0.5) * Math.abs(target - start.price) * 0.04;
+    const elapsedInCandle = Date.now() - (demoStartRef.current!.time + idx * candleDurationMsRef.current);
+    const progressInCandle = Math.min(elapsedInCandle / candleDurationMsRef.current, 1);
 
-    simPrice = progress >= 1 ? target : basePrice + noise; // land exactly on target at the end
+    const wickJitter = (Math.random() - 0.5) * Math.abs(to - from) * 0.15;
+    simPrice = from + (to - from) * progressInCandle + wickJitter;
   } else {
-    // NORMAL MODE: pure random walk
+    // NORMAL MODE: pure random walk (unchanged)
     const move = (Math.random() - 0.48) * simPrice * 0.0015;
     simPrice = Math.max(simPrice + move, 0.01);
   }
@@ -386,26 +423,13 @@ const fakeTimer = window.setInterval(() => {
 // so a 15s scripted move produces ~7-8 visible candles instead of 1.
 
 const idleRollMs = 10000; 
-const desiredCandleCount = 10; // pick 5-10
 const demoRollMs = (demoDurationSecs * 1000) / desiredCandleCount;
-
-const rollTimer = window.setInterval(() => {
-  if (!isCurrent) return;
-  historicalData = [...historicalData, {
-    time: simTime as LightweightCharts.UTCTimestamp,
-    open: candleOpen,
-    high: Math.max(candleOpen, simPrice),
-    low: Math.min(candleOpen, simPrice),
-    close: simPrice,
-  }];
-  simTime += intervalSecs; // timestamps still spaced correctly for the chosen timeframe
-  candleOpen = simPrice;
-}, demoTargetRef.current != null ? demoRollMs : idleRollMs);
 
 let rollTimeoutId: ReturnType<typeof setTimeout>;
 
 const scheduleRoll = () => {
-  const delay = demoTargetRef.current != null ? demoRollMs : idleRollMs;
+  const path = pathRef.current;
+  const delay = path != null ? candleDurationMsRef.current : idleRollMs;
 
   rollTimeoutId = setTimeout(() => {
     if (!isCurrent) return;
@@ -417,14 +441,19 @@ const scheduleRoll = () => {
       low: Math.min(candleOpen, simPrice),
       close: simPrice,
     }];
+
+    if (path != null && pathIndexRef.current < path.length - 1) {
+      pathIndexRef.current += 1;
+    }
+
     simTime += intervalSecs;
     candleOpen = simPrice;
 
-    scheduleRoll(); // re-check the mode and reschedule at the right speed
+    scheduleRoll();
   }, delay);
 };
 
-scheduleRoll(); // kick it off
+scheduleRoll();
 
 return () => {
   isCurrent = false;
@@ -995,7 +1024,7 @@ const TradeResultOverlay = ({
           <div className="w-full flex flex-col md:flex-row items-stretch md:items-center overflow-hidden">
             
             {/* LEFT SIDE: Logo & Symbol/Side */}
-            <div className="flex-1 p-4 md:p-8 text-left space-y-3">
+            <div className="md:mr-10 p-4 md:p-8 text-left space-y-3">
               
 
               <h4 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-white">
@@ -1017,7 +1046,7 @@ const TradeResultOverlay = ({
             <div className="h-px w-full md:h-40 md:w-px bg-white/10 my-2 md:my-0" />
 
             {/* RIGHT SIDE: Trade Details */}
-            <div className="p-4 md:p-8 w-full md:w-64 text-left flex flex-col justify-center">
+            <div className="p-4 md:p-8 w-full md:w-64 text-left flex flex-col justify-center md:ml-5">
               <div className="space-y-4">
                 <div className="space-y-1">
                   <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
@@ -1090,7 +1119,7 @@ const [isPositionClosed, setIsPositionClosed] = useState(false);
 const [isRejected, setIsRejected] = useState(false);
 const [showJournal, setShowJournal] = useState(false);
 const [demoTargetPrice, setDemoTargetPrice] = useState<number | null>(null);
-const [isFakeData, setIsFakeData] = useState(false); // true while recording demos, set false for real trading
+const [isFakeData, setIsFakeData] = useState(false);
 const [userProfile, setUserProfile] = useState({
   avatarUrl: "",
   username: "",
@@ -1117,35 +1146,36 @@ useEffect(() => {
   const slHit = isBuy ? price <= sl : price >= sl;
 
   if (tpHit || slHit) {
-    handleCloseOrder(activeSymbol);
+    handleCloseOrder(activeSymbol); // still closes on either outcome
 
-    // CALCULATE ACTUAL PNL
-    const exitPrice = tpHit ? tp : sl;
-    const priceDiff = Math.abs(exitPrice - entry);
-    const percentageChange = priceDiff / entry;
-    const leverageNum = parseFloat(activeTradeParams.leverage);          // ← make sure this line exists
-    const calculatedPnl = (
-      parseFloat(activeTradeParams.amount) * leverageNum * percentageChange
-    ).toFixed(2);
+    // Only build/show the result overlay on a WIN
+    if (tpHit) {
+      const priceDiff = Math.abs(tp - entry);
+      const percentageChange = priceDiff / entry;
+      const leverageNum = parseFloat(activeTradeParams.leverage);
+      const calculatedPnl = (
+        parseFloat(activeTradeParams.amount) * leverageNum * percentageChange
+      ).toFixed(2);
+      const pnlPercentage = (percentageChange * leverageNum * 100).toFixed(2);
 
-    const pnlPercentage = (percentageChange * leverageNum * 100).toFixed(2);
-
-    setTradeResult({
-      show: true,
-      type: tpHit ? 'WIN' : 'LOSS',
-      pnl: calculatedPnl,
-      pnlPercentage,  
-      details: {
-        prompt: lastResearch?.research_summary?.substring(0, 60) + "..." || "Trade Executed",
-        amount: activeTradeParams.amount,
-        leverage: activeTradeParams.leverage,
-        odds: lastResearch?.confidence || "0",
-        side: side,
-        entryPrice: entry.toFixed(2),                   // FIXED — was reusing "amount"
-      markPrice: exitPrice.toFixed(2), 
-      },
-      profile: userProfile,
-    });
+      setTradeResult({
+        show: true,
+        type: 'WIN',
+        pnl: calculatedPnl,
+        pnlPercentage,
+        details: {
+          prompt: lastResearch?.research_summary?.substring(0, 60) + "..." || "Trade Executed",
+          amount: activeTradeParams.amount,
+          leverage: activeTradeParams.leverage,
+          odds: lastResearch?.confidence || "0",
+          side: side,
+          entryPrice: entry.toFixed(2),
+          markPrice: tp.toFixed(2),
+        },
+        profile: userProfile,
+      });
+    }
+    // slHit case: position closes, no overlay shown
   }
 }, [currentPrice, isExecuted, activeLines, activeSymbol, activeTradeParams]);
 
@@ -1153,6 +1183,7 @@ useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setEmail(session?.user?.email || "");
+      setIsFakeData(session?.user?.email === "nileshinde001@gmail.com");
     };
     getUser();
   }, []);
@@ -1216,14 +1247,33 @@ const handleAccept = async (tradeParams: TradeParams) => {
   setIsTrading(true);
 
   if (isFakeData) {
-    await new Promise(res => setTimeout(res, 600)); // fake "placing order" delay
+    await new Promise(res => setTimeout(res, 600));
     setConfirmedEntryPrice(tradeParams.entry);
     setIsExecuted(true);
     setIsPositionClosed(false);
     setDemoTargetPrice(parseFloat(tradeParams.tp));
-    setMessages(prev => [...prev, { role: "ai", content: (
-      <div className="p-2">Order placed (demo)</div>
-    )}]);
+    setMessages(prev => [
+      ...prev,
+      {
+        role: "ai",
+        content: (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-2 flex flex-col gap-2">
+            <div className=" flex items-center">
+              Order placed
+            </div>
+            {!isPositionClosed && (
+          <button 
+            className={cn(
+              "mt-1 self-start px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer bg-white text-black"
+            )}
+          >
+            Close position
+          </button>
+        )}
+          </motion.div>
+        )
+      }
+    ]);
     setIsTrading(false);
     return;
   }
@@ -1574,7 +1624,7 @@ const handleClearMemory = async () => {
 
         <AdvancedChart isDemo={isDemo}  isFakeData={isFakeData}
   fakeStartPrice={65000} demoTargetPrice={demoTargetPrice}
-  demoDurationSecs={15}  symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
+  demoDurationSecs={60}  symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
       
 {!showAgent && <button 
@@ -1660,7 +1710,7 @@ const handleClearMemory = async () => {
   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
   <span className="relative inline-flex size-3 rounded-full bg-white"></span>
 </span>
-                <span className=" text-white/40 animate-pulse">Researching</span>
+                
 
               </motion.div>
             )}
