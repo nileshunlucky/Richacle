@@ -1,9 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import Journal from "@/components/Journal";
 import { 
   MessageCircle,
@@ -22,7 +21,7 @@ const avatarVariants = {
   },
 };
 
-export default function Home() {
+function MenuContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -59,7 +58,6 @@ export default function Home() {
     fetchBinance();
   }, [email]);
 
-  // --- Active-tab detection ---
   const isAgentActive = pathname === "/dashboard" && searchParams.get("agent") === "true";
   const isChartActive = pathname === "/dashboard" && !isAgentActive;
   const isExploreActive = pathname === "/explore";
@@ -110,5 +108,13 @@ export default function Home() {
         </div>
       </button>
     </div>
+  );
+}
+
+export default function Menu() {
+  return (
+    <Suspense fallback={null}>
+      <MenuContent />
+    </Suspense>
   );
 }
