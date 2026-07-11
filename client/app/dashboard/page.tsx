@@ -87,26 +87,6 @@ interface TradeWidgetProps {
   };
 }
 
-interface TradeResultState {
-  show: boolean;
-  type: 'WIN' | 'LOSS';
-  pnl: string;
-  pnlPercentage: string;              // ADD
-  details: {
-    prompt: string;
-    amount: string;
-    leverage: string;
-    odds: string;
-    side: string;
-    entryPrice: string;               // ADD
-    markPrice: string;                // ADD
-  };
-  profile: {                          // ADD
-    avatarUrl: string;
-    username: string;
-    name: string;
-  };
-}
 
 interface TradeParams {
   symbol: string;
@@ -958,6 +938,33 @@ useEffect(() => {
   );
 });
 
+const buildDisplayTradeData = (raw: any, fakeEntry: number, isFake: boolean) => {
+  if (!isFake) return raw;
+
+  const realEntry = parseFloat(raw.entry_price || fakeEntry || "0");
+  const realTp = parseFloat(raw.take_profit);
+  const realSl = parseFloat(raw.stop_loss);
+  const isBuy = String(raw.side).toUpperCase() === "BUY";
+
+  if (!realEntry || !realTp || !realSl || !fakeEntry) return raw;
+
+  // Clamp risk % to a believable range (e.g. 0.4% – 2% of entry)
+  let riskPct = Math.abs(realEntry - realSl) / realEntry;
+  riskPct = Math.min(Math.max(riskPct, 0.004), 0.02);
+
+  const slDistance = fakeEntry * riskPct;
+  const tpDistance = slDistance * 3; // 1:3 risk:reward
+
+  const tp = isBuy ? fakeEntry + tpDistance : fakeEntry - tpDistance;
+  const sl = isBuy ? fakeEntry - slDistance : fakeEntry + slDistance;
+
+  return {
+    ...raw,
+    entry_price: fakeEntry,
+    take_profit: tp,
+    stop_loss: sl,
+  };
+};
 
 function VibeTradingUIContent() {
 
@@ -983,7 +990,6 @@ function VibeTradingUIContent() {
 const [confirmedEntryPrice, setConfirmedEntryPrice] = useState<number | null>(null);
 const [lastResearch, setLastResearch] = useState<any>(null);
 const [activeTradeParams, setActiveTradeParams] = useState<any>(null);
-const [tradeResult, setTradeResult] = useState<TradeResultState | null>(null);
 const [selectedModel, setSelectedModel] = useState("claude-fable-5");
 const [loading, setLoading] = useState(false)
 const [isWidgetActive, setIsWidgetActive] = useState(false);
@@ -997,6 +1003,7 @@ const [userProfile, setUserProfile] = useState({
   username: "",
   name: "",
 });
+const [tradeStatusText, setTradeStatusText] = useState<string | null>(null);
 
 const models = [
   { id: "claude-fable-5", name: "Claude Fable 5" },
@@ -1016,49 +1023,35 @@ const models = [
   }, [searchParams]);
 
 
+const hasClosedRef = useRef(false);
+
 useEffect(() => {
-  if (!isExecuted || !activeLines || !currentPrice || !activeTradeParams) return;
+  if (isExecuted) hasClosedRef.current = false; // reset for new trade
+}, [isExecuted]);
+
+useEffect(() => {
+  if (!isExecuted || !activeLines || !currentPrice) return;
+  if (hasClosedRef.current) return; // already fired, stop here
 
   const price = parseFloat(currentPrice);
-  const { tp, sl, side, entry } = activeLines;
+  const { tp, sl, side } = activeLines;
   const isBuy = side.toUpperCase() === "BUY";
 
   const tpHit = isBuy ? price >= tp : price <= tp;
   const slHit = isBuy ? price <= sl : price >= sl;
 
   if (tpHit || slHit) {
-    handleCloseOrder(activeSymbol); // still closes on either outcome
+    hasClosedRef.current = true; // lock immediately so it can't fire again
 
-    // Only build/show the result overlay on a WIN
+    handleCloseOrder(activeSymbol);
+
     if (tpHit) {
-      const priceDiff = Math.abs(tp - entry);
-      const percentageChange = priceDiff / entry;
-      const leverageNum = parseFloat(activeTradeParams.leverage);
-      const calculatedPnl = (
-        parseFloat(activeTradeParams.amount) * leverageNum * percentageChange
-      ).toFixed(2);
-      const pnlPercentage = (percentageChange * leverageNum * 100).toFixed(2);
-
-      setTradeResult({
-        show: true,
-        type: 'WIN',
-        pnl: calculatedPnl,
-        pnlPercentage,
-        details: {
-          prompt: lastResearch?.research_summary?.substring(0, 60) + "..." || "Trade Executed",
-          amount: activeTradeParams.amount,
-          leverage: activeTradeParams.leverage,
-          odds: lastResearch?.confidence || "0",
-          side: side,
-          entryPrice: entry.toFixed(2),
-          markPrice: tp.toFixed(2),
-        },
-        profile: userProfile,
-      });
+      toast(`TAKE PROFIT HIT ${sl}`);
+    } else {
+      toast.error(`STOP LOSS HIT ${sl}`);
     }
-    // slHit case: position closes, no overlay shown
   }
-}, [currentPrice, isExecuted, activeLines, activeSymbol, activeTradeParams]);
+}, [currentPrice, isExecuted, activeLines, activeSymbol]);
 
       useEffect(() => {
     const getUser = async () => {
@@ -1349,9 +1342,20 @@ const handleSend = async () => {
   setLoading(true)
 
   const currentPrompt = prompt;
+  const isTradeCommand = /\/trade\b/i.test(currentPrompt);
   setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
   setPrompt("");
   setIsSearching(true);
+
+
+   if (isTradeCommand) {
+    setTradeStatusText("Researching");
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
+    setTradeStatusText("Predicting");
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+  }
+
 
   try {
     const formData = new FormData();
@@ -1410,19 +1414,22 @@ const handleSend = async () => {
 
     // If Oracle detected trade intent, show analysis + widget
 if (wants_to_trade && trade_data) {
-  setLastResearch(trade_data);
+  const fakeEntry = parseFloat(currentPrice || "0");
+  const displayTradeData = buildDisplayTradeData(trade_data, fakeEntry, isFakeData);
+
+  setLastResearch(displayTradeData);
   setIsRejected(false);
   setIsWidgetActive(true);
-if (trade_data.symbol) {
-  setActiveSymbol(trade_data.symbol);
-  setActiveLines({
-    entry: parseFloat(trade_data.entry_price || currentPrice || "0"),
-    tp: parseFloat(trade_data.take_profit),
-    sl: parseFloat(trade_data.stop_loss),
-    side: trade_data.side,
-  });
-}
 
+  if (displayTradeData.symbol) {
+    setActiveSymbol(displayTradeData.symbol);
+    setActiveLines({
+      entry: parseFloat(displayTradeData.entry_price || currentPrice || "0"),
+      tp: parseFloat(displayTradeData.take_profit),
+      sl: parseFloat(displayTradeData.stop_loss),
+      side: displayTradeData.side,
+    });
+  }
 
   setMessages(prev => [
     ...prev,
@@ -1430,7 +1437,7 @@ if (trade_data.symbol) {
       role: "ai",
       content: (
         <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
-          <h1 className="font-semibold">Win Rate {trade_data.confidence}%</h1>
+          <h1 className="font-semibold">Win Rate {displayTradeData.confidence}%</h1>
           <h1 className="font-light theseason">RICHACLE</h1>
         </div>
       ),
@@ -1439,7 +1446,7 @@ if (trade_data.symbol) {
       role: "ai",
       content: (
         <TradeWidget
-          initialData={trade_data}
+          initialData={displayTradeData}
           onPriceChange={setActiveLines}
           onReset={handleReject}
           onAccept={handleAccept}
@@ -1460,6 +1467,9 @@ if (trade_data.symbol) {
     ]);
   } finally {
     setLoading(false)
+    setIsSearching(false);
+    setLoading(false);
+    setTradeStatusText(null)
   }
 };
 
@@ -1583,7 +1593,9 @@ const handleClearMemory = async () => {
   <span className="relative inline-flex size-3 rounded-full bg-white"></span>
 </span>
                 
-
+ {tradeStatusText && (
+      <span className="text-white/40 animate-pulse">{tradeStatusText}</span>
+    )}
               </motion.div>
             )}
 
