@@ -140,6 +140,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     return `${isNegative ? "-" : ""}$${formatted}`;
   }
 
+
   // ── Data fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
     async function getProfileData() {
@@ -173,6 +174,14 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           body: formData,
         });
 
+            const formxData = new FormData();
+formxData.append("email", profileEmail);
+
+const res = await fetch("https://api.richacle.com/api/trade-log", {
+  method: "POST",
+  body: formxData,
+});
+
         const form = new FormData();
         form.append("email", profileEmail);
         const balRes = await fetch("https://api.richacle.com/api/balance", {
@@ -187,10 +196,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
         // Net worth should just reflect current balance, regardless of trade history
         if (balData?.equity !== undefined && balData?.equity !== null) {
-          displayNetWorth = formatShortCurrency(balData.equity);
-        }
+  displayNetWorth = `$${Number(balData.equity).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
 
-        if (tradeResponse.ok) {
+       if (tradeResponse.ok) {
   const tradeData = await tradeResponse.json();
   if (tradeData.status === "success" && tradeData.calendar?.length > 0) {
     const calendar = [...tradeData.calendar].sort(
@@ -198,10 +210,15 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     );
     const latestPnL = calendar[calendar.length - 1].pnl || 0;
     isNegative = latestPnL < 0;
-    displayNetWorthChange = `$${Math.abs(latestPnL).toLocaleString(undefined, {
+
+    const sign = latestPnL >= 0 ? "+" : "-";
+    const equity = balData?.equity || 0;
+    const pct = equity !== 0 ? (Math.abs(latestPnL) / equity) * 100 : 0;
+
+    displayNetWorthChange = `${sign}$${Math.abs(latestPnL).toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })}`;
+    })} ${sign}${pct.toFixed(2)}%`;
   }
 }
 
@@ -309,7 +326,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="pb-4"
+          className="mb-7"
         >
           <p className="text-zinc-500 text-lg">from</p>
           <p className="theseason text-xl tracking-wider">RICHACLE</p>
@@ -465,6 +482,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         exit="exit"
         className="min-h-screen bg-black flex items-start justify-center p-5"
       >
+
         <motion.div
           variants={cardVariants}
           initial="initial"
@@ -502,54 +520,50 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             variants={staggerContainer}
             initial="initial"
             animate="animate"
-            className="flex items-center gap-6 px-1"
+            className="flex items-center px-1 gap-3"
           >
             <motion.div variants={avatarVariants} className="shrink-0">
               <div
-                className="p-[3px] rounded-full"
+                className="p-[3px] "
                 
               >
                 <div
                   style={{
-                    width: "84px",
-                    height: "84px",
+                    width: "80px",
+                    height: "80px",
                     borderRadius: "50%",
                     backgroundImage: `url(${user.avatar})`,
                     backgroundSize: "cover",
                     backgroundPosition: "center",
-                    border: "3px solid #000000",
+                   
                   }}
                 />
               </div>
             </motion.div>
 
-            <motion.div variants={fadeUp} className="flex flex-1 items-center md:justify-around justify-between">
+            <motion.div variants={fadeUp} className="flex flex-col w-full items-center justify-center">
 
-              <div className="flex flex-col items-center">
-                <span className="text-lg font-semibold text-white">
-                  {user.rank}
-                </span>
-                <span className=" text-[13px]">Rank</span>
-              </div>
 
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center w-full">
+                      <motion.h1 variants={fadeUp} className="font-semibold text-[15px] text-white w-full  ">
+              {user.name}
+            </motion.h1>
                 <span
-                  className="text-lg font-semibold text-white "
+                  className="font-semibold text-white text-3xl"
                   
                 >
                   {user.netWorth}
                 </span>
-                <span className=" text-[13px]">Net Worth</span>
               </div>
               
-              <div className="flex flex-col items-center">
-                <span
-                  className={`text-lg font-bold leading-tight tabular-nums `}
-                >
-                   {user.netWorthChange}
-                </span>
-                <span className=" text-[13px]">Net PnL</span>
-              </div>
+              <div className="flex items-center text-zinc-500 mt-1">
+  <span className={`text-sm font-semibold`}>
+    {user.netWorthChange.split(" ")[0]}
+  </span>
+  <span className={`text-xs font-semibold px-2 py-0.5 rounded `}>
+    ({user.netWorthChange.split(" ")[1]})
+  </span>
+</div>
             </motion.div>
           </motion.div>
 
@@ -558,11 +572,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             variants={staggerContainer}
             initial="initial"
             animate="animate"
-            className="px-1 pt-4 text-left"
+            className="px-1 pt-4 text-left "
           >
-            <motion.h1 variants={fadeUp} className="font-semibold text-[15px] text-white">
-              {user.name}
-            </motion.h1>
+    
 
             {user.bio && (
               <motion.p

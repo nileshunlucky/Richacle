@@ -1,14 +1,13 @@
 @import "tailwindcss";
 
+*{
+  scroll-behavior: smooth;
+ 
+}
+
 @font-face {
   font-family: 'theseason Display';
   src: url('/theseason.otf') format('truetype');
-  font-weight: 100;
-  font-style: normal;
-}
-@font-face {
-  font-family: 'spacemono Display';
-  src: url('/spacemono.ttf') format('opentype');
   font-weight: 100;
   font-style: normal;
 }
@@ -16,9 +15,7 @@
 .theseason {
   font-family: 'theseason Display', serif;
 }
-.spacemono {
-  font-family: 'spacemono Display', serif;
-}
+
 
 @custom-variant dark (&:is(.dark *));
 
@@ -149,10 +146,6 @@
 /* no scrollbar */
 ::-webkit-scrollbar {
   display: none;
-}
-
-*{
-  scroll-behavior: smooth;
 }
 
 /* Editor background */

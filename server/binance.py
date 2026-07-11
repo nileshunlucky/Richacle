@@ -148,3 +148,104 @@ async def set_engine(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.post("/api/trade-log")
+async def get_trade_log(
+    email: str = Form(...),
+):
+
+    user = users_collection.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    binance_creds = user.get("binance")
+    if not binance_creds or not binance_creds.get("apiKey"):
+        raise HTTPException(status_code=400, detail="Binance API keys not configured")
+
+    apiSecret = binance_creds.get("apiSecret")
+    decrypted_secret = fernet.decrypt(apiSecret.encode()).decode()
+
+    try:
+        exchange = ccxt.binance({
+            'apiKey': binance_creds.get("apiKey"),
+            'secret': decrypted_secret,
+            'enableRateLimit': True,
+            'options': {'defaultType': 'future'},
+        })
+
+        if binance_creds.get("demo"):
+            exchange.enable_demo_trading(True)
+
+        symbol_list = ["BTCUSDT", "ETHUSDT", "SOLUSDT"]  # fixed internally, frontend doesn't need to send this
+        all_trades = []
+
+        for sym in symbol_list:
+            ccxt_symbol = sym.replace("USDT", "/USDT")
+            try:
+                fills = exchange.fetch_my_trades(ccxt_symbol, limit=200)
+            except Exception:
+                continue
+
+            if not fills:
+                continue
+
+            fills.sort(key=lambda t: t['timestamp'])
+
+            position_qty = 0.0
+            entry_notional = 0.0
+            open_side = None
+            closed_trades = []
+
+            for f in fills:
+                qty = f['amount']
+                price = f['price']
+                side = f['side']
+                realized_pnl = float(f.get('info', {}).get('realizedPnl', 0) or 0)
+                signed_qty = qty if side == 'buy' else -qty
+
+                if position_qty == 0:
+                    open_side = 'BUY' if side == 'buy' else 'SELL'
+                    entry_notional = qty * price
+                    position_qty = signed_qty
+                    continue
+
+                same_direction = (position_qty > 0 and side == 'buy') or (position_qty < 0 and side == 'sell')
+
+                if same_direction:
+                    entry_notional += qty * price
+                    position_qty += signed_qty
+                else:
+                    closing_qty = min(qty, abs(position_qty))
+                    avg_entry_price = entry_notional / abs(position_qty) if position_qty != 0 else price
+                    roi_pct = (realized_pnl / (avg_entry_price * closing_qty)) * 100 if avg_entry_price and closing_qty else 0
+
+                    closed_trades.append({
+                        "symbol": sym,
+                        "side": open_side,
+                        "entryPrice": round(avg_entry_price, 4),
+                        "exitPrice": round(price, 4),
+                        "qty": round(closing_qty, 6),
+                        "pnl": round(realized_pnl, 2),
+                        "roi": round(roi_pct, 2),
+                        "closedAt": f['timestamp'],
+                    })
+
+                    position_qty += signed_qty
+                    entry_notional = entry_notional * (abs(position_qty) / (abs(position_qty) + closing_qty)) if position_qty != 0 else 0
+
+                    if position_qty != 0 and ((position_qty > 0) != (open_side == 'BUY')):
+                        open_side = 'BUY' if position_qty > 0 else 'SELL'
+                        entry_notional = abs(position_qty) * price
+
+            all_trades.extend(closed_trades)
+
+        all_trades.sort(key=lambda t: t['closedAt'], reverse=True)
+        all_trades = all_trades[:30]
+
+        return {
+            "status": "success",
+            "trades": all_trades,
+        }
+
+    except Exception as e:
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Exchange error: {str(e)}")
