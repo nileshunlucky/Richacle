@@ -3,13 +3,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { notFound, useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { ChevronLeft, Camera, X, Check, Loader2, Share2, Pencil } from "lucide-react";
+import { ChevronLeft, Camera, X, Check, Loader2, Share2, Ellipsis } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 
 // ─── Animation Variants ────────────────────────────────────────────────────────
 
@@ -32,7 +31,7 @@ const cardVariants = {
   animate: {
     opacity: 1,
     scale: 1,
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const ,  delay: 0.05  },
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const, delay: 0.05 },
   },
 };
 
@@ -97,7 +96,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [copied, setCopied] = useState(false);
-  
 
   // ── Share handler ──────────────────────────────────────────────────────────
   const handleShare = async () => {
@@ -125,22 +123,22 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   };
 
   function formatShortCurrency(value: number): string {
-  const isNegative = value < 0;
-  const absValue = Math.abs(value);
+    const isNegative = value < 0;
+    const absValue = Math.abs(value);
 
-  let formatted = "";
-  if (absValue >= 1.0e9) {
-    formatted = `${(absValue / 1.0e9).toFixed(2).replace(/\.00$/, "")}b`;
-  } else if (absValue >= 1.0e6) {
-    formatted = `${(absValue / 1.0e6).toFixed(2).replace(/\.00$/, "")}m`;
-  } else if (absValue >= 1.0e3) {
-    formatted = `${(absValue / 1.0e3).toFixed(2).replace(/\.00$/, "")}k`;
-  } else {
-    formatted = absValue.toFixed(2);
+    let formatted = "";
+    if (absValue >= 1.0e9) {
+      formatted = `${(absValue / 1.0e9).toFixed(2).replace(/\.00$/, "")}b`;
+    } else if (absValue >= 1.0e6) {
+      formatted = `${(absValue / 1.0e6).toFixed(2).replace(/\.00$/, "")}m`;
+    } else if (absValue >= 1.0e3) {
+      formatted = `${(absValue / 1.0e3).toFixed(2).replace(/\.00$/, "")}k`;
+    } else {
+      formatted = absValue.toFixed(2);
+    }
+
+    return `${isNegative ? "-" : ""}$${formatted}`;
   }
-
-  return `${isNegative ? "-" : ""}$${formatted}`;
-}
 
   // ── Data fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -183,33 +181,27 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         });
         const balData = await balRes.json();
 
-
         let displayNetWorth = "$0.00";
-let displayNetWorthChange = "$0.00 (0.00%)";
-let isNegative = false;
+        let displayNetWorthChange = "$0.00 (0.00%)";
+        let isNegative = false;
 
-// Net worth should just reflect current balance, regardless of trade history
-if (balData?.equity !== undefined && balData?.equity !== null) {
-  displayNetWorth = formatShortCurrency(balData.equity);
-}
+        // Net worth should just reflect current balance, regardless of trade history
+        if (balData?.equity !== undefined && balData?.equity !== null) {
+          displayNetWorth = formatShortCurrency(balData.equity);
+        }
 
-if (tradeResponse.ok) {
+        if (tradeResponse.ok) {
   const tradeData = await tradeResponse.json();
   if (tradeData.status === "success" && tradeData.calendar?.length > 0) {
     const calendar = [...tradeData.calendar].sort(
       (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
     );
-    const totalPnL = calendar.reduce((sum, day) => sum + (day.pnl || 0), 0);
     const latestPnL = calendar[calendar.length - 1].pnl || 0;
     isNegative = latestPnL < 0;
-    const historicBaseline = totalPnL - latestPnL;
-    const pct = historicBaseline !== 0
-      ? (latestPnL / Math.abs(historicBaseline)) * 100
-      : 0;
     displayNetWorthChange = `$${Math.abs(latestPnL).toLocaleString(undefined, {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    })} (${Math.abs(pct).toFixed(2)}%)`;
+    })}`;
   }
 }
 
@@ -252,7 +244,7 @@ if (tradeResponse.ok) {
     if (file) {
       setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
-    }  
+    }
   };
 
   async function handleSaveProfile() {
@@ -260,7 +252,7 @@ if (tradeResponse.ok) {
       setIsSaving(true);
       const formData = new FormData();
       if (targetEmail) {
-       formData.append("email", targetEmail);
+        formData.append("email", targetEmail);
       }
       if (editForm.name) formData.append("name", editForm.name);
       if (editForm.username) formData.append("username", editForm.username);
@@ -272,24 +264,20 @@ if (tradeResponse.ok) {
         body: formData,
       });
 
-      console.log("response", response)
-
-
       const result = await response.json();
-      console.log(result)
+
       if (response.ok) {
-        
         setUser((prev) => {
-    if (!prev) return null;
-    
-    return {
-      ...prev,
-      name: editForm.name,
-      username: editForm.username,
-      bio: editForm.bio,
-      avatar: result.updated_fields?.avatar || prev.avatar,
-    };
-  });
+          if (!prev) return null;
+
+          return {
+            ...prev,
+            name: editForm.name,
+            username: editForm.username,
+            bio: editForm.bio,
+            avatar: result.updated_fields?.avatar || prev.avatar,
+          };
+        });
         if (editForm.username !== username) {
           router.replace(`/${editForm.username}`);
         }
@@ -342,13 +330,13 @@ if (tradeResponse.ok) {
           initial="initial"
           animate="animate"
           exit="exit"
-          className="min-h-screen  flex items-center justify-center p-4"
+          className="min-h-screen bg-black flex items-center justify-center p-4"
         >
           <motion.div
             variants={cardVariants}
             initial="initial"
             animate="animate"
-            className="w-full max-w-sm overflow-hidden rounded-lg relative "
+            className="w-full max-w-sm overflow-hidden rounded-lg relative"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4">
@@ -361,7 +349,7 @@ if (tradeResponse.ok) {
                 <X size={24} />
               </Button>
 
-              
+              <span className="text-white font-semibold text-sm">Edit profile</span>
 
               <Button
                 variant="ghost"
@@ -386,56 +374,69 @@ if (tradeResponse.ok) {
               className="p-7 flex flex-col items-center gap-7"
             >
               {/* Avatar Upload */}
-             <motion.div variants={avatarVariants}>
-  <div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-    <div style={{
-      width: "144px",
-      height: "144px",
-      borderRadius: "50%",
-      backgroundImage: `url(${imagePreview})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      flexShrink: 0,
-      opacity: 0.7,
-    }} className="group-hover:opacity-40 transition-opacity duration-300" />
-    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-      <Camera className="text-zinc-200" size={28} />
-    </div>
-    <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
-  </div>
-</motion.div>
-
+              <motion.div variants={avatarVariants}>
+                <div
+                  className="relative group cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div
+                    style={{
+                      width: "120px",
+                      height: "120px",
+                      borderRadius: "50%",
+                      backgroundImage: `url(${imagePreview})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                      flexShrink: 0,
+                      opacity: 0.7,
+                    }}
+                    className="group-hover:opacity-40 transition-opacity duration-300"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <Camera className="text-zinc-200" size={26} />
+                  </div>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    className="hidden"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                  />
+                </div>
+              </motion.div>
 
               {/* Inputs */}
               <motion.div variants={fadeUp} className="w-full space-y-5 p-5 px-0">
                 {/* Name */}
                 <div>
-                  <label className="text-[10px]  text-zinc-500 font-semibold ml-0.5 block mb-1.5">
+                  <label className="text-[10px] text-zinc-500 font-semibold ml-0.5 block mb-1.5">
                     Name
                   </label>
                   <Input
                     type="text"
                     value={editForm.name}
                     onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                    className="bg-transparent border-0  rounded p-2 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-zinc-400 transition-colors duration-200 h-8"
+                    className="bg-transparent border-0 rounded p-2 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-zinc-400 transition-colors duration-200 h-8"
                   />
                 </div>
                 {/* Username */}
                 <div>
-                  <label className="text-[10px]  text-zinc-500 font-semibold ml-0.5 block mb-1.5">
+                  <label className="text-[10px] text-zinc-500 font-semibold ml-0.5 block mb-1.5">
                     Username
                   </label>
                   <Input
                     type="text"
                     value={editForm.username}
-                    onChange={(e) => setEditForm({ ...editForm, username: e.target.value.toLowerCase() })}
-                    className="bg-transparent border-0  rounded p-2 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-zinc-400 transition-colors duration-200 h-8 lowercase"
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, username: e.target.value.toLowerCase() })
+                    }
+                    className="bg-transparent border-0 rounded p-2 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-zinc-400 transition-colors duration-200 h-8 lowercase"
                   />
                 </div>
 
                 {/* Bio */}
                 <div>
-                  <label className="text-[10px]  text-zinc-500 font-semibold ml-0.5 block mb-1.5">
+                  <label className="text-[10px] text-zinc-500 font-semibold ml-0.5 block mb-1.5">
                     Bio
                   </label>
                   <Textarea
@@ -446,7 +447,6 @@ if (tradeResponse.ok) {
                   />
                 </div>
               </motion.div>
-
             </motion.div>
           </motion.div>
         </motion.main>
@@ -463,162 +463,140 @@ if (tradeResponse.ok) {
         initial="initial"
         animate="animate"
         exit="exit"
-        className="min-h-screen bg-black flex items-center justify-center p-4"
+        className="min-h-screen bg-black flex items-start justify-center p-5"
       >
         <motion.div
           variants={cardVariants}
           initial="initial"
           animate="animate"
-          className="w-full max-w-sm overflow-hidden rounded-sm relative"
+          className="w-full max-w-xl overflow-hidden rounded-sm relative"
         >
-          {/* Back button */}
-          <motion.button
-            whileHover={{ x: -2 }}
-            whileTap={{ scale: 0.92 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            onClick={() => router.back()}
-            className="text-zinc-400 hover:text-white absolute top-4 left-4 z-10 cursor-pointer transition-colors duration-150"
-          >
-            <ChevronLeft size={20} />
-          </motion.button>
+          {/* Top bar: back / username / ellipsis */}
+          <motion.div variants={fadeUp} className="flex items-center justify-between px-1 pb-5">
+            <motion.button
+              whileHover={{ x: -2 }}
+              whileTap={{ scale: 0.92 }}
+              transition={{ type: "spring", stiffness: 400, damping: 25 }}
+              onClick={() => router.back()}
+              className="text-white cursor-pointer transition-colors duration-150"
+            >
+              <ChevronLeft size={22} />
+            </motion.button>
 
-          {/* Top Half — Avatar */}
-<div className="p-6 flex justify-center pt-10 pb-0">
-  <motion.div variants={avatarVariants} initial="initial" animate="animate">
-    <div style={{
-      width: "192px",
-      height: "192px",
-      borderRadius: "50%",
-      backgroundImage: `url(${user.avatar})`,
-      backgroundSize: "cover",
-      backgroundPosition: "center",
-      flexShrink: 0,
-    }} />
-  </motion.div>
-</div>
+            <span className="flex items-center gap-1.5 font-semibold text-[15px] text-white">
+              {user.username}
+              {user.verified && (
+                <img
+                  className="h-3.5"
+                  src="https://cdn-icons-png.magnific.com/256/18984/18984328.png?semt=ais_white_label"
+                  alt="verified"
+                />
+              )}
+            </span>
 
-          {/* Bottom Half — Details */}
+            <Ellipsis className="text-white" size={20} />
+          </motion.div>
+
+          {/* Avatar + Stats row */}
           <motion.div
             variants={staggerContainer}
             initial="initial"
             animate="animate"
-            className="px-8 pt-6 pb-12 text-center flex flex-col items-center"
+            className="flex items-center gap-6 px-1"
           >
-            {/* @username row */}
-            <motion.div
-              variants={fadeUp}
-              className="flex items-center gap-1.5 mb-6 text-[12px] text-zinc-500"
-            >
-              <img className="h-5" src="/logo.png" alt="logo" />
-              @{user.username}
-              {user.verified && (
-              <img className="h-4" src="https://cdn-icons-png.magnific.com/256/18984/18984328.png?semt=ais_white_label" alt="logo" />
-              )}
+            <motion.div variants={avatarVariants} className="shrink-0">
+              <div
+                className="p-[3px] rounded-full"
+                
+              >
+                <div
+                  style={{
+                    width: "84px",
+                    height: "84px",
+                    borderRadius: "50%",
+                    backgroundImage: `url(${user.avatar})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    border: "3px solid #000000",
+                  }}
+                />
+              </div>
             </motion.div>
 
-            {/* Name */}
-            <motion.h1
-              variants={fadeUp}
-              className="font-serif text-3xl font-medium text-white mb-1 theseason"
-            >
+            <motion.div variants={fadeUp} className="flex flex-1 items-center md:justify-around justify-between">
+
+              <div className="flex flex-col items-center">
+                <span className="text-lg font-semibold text-white">
+                  {user.rank}
+                </span>
+                <span className=" text-[13px]">Rank</span>
+              </div>
+
+              <div className="flex flex-col items-center">
+                <span
+                  className="text-lg font-semibold text-white "
+                  
+                >
+                  {user.netWorth}
+                </span>
+                <span className=" text-[13px]">Net Worth</span>
+              </div>
+              
+              <div className="flex flex-col items-center">
+                <span
+                  className={`text-lg font-bold leading-tight tabular-nums `}
+                >
+                   {user.netWorthChange}
+                </span>
+                <span className=" text-[13px]">Net PnL</span>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* Name + Bio */}
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            className="px-1 pt-4 text-left"
+          >
+            <motion.h1 variants={fadeUp} className="font-semibold text-[15px] text-white">
               {user.name}
             </motion.h1>
 
-            {/* Bio */}
-            <motion.p
-              variants={fadeUp}
-              className="tracking-wide text-zinc-500 mb-4"
-            >
-              {user.bio}
-            </motion.p>
-
-            {/* Owner Actions */}
-            {isOwner && (
-              <motion.div
+            {user.bio && (
+              <motion.p
                 variants={fadeUp}
-                className="flex items-center gap-5 mb-4"
+                className="text-zinc-400 text-[14px] mt-1 leading-snug whitespace-pre-line"
               >
-                {/* Edit Profile */}
-                <motion.div
-                  transition={{ type: "spring", stiffness: 350, damping: 22 }}
-                >
-                  <Button
-                    onClick={() => setIsEditing(true)}
-                    className="
-                      cursor-pointer h-8 px-5 text-xs font-semibold 
-                      bg-zinc-800 hover:bg-zinc-700
-                      text-zinc-200 hover:text-white
-                      
-                      rounded
-                      transition-all duration-200
-                    "
-                  >
-       
-                    Edit Profile
-                  </Button>
-                </motion.div>
-
-                {/* Share Profile */}
-                <motion.div
-                  transition={{ type: "spring", stiffness: 350, damping: 22 }}
-                >
-                  <Button
-                    onClick={handleShare}
-                    className="
-                      cursor-pointer h-8 px-5 text-xs font-semibold 
-                      bg-zinc-800 hover:bg-zinc-700
-                      text-zinc-200 hover:text-white
-                      
-                      rounded
-                      transition-all duration-200
-                    "
-                  >
-                    Share Profile
-                  </Button>
-                </motion.div>
-              </motion.div>
+                {user.bio}
+              </motion.p>
             )}
 
-            {/* Net Worth Row */}
-            <motion.div
-              variants={fadeUp}
-              className="flex items-center justify-between gap-3"
-            >
-              <div className="text-4xl font-bold font-sans text-white mb-1 ">
-                {user.netWorth}
-                <div className="flex items-center gap-2">
-                <span
-                  className={`font-semibold flex text-xs items-center gap-0.5 mt-0.5 ${
-                    user.isChangeNegative ? "text-red-600" : "text-green-600"
-                  }`}
+            {/* Owner Actions */}
+            <motion.div variants={fadeUp} className="flex items-center gap-2 mt-4">
+              {isOwner && (
+                <Button
+                  onClick={() => setIsEditing(true)}
+                  className="
+                    flex-1 cursor-pointer h-8 text-[13px] font-semibold
+                    bg-zinc-900 hover:bg-zinc-800
+                    text-zinc-200 hover:text-white
+                    rounded-lg
+                    transition-all duration-200
+                  "
                 >
-                  {user.isChangeNegative ? "▼" : "▲"} 
-                </span>
-                <span
-                  className={`font-semibold flex text-xs items-center gap-0.5 mt-0.5 `}
-                >
-                {user.netWorthChange}
-                </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-0.5 mt-1 text-left gap-2 ">
-                <div className="text-[11px] text-zinc-300 font-medium">
-                  Real Time Net Worth
-                  <br />
-                <span className="text-xs text-zinc-500">
-  as of {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'numeric', year: '2-digit' })}
-</span>
-                </div>
-
-                <motion.span
-                  whileHover={{ x: 1 }}
-                  className="text-zinc-400 text-[11px] transition-all duration-150"
-                >
-                  #{user.rank} in the{" "}
-                  <span className="theseason">RICHACLE</span> today
-                </motion.span>
-              </div>
+                  Edit Profile
+                </Button>
+              )}
+              <Button
+                onClick={handleShare}
+                className={`${
+                  isOwner ? "flex-1" : "w-full"
+                } cursor-pointer h-8 text-[13px] font-semibold bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white rounded-lg transition-all duration-200`}
+              >
+                Share Profile
+              </Button>
             </motion.div>
           </motion.div>
         </motion.div>

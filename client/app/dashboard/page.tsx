@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, memo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import Journal from "@/components/Journal";
 import { 
   ArrowUp, 
@@ -16,7 +17,9 @@ import {
   LoaderCircle,
   MessageCircle,
   X,
-  Calendar
+  ChartNoAxesColumn,
+  Calendar,
+  Search 
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -34,6 +37,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useSearchParams } from "next/navigation";
+
+const avatarVariants = {
+  initial: { opacity: 0, scale: 0.88 },
+  animate: {
+    opacity: 1,
+    scale: 1,
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const },
+  },
+};
 
 const cn = (...classes: (string | boolean | undefined | null)[]) => 
   classes.filter(Boolean).join(" ");
@@ -1091,6 +1104,9 @@ const TradeResultOverlay = ({
   );
 };
 export default function VibeTradingUI() {
+
+  const searchParams = useSearchParams();
+
   const [isDemo, setIsDemo] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [isSearching, setIsSearching] = useState(false);
@@ -1134,6 +1150,15 @@ const models = [
   { id: "grok-4.2", name: "Grok 4.2" },
   { id: "deepseek-v3.2", name: "Deepseek-V3.2" },
 ]
+
+  useEffect(() => {
+    if (searchParams.get("agent") === "true") {
+      setShowAgent(true);
+    } else {
+      setShowAgent(false);
+    }
+  }, [searchParams]);
+
 
 useEffect(() => {
   if (!isExecuted || !activeLines || !currentPrice || !activeTradeParams) return;
@@ -1627,12 +1652,8 @@ const handleClearMemory = async () => {
   demoDurationSecs={60}  symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
       
-{!showAgent && <button 
-  onClick={() => setShowAgent(true)}
-  className="md:hidden fixed bottom-2 right-6 z-45 p-2 px-3 bg-black text-white border rounded-xl transition-transform"
->
-  <MessageCircle />
-</button>}
+
+
 
       
 
@@ -1645,14 +1666,7 @@ const handleClearMemory = async () => {
 <div className="bg-black flex justify-end items-center p-2 px-4 gap-2">
 
 <h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right"><Plus size={20}/></h1>
-<button onClick={() => setShowJournal(true)} className="cursor-pointer p-2">
-  <Calendar size={20} />
-</button>
-<AnimatePresence>
-  {showJournal && (
-    <Journal email={email}  onClose={() => setShowJournal(false)} />
-  )}
-</AnimatePresence>
+
 {showAgent && <button 
   onClick={() => setShowAgent(false)}
   className="cursor-pointer relative group md:hidden"
@@ -1745,7 +1759,7 @@ const handleClearMemory = async () => {
               exit={{ opacity: 0, y: 10 }}
               className="p-4 "
             >
-              <div className="relative bg-[#0d0d0d] rounded-2xl  p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
+              <div className="relative mb-10 bg-[#0d0d0d] rounded-2xl  p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
                 <div className="relative w-full">
   {/* Highlighted text layer — purely visual, sits behind the textarea */}
   <div

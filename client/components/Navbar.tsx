@@ -201,7 +201,7 @@ const toggleMobileTip = () => {
           </Link>
 
            <ul className="flex gap-5 items-center text-sm font-semibold">
-            <Link href="/explore"><li><Search className="cursor-pointer font-bold" size={20} /></li></Link>
+            <Link href="/explore"><li><Search className="hidden md:flex cursor-pointer font-bold" size={20} /></li></Link>
            <li> <button 
                     onClick={() => setIsModalOpen(true)}
                     className="flex cursor-pointer items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"
@@ -218,13 +218,13 @@ const toggleMobileTip = () => {
   }).format(strategiesPerf)}</li>
 
   <li>
-  <Link href={`/${username || "dashboard"}`}> <div className=" flex justify-center  pb-0 cursor-pointer">
+  <Link href={`/${username || "dashboard"}`}> <div className="hidden md:flex justify-center  pb-0 cursor-pointer">
   <motion.div variants={avatarVariants} initial="initial" animate="animate">
     <div style={{
       width: "40px",
       height: "40px",
       borderRadius: "50%",
-      backgroundImage: `url(${avatar})`,
+      backgroundImage: `url(${avatar || "/user.png"})`,
       backgroundSize: "cover",
       backgroundPosition: "center",
       flexShrink: 0,

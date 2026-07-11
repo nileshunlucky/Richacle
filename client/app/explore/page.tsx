@@ -13,6 +13,7 @@ interface TraderUser {
   name: string
   networth: number // parsed balance/equity mapping
   avatar: string
+  verified: Boolean
 }
 
 export default function Home() {
@@ -72,6 +73,7 @@ export default function Home() {
               email: traderEmail || "",
               networth: liveEquity, 
               avatar: trader.avatar || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQAgvAlI9O_F3MJZ9WdUONOZZSzUPopo9wQXw&s",
+              verified : trader.active || false,
             }
           })
         )
@@ -134,7 +136,7 @@ export default function Home() {
         </div>
 
         {/* Table Header Row */}
-        <div className="flex items-center justify-between gap-3 px-6 py-2 text-[13px] font-semibold text-zinc-500 border-b border-neutral-900">
+        <div className="flex items-center justify-between gap-3 px-6 py-2 text-[13px] font-semibold text-zinc-500">
           <div className="flex items-center gap-4">
             <span>Rank</span>
             <span>Trader</span>
@@ -181,10 +183,13 @@ export default function Home() {
                           </Avatar>
 
                           <div className="flex flex-col min-w-0">
-                            <span className="text-[15px] font-semibold leading-tight text-white truncate">
+                            <span className="text-[15px] font-semibold leading-tight text-white flex itmes-center gap-2">
                               {user.username}
+                              {user.verified && (
+              <img className="h-4" src="https://cdn-icons-png.magnific.com/256/18984/18984328.png?semt=ais_white_label" alt="logo" />
+              )}
                             </span>
-                            <span className="text-[14px] text-zinc-400 leading-tight mt-0.5 truncate">
+                            <span className="text-[14px] text-zinc-400 leading-tight mt-0.5 ">
                               {user.name}
                             </span>
                           </div>
