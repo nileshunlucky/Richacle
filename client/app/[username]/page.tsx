@@ -821,7 +821,6 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
       details={{
         prompt: "Trade Closed",
         amount: "",
-        leverage: "",
         odds: "",
         side: selectedTrade.side,
         qty: selectedTrade.qty,
