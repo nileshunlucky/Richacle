@@ -958,151 +958,7 @@ useEffect(() => {
   );
 });
 
-const TradeResultOverlay = ({ 
-  type, 
-  pnl,
-  pnlPercentage,
-  symbol, 
-  onClose,
-  details,
-  profile
-}: { 
-  type: 'WIN' | 'LOSS', 
-  pnl: string,
-  pnlPercentage: string,
-  symbol: string, 
-  onClose: () => void,
-  details: {
-    prompt: string,
-    amount: string,
-    leverage: string,
-    odds: string,
-    side: string,
-    entryPrice: string,
-    markPrice: string,
-  },
-  profile: {
-    avatarUrl: string,
-    username: string,
-    name: string,
-  }
-}) => {
-  const isWin = type === 'WIN';
-  
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-xl p-4 md:p-6"
-    >
-      <motion.div 
-        initial={{ scale: 0.95, y: 30, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        transition={{ type: "spring", damping: 25, stiffness: 150 }}
-        onClick={onClose}
-        className="relative cursor-pointer w-full max-w-[650px] overflow-hidden rounded-[24px] md:rounded-[32px] shadow-[0_32px_120px_-15px_rgba(0,0,0,0.8)]"
-        style={{
-          backgroundColor: '#000000',
-          backgroundImage: "radial-gradient(100% 90% at 50% 100%, #7A001B 0%, #4A0010 30%, #1A0508 60%, #000000 90%, transparent 100%)"
-        }}
-      >
-        <div className="relative z-10 p-5 flex flex-col items-center">
-          
-          {/* USER PROFILE ROW — NEW */}
-          <div className="w-full flex items-center gap-3">
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt={profile.name || profile.username || "User"}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white  font-semibold">
-                {(profile.name || profile.username || "U").charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="flex flex-col leading-tight">
-              <span className="text-white text-sm font-semibold">{profile.name || "Anonymous"}</span>
-              {profile.username && (
-                <span className="text-zinc-400 text-xs">@{profile.username}</span>
-              )}
-            </div>
 
-            
-          </div>
-          
-
-          {/* Main Content Container: Mobile Stack, Desktop Row */}
-          <div className="w-full flex flex-col md:flex-row items-stretch md:items-center overflow-hidden">
-            
-            {/* LEFT SIDE: Logo & Symbol/Side */}
-            <div className="md:mr-10 p-4 md:p-8 text-left space-y-3">
-              
-
-              <h4 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-white">
-                {symbol}
-              </h4>
-
-              <div className="flex gap-3 items-center text-sm font-semibold text-white">
-                <span>{details.side}</span>
-                <span className="tabular-nums font-bold text-white">{details.leverage}x</span>
-              </div>
-
-              
-              
-            </div>
-
-            
-
-            {/* Separator */}
-            <div className="h-px w-full md:h-40 md:w-px bg-white/10 my-2 md:my-0" />
-
-            {/* RIGHT SIDE: Trade Details */}
-            <div className="p-4 md:p-8 w-full md:w-64 text-left flex flex-col justify-center md:ml-5">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
-                    <span>Entry Price</span>
-                    <span className="tabular-nums font-semibold text-white">${details.entryPrice}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
-                    <span>Mark Price</span>
-                    <span className="tabular-nums font-semibold text-white">${details.markPrice}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
-                    <span>Odds</span>
-                    <span className="tabular-nums font-semibold text-white">{details.odds}%</span>
-                  </div>
-                </div>
-
-                <div className="h-px w-full bg-white/10 border-dashed border-zinc-600/20" />
-                
-                <div className="space-y-1">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="text-4xl md:text-5xl font-bold tracking-tighter tabular-nums text-[#CFA968]">
-                      {isWin ? '+' : '-'}${pnl}
-                    </div>
-                    <span className={cn(
-                      "text-sm font-semibold tabular-nums bg-[#CFA968] p-1 px-3 rounded text-black",
-                      
-                    )}>
-                      {isWin ? '+' : '-'}{pnlPercentage}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center justify-center gap-3 mb-6 md:mb-10 w-full ">
-                <img className="h-6 w-6 md:h-8 md:w-8 opacity-90" src="/logo.png" alt="logo"/>
-                <p className="text-xl md:text-2xl text-white font-medium theseason">RICHACLE</p>
-              </div>
-      </motion.div>
-    </motion.div>
-  );
-};
 function VibeTradingUIContent() {
 
   const searchParams = useSearchParams();
@@ -1231,7 +1087,9 @@ useEffect(() => {
     handleCloseOrder(activeSymbol);
 
     // 2. Toast Notify
-    if(!tpHit){
+    if(tpHit){
+      toast(`TAKE PROFIT HIT ${sl}`)
+    } else {
       toast.error(`STOP LOSS HIT ${sl}`)
     }
 
@@ -1833,22 +1691,6 @@ const handleClearMemory = async () => {
         </AnimatePresence>
 
       </div>
-        <AnimatePresence>
-      {tradeResult?.show && (
-  <TradeResultOverlay 
-    type={tradeResult.type}
-    pnl={tradeResult.pnl}
-    pnlPercentage={tradeResult.pnlPercentage}
-    symbol={activeSymbol}
-    details={tradeResult.details}
-    profile={tradeResult.profile}
-    onClose={() => {
-      setTradeResult(null);
-      handleReset();
-    }}
-  />
-)}
-    </AnimatePresence>
 
       <style dangerouslySetInnerHTML={{ __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
