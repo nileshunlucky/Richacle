@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, memo } from "react";
+import React, { useState, useEffect, useRef, memo, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Journal from "@/components/Journal";
@@ -1103,7 +1103,7 @@ const TradeResultOverlay = ({
     </motion.div>
   );
 };
-export default function VibeTradingUI() {
+function VibeTradingUIContent() {
 
   const searchParams = useSearchParams();
 
@@ -1857,5 +1857,13 @@ const handleClearMemory = async () => {
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       `}} />
     </div>
+  );
+}
+
+export default function VibeTradingUI() {
+  return (
+    <Suspense fallback={null}>
+      <VibeTradingUIContent />
+    </Suspense>
   );
 }
