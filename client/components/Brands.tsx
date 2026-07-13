@@ -48,7 +48,7 @@ const icons = {
   ),
 }
 
-const brands = [
+const brands: (keyof typeof icons)[] = [
   "Stripe",
   "OpenAI",
   "Claude",
