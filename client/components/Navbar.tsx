@@ -206,7 +206,7 @@ const toggleMobileTip = () => {
                     onClick={() => setIsModalOpen(true)}
                     className="flex cursor-pointer items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"
                   >
-                    Broker
+                    Binance
                   </button></li>
            <li>$ {new Intl.NumberFormat("en-US", {
     minimumFractionDigits: 2,

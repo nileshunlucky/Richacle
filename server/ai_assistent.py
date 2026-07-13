@@ -188,7 +188,7 @@ async def execute_trade(
     is_demo = binance_data.get("demo", False)
 
     if not api_key or not encrypted_secret:
-        raise HTTPException(status_code=400, detail="Binance API keys missing.")
+        raise HTTPException(status_code=400, detail="Connect your Binance.")
 
     # Decrypt the secret
     try:

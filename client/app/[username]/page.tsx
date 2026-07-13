@@ -232,7 +232,7 @@ if (tradeLogData.status === "success") {
 
         const fetchedAvatar =
           apiData.avatar ||
-          "https://upload.wikimedia.org/wikipedia/commons/0/0e/Elon_Musk_%2854816836217%29_%28cropped_2%29_%28b%29.jpg";
+          "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQAgvAlI9O_F3MJZ9WdUONOZZSzUPopo9wQXw&s";
 
         setUser({
           name: apiData.name || "",
@@ -665,7 +665,7 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
               )}
             </span>
 
-            <Ellipsis className="text-white" size={20} />
+            <div></div>
           </motion.div>
 
           {/* Avatar + Stats row */}
@@ -770,7 +770,7 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
   variants={staggerContainer}
   initial="initial"
   animate="animate"
-  className="px-1 pt-8 mb-10"
+  className="px-1 pt-8 "
 >
 
   {trades.length === 0 ? (
@@ -788,7 +788,7 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
               <div className="flex flex-col">
                 <span className="text-white text-[13px] font-semibold">{trade.symbol}</span>
                 <span className="text-zinc-500 text-[11px]">
-                {trade.side}  {trade.qty} lot at 
+                {trade.side}  {trade.qty} • 
                     ${trade.entryPrice.toLocaleString()}
                 </span>
               </div>

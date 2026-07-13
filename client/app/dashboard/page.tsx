@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef, memo, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import Menu from "@/components/Menu"
+
 import Journal from "@/components/Journal";
 import { 
   ArrowUp, 
@@ -468,8 +470,8 @@ return () => {
     : "https://fapi.binance.com/fapi/v1";
   
   const wsBase = isDemo 
-    ? "stream.binancefuture.com" 
-    : "fstream.binance.com";
+  ? "stream.binancefuture.com/market" 
+  : "fstream.binance.com/market";
 
   type BinanceKline = [number, string, string, string, string, string, number, string, number, string, string, string];
 
@@ -1007,11 +1009,10 @@ const [tradeStatusText, setTradeStatusText] = useState<string | null>(null);
 
 const models = [
   { id: "claude-fable-5", name: "Claude Fable 5" },
-  { id: "claude-4.8", name: "Claude Opus 4.8" },
-  { id: "gpt-5.4", name: "GPT 5.4" },
+  { id: "GPT-5.6-Sol", name: "GPT-5.6 Sol" },
   { id: "gemini-3.1", name: "Gemini 3.1 Pro" },
-  { id: "grok-4.2", name: "Grok 4.2" },
-  { id: "deepseek-v3.2", name: "Deepseek-V3.2" },
+  { id: "grok-4.5", name: "Grok 4.5" },
+  { id: "deepseek-v3.2", name: "Deepseek V3.2" },
 ]
 
   useEffect(() => {
@@ -1535,13 +1536,17 @@ const handleClearMemory = async () => {
 
 <h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right"><Plus size={20}/></h1>
 
-{showAgent && <button 
-  onClick={() => setShowAgent(false)}
-  className="cursor-pointer relative group md:hidden"
->
-<X size={20}/>
-</button>}
+<button onClick={() => setShowJournal(true)} className="cursor-pointer md:flex hidden text-white/40 hover:text-white/70 transition-colors">
+        <Calendar size={23} />
+      </button>
+      <AnimatePresence>
+        {showJournal && (
+          <Journal email={email} onClose={() => setShowJournal(false)} />
+        )}
+      </AnimatePresence>
 </div>
+
+
 
 {messages.length === 0 && (
   <div className="w-full justify-center items-center flex h-full">
@@ -1718,6 +1723,7 @@ export default function VibeTradingUI() {
   return (
     <Suspense fallback={null}>
       <VibeTradingUIContent />
+         <Menu/>
     </Suspense>
   );
 }

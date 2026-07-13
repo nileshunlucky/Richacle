@@ -30,7 +30,8 @@ export default function Navbar() {
     <nav className="z-50 flex w-full flex-col items-center justify-between px-8 py-6 md:max-w-7xl md:mx-auto">
       <div className="flex items-center justify-between w-full">
         
-        <Link href="/">
+        <Link href="/" className="flex items-center gap-1">
+        <img className="h-8" src="/logo.png"/>
           <h1 className="text-2xl theseason">RICHACLE</h1>
         </Link>
 

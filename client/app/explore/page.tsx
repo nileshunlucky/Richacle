@@ -5,6 +5,7 @@ import { Search, X, Loader2 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Link from "next/link"
+import Menu from "@/components/Menu"
 
 // Define the structural type of a real user from your API
 interface TraderUser {
@@ -218,6 +219,7 @@ export default function Home() {
         </div>
 
       </div>
+      <Menu/>
     </div>
   )
 }

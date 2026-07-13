@@ -82,7 +82,7 @@ def save_referral(email: str = Form(...)):
         "email": email,
         "name": name,
         "username": username,
-        "credits": 20,
+        "credits": 10,
     }
 
     users_collection.insert_one(user_data)
