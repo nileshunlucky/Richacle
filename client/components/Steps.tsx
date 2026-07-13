@@ -131,18 +131,18 @@ function SearchAnimationCard() {
   const [phase, setPhase] = useState("typing")
   const [typedLen, setTypedLen] = useState(0)
   const [activeStep, setActiveStep] = useState(-1) // index of step currently "active"
-  const [doneSteps, setDoneSteps] = useState([]) // indices fully resolved
-  const timers = useRef([])
+  const [doneSteps, setDoneSteps] = useState<number[]>([])
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const clearTimers = () => {
     timers.current.forEach((t) => clearTimeout(t))
     timers.current = []
   }
-  const after = (ms, fn) => {
-    const id = setTimeout(fn, ms)
-    timers.current.push(id)
-    return id
-  }
+const after = (ms: number, fn: () => void) => {
+  const id = setTimeout(fn, ms)
+  timers.current.push(id)
+  return id
+}
 
   useEffect(() => {
     clearTimers()
@@ -280,7 +280,7 @@ function PredictedTradeCard() {
   const tp = 66850
   const sl = 63500
 
-  const [amount, setAmount] = useState(100000) 
+  const [amount, setAmount] = useState<number | string>(100000)
 
    const formatUSD = (value: string | number) => {
     if (!value && value !== 0) return ""
@@ -387,12 +387,12 @@ function PredictedTradeCard() {
               <div className="relative h-[3px] rounded-full bg-white/15 mx-1">
                 <div
                   className="absolute left-0 top-0 h-full rounded-full bg-white transition-all"
-                  style={{ width: `${((parseInt(leverage) - 1) / 124) * 100}%` }}
+                  style={{ width: `${((leverage - 1) / 124) * 100}%` }}
                 />
                 {/* Thumb dot */}
                 <div
                   className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-black shadow transition-all"
-                  style={{ left: `${((parseInt(leverage) - 1) / 124) * 100}%` }}
+                  style={{ left: `${((leverage - 1) / 124) * 100}%` }}
                 />
                 {/* Tick dots */}
                 {[1, 25, 50, 75, 100, 125].map((v) => (
@@ -409,7 +409,7 @@ function PredictedTradeCard() {
 
               {/* Invisible range input */}
               <input
-               readonly
+               readOnly
                 type="range"
                 min={1}
                 max={125}
