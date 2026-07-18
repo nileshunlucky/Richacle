@@ -296,6 +296,7 @@ function FakeTradeChat() {
   const [capturedEntry, setCapturedEntry] = useState<number | null>(null)
   const [pnl, setPnl] = useState(0)
   const [showMobileTip, setShowMobileTip] = useState(false)
+  const [showModeMenu, setShowModeMenu] = useState(false)
 
   const toggleMobileTip = () => setShowMobileTip((v) => !v)
 
@@ -318,7 +319,7 @@ function FakeTradeChat() {
 
     // fake canned reply, no real request is made
     setTimeout(() => {
-      const isTradeCmd = /\/trade/i.test(text)
+   const isTradeCmd = /\/(scalp-trade|swing-trade|day-trade)/i.test(text)
       setExtraMessages((prev) => [
         ...prev,
         {
@@ -389,8 +390,8 @@ function FakeTradeChat() {
     <div className="flex-1 overflow-y-auto p-3 space-y-3 text-[12px]">
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex justify-end">
         <div className="max-w-[85%] bg-zinc-900 text-white px-3 py-2 rounded-lg rounded-tr-none">
-          /trade on Bitcoin.
-        </div>
+  <span className="bg-blue-950/60 text-blue-300 rounded px-1">/scalp-trade</span> on Bitcoin.
+</div>
       </motion.div>
 
       <motion.div
@@ -694,17 +695,17 @@ function FakeTradeChat() {
               className="absolute inset-0 w-full text-[13px] px-0 py-0 whitespace-pre-wrap break-words pointer-events-none"
               style={{ fontFamily: "inherit", lineHeight: "inherit" }}
             >
-              {prompt.split(/(\/trade)/gi).map((part, i) =>
-                part.toLowerCase() === "/trade" ? (
-                  <span key={i} className="text-blue-500">
-                    {part}
-                  </span>
-                ) : (
-                  <span key={i} className="text-white">
-                    {part}
-                  </span>
-                )
-              )}
+            {prompt.split(/(\/scalp-trade|\/swing-trade|\/day-trade)/gi).map((part, i) =>
+  /^\/(scalp-trade|swing-trade|day-trade)$/i.test(part) ? (
+    <span key={i} className="bg-blue-950/60 text-blue-300 rounded">
+      {part}
+    </span>
+  ) : (
+    <span key={i} className="text-white">
+      {part}
+    </span>
+  )
+)}
               {/* trailing space so caret has room to sit after last char */}
               {prompt.length === 0 && <span className="text-white/50">Ask Richacle</span>}
             </div>
@@ -722,14 +723,33 @@ function FakeTradeChat() {
           </div>
           <div className="flex justify-between items-center mt-auto">
             <div className="flex items-center gap-2">
-              <Plus
-                size={28}
-                onClick={() => {
-                  setPrompt((prev) => (prev ? `${prev} /trade ` : "/trade "))
-                  textareaRef.current?.focus()
-                }}
-                className="hover:bg-zinc-900 p-1.5 rounded-full cursor-pointer text-white/70"
-              />
+              <div className="relative">
+  <Plus
+    size={28}
+    onClick={() => setShowModeMenu((v) => !v)}
+    className="hover:bg-zinc-900 p-1.5 rounded-full cursor-pointer text-white/70"
+  />
+  {showModeMenu && (
+    <>
+      <div className="fixed inset-0 z-40" onClick={() => setShowModeMenu(false)} />
+      <div className="absolute bottom-10 p-1 left-0 bg-[#141414]  rounded-lg overflow-hidden z-50 min-w-[150px] shadow-xl">
+        {["scalp-trade", "swing-trade", "day-trade"].map((mode) => (
+          <button
+            key={mode}
+            onClick={() => {
+              setPrompt((prev) => (prev ? `${prev} /${mode} ` : `/${mode} `))
+              setShowModeMenu(false)
+              textareaRef.current?.focus()
+            }}
+            className="block w-full text-left px-3 rounded-lg py-2 text-xs hover:bg-zinc-800 transition-colors cursor-pointer"
+          >
+            /{mode}
+          </button>
+        ))}
+      </div>
+    </>
+  )}
+</div>
 
               <Select value={selectedModel} onValueChange={setSelectedModel}>
                 <SelectTrigger className="border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70 hover:text-white transition-colors cursor-pointer outline-none">
@@ -841,7 +861,7 @@ export default function Hero() {
             <div className="w-12" />
           </div>
 
-          {/* fake live prediction/trade demo */}
+      
           <FakeTradeDemo />
         </div>
       </section>
