@@ -67,7 +67,7 @@ interface TradeLines {
 interface AdvancedChartProps {
   tradeLines: TradeLines | null;
   onPriceUpdate: (price: string) => void;
-  symbol?: string;S
+  symbol?: string;
   isDemo?: boolean;
   isFakeData?: boolean;       
   fakeStartPrice?: number;  
