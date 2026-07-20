@@ -27,6 +27,14 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
+interface NavbarProps {
+  fakePnl?: number | null;
+  onSetFakePnl?: (amount: number) => void;
+  plannedOutcome?: "tp" | "sl";
+  onSetPlannedOutcome?: (outcome: "tp" | "sl") => void;
+}
+
+
 const avatarVariants = {
   initial: { opacity: 0, scale: 0.88 },
   animate: {
@@ -36,7 +44,10 @@ const avatarVariants = {
   },
 };
 
-export default function Navbar() {
+const cn = (...classes: (string | boolean | undefined | null)[]) => 
+  classes.filter(Boolean).join(" ");
+
+export default function Navbar({ fakePnl, onSetFakePnl, plannedOutcome, onSetPlannedOutcome  }: NavbarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -50,6 +61,8 @@ export default function Navbar() {
   const [totalPnl, setTotalPnl] = useState(0)
 const [strategiesPerf, setStrategiesPerf] = useState(0)
  const [showMobileTip, setShowMobileTip] = useState(false);
+ const [showCustomizePanel, setShowCustomizePanel] = useState(false);
+  const [customAmount, setCustomAmount] = useState("");
 
     // Fetch user session
   useEffect(() => {
@@ -62,6 +75,7 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
 
   useEffect(() => {
   if (!email) return;
+
 
   const fetchBinance = async () => {
     try {
@@ -124,6 +138,8 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
   useEffect(() => {
   if (!email) return;
 
+  if (fakePnl != null) return;
+
   const fetchData = async () => {
     try {
       if (apiKey && apiSecret) {
@@ -150,7 +166,9 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
   };
 
   fetchData(); 
-}, [email, apiKey, apiSecret]);
+}, [email, apiKey, apiSecret, fakePnl]);
+
+  const displayedPnl = fakePnl != null ? fakePnl : totalPnl;
 
 const toggleMobileTip = () => {
     // Only show tooltip on small screens
@@ -190,7 +208,6 @@ const toggleMobileTip = () => {
 
 
   return (
-    // Set to absolute and top-0 so it doesn't push the Dashboard content down
     <nav className="w-full bg-black">
       <div>
         {/* Changed bg-black to bg-transparent */}
@@ -200,22 +217,91 @@ const toggleMobileTip = () => {
             <img src="/logo.png" alt="Logo" className="h-7 w-7 object-cover" />
           </Link>
 
-           <ul className="flex gap-5 items-center text-sm font-semibold">
+          <div className="relative">
+  <div 
+    onClick={() => fakePnl != null && setShowCustomizePanel(v => !v)}
+    className={fakePnl != null ? "cursor-pointer" : ""}
+  >
+    $ {new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(displayedPnl)}
+  </div>
+
+{fakePnl != null && (
+  <AnimatePresence>
+    {showCustomizePanel && (
+      <>
+        {/* click-away layer */}
+        <div className="fixed inset-0 z-40" onClick={() => setShowCustomizePanel(false)} />
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 w-56 bg-zinc-950 border border-white/10 rounded-xl p-3 shadow-2xl"
+        >
+<div className="flex gap-2 mt-1">
+  <input
+    type="text"
+    inputMode="decimal"
+    value={customAmount}
+    onChange={(e) => setCustomAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+    placeholder="$10,000"
+    className="flex-1 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-white/30"
+  />
+  <button
+    onClick={() => {
+      const amt = parseFloat(customAmount);
+      if (!isNaN(amt)) onSetFakePnl?.(amt);
+      setCustomAmount("");
+    }}
+    className="flex-1 bg-zinc-100 text-zinc-950 px-3 rounded-lg text-xs font-semibold hover:bg-white cursor-pointer"
+  >
+    Set
+  </button>
+</div>
+
+<div className="flex gap-2 mt-1">
+  <button
+    onClick={() => onSetPlannedOutcome?.("tp")}
+    className={cn(
+      "flex-1 px-2 py-1.5 rounded-lg text-xs font-semibold cursor-pointer border transition-colors",
+      plannedOutcome === "tp" 
+        ? "bg-green-700/30 text-green-300 border-green-600" 
+        : "bg-transparent text-zinc-500 border-white/10 hover:border-white/20"
+    )}
+  >
+    TP
+  </button>
+  <button
+    onClick={() => onSetPlannedOutcome?.("sl")}
+    className={cn(
+      "flex-1 px-2 py-1.5 rounded-lg text-xs font-semibold cursor-pointer border transition-colors",
+      plannedOutcome === "sl" 
+        ? "bg-red-700/30 text-red-300 border-red-600" 
+        : "bg-transparent text-zinc-500 border-white/10 hover:border-white/20"
+    )}
+  >
+    SL
+  </button>
+</div>
+        </motion.div>
+      </>
+    )}
+  </AnimatePresence>
+  )}
+</div>
+
+           <ul className="flex md:gap-5 items-center text-sm font-semibold">
             <Link href="/explore"><li><Search className="hidden md:flex cursor-pointer font-bold" size={20} /></li></Link>
            <li> <button 
                     onClick={() => setIsModalOpen(true)}
-                    className="flex cursor-pointer items-center gap-2 text-xs text-zinc-200 hover:text-white transition-colors"
+                    className="flex cursor-pointer items-center text-xs text-zinc-200 hover:text-white transition-colors"
                   >
-                    Binance
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="#FFFFFF" width="25" height="25">
+  <path d="M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z"/>
+</svg>
                   </button></li>
-           <li>$ {new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(totalPnl)}</li>
-           <li>${new Intl.NumberFormat("en-US", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(strategiesPerf)}</li>
 
   <li>
   <Link href={`/${username || "dashboard"}`}> <div className="hidden md:flex justify-center  pb-0 cursor-pointer">

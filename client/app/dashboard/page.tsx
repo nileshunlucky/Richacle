@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, memo, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Menu from "@/components/Menu"
+import Navbar from "@/components/Navbar"
 
 import Journal from "@/components/Journal";
 import { 
@@ -60,12 +61,13 @@ interface TradeLines {
   side: string;
   amount?: number;    // add this
   leverage?: number;  // add this
+  startTime?: number;
 }
 
 interface AdvancedChartProps {
   tradeLines: TradeLines | null;
   onPriceUpdate: (price: string) => void;
-  symbol?: string;
+  symbol?: string;S
   isDemo?: boolean;
   isFakeData?: boolean;       
   fakeStartPrice?: number;  
@@ -136,29 +138,26 @@ function generateFakeCandles(count: number, startPrice: number, intervalSecs: nu
   return data;
 }
 
-// Generates a random walk from `start` to `target` over `steps` candles,
-// guaranteed to land exactly on target, with natural up/down movement in between.
-function generateBridgePath(start: number, target: number, steps: number, volatility = 2.8) {
+function generateBridgePath(start: number, target: number, steps: number, volatility = 2.4) {
   const path: number[] = [start];
   const totalMove = target - start;
   const avgStep = totalMove / steps;
 
-  // Raw random walk (unconstrained)
   const rawWalk: number[] = [0];
   for (let i = 1; i <= steps; i++) {
-    const noise = (Math.random() - 0.5) * Math.abs(avgStep) * volatility * 4;
+    const taper = i > steps - 2 ? 0.6 : 1; // was 0.3 over last 3 — too flat; now 0.6 over last 2
+    const noise = (Math.random() - 0.5) * Math.abs(avgStep) * volatility * 4 * taper;
     rawWalk.push(rawWalk[i - 1] + noise);
   }
 
-  // Bridge correction: force rawWalk to end at 0, so we can add the linear trend after
   const endValue = rawWalk[steps];
   for (let i = 0; i <= steps; i++) {
     const t = i / steps;
-    const corrected = rawWalk[i] - t * endValue; // pulls the random walk back to 0 at the end
+    const corrected = rawWalk[i] - t * endValue;
     path[i] = start + totalMove * t + corrected;
   }
 
-  path[steps] = target; // force exact landing, no floating point drift
+  path[steps] = target;
   return path;
 }
 
@@ -169,6 +168,10 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
   const tpFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
   const slFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
 
+  const currentChartTimeRef = useRef<number>(Math.floor(Date.now() / 1000));
+const tradeOpenTimeRef = useRef<number | null>(null);
+const hadTradeLinesRef = useRef(false);
+
   const pathRef = useRef<number[] | null>(null);
 const pathIndexRef = useRef(0);
 const candleDurationMsRef = useRef(2000);
@@ -177,6 +180,7 @@ const candleDurationMsRef = useRef(2000);
 const demoTargetRef = useRef<number | null>(null);
 const demoStartRef = useRef<{ price: number; time: number } | null>(null);
 const demoDurationRef = useRef<number>(15);
+const idleAnchorRef = useRef<number>(fakeStartPrice);
   
 
   const container = useRef<HTMLDivElement>(null);
@@ -230,21 +234,18 @@ topFillColor2: isBuy ? 'rgba(0, 230, 118, 0.20)' : 'rgba(0,0,0,0)',
       crosshairMarkerVisible: false,
     });
 
-    const candleData = (seriesRef.current.data() as any);
-    if (candleData.length > 0) {
-      const intervalMap: Record<string, number> = {
+    const intervalMap: Record<string, number> = {
   "1m": 60, "5m": 300, "15m": 900,
   "1h": 3600, "4h": 14400, "1d": 86400
 };
 const intervalSecs = intervalMap[interval] || 900;
-const candleData = seriesRef.current.data() as any[];
-const lastRealCandle = candleData.filter((c: any) => c.time <= Math.floor(Date.now() / 1000)).pop();
-const startTime = (lastRealCandle?.time || Math.floor(Date.now() / 1000)) as LightweightCharts.UTCTimestamp;
+
+// use the chart's own virtual clock, not the parent's real-time timestamp
+const startTime = (tradeOpenTimeRef.current ?? currentChartTimeRef.current) as LightweightCharts.UTCTimestamp;
 const endTime = (startTime + intervalSecs * futureCandlesBox) as LightweightCharts.UTCTimestamp;
 
 tpFillRef.current.setData([{ time: startTime, value: tp }, { time: endTime, value: tp }]);
 slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, value: sl }]);
-    }
 
     const eLine = seriesRef.current.createPriceLine({ 
       price: entry, color: isBuy ? '#1e3a8a' : '#FF1744', 
@@ -301,9 +302,8 @@ useEffect(() => {
     demoTargetRef.current = demoTargetPrice;
     demoStartRef.current = { price: simPriceRef.current, time: Date.now() };
 
-    // Pre-plan the whole candle path right now — guarantees natural red/green mix
-    const steps = 15; // matches desiredCandleCount below — keep these equal
-    pathRef.current = generateBridgePath(simPriceRef.current, demoTargetPrice, steps, 2.8);
+    const steps = 14; // fewer, chunkier candles (was 40)
+    pathRef.current = generateBridgePath(simPriceRef.current, demoTargetPrice, steps, 2.4); // more volatility per step
     pathIndexRef.current = 0;
     candleDurationMsRef.current = (demoDurationSecs * 1000) / steps;
   } else {
@@ -369,10 +369,11 @@ simPriceRef.current = simPrice;
 let simTime = lastCandle.time as number;
 let candleOpen = simPrice;
 let historicalData = data.slice(0, -1);
-const desiredCandleCount = 60;
+const desiredCandleCount = 14;
 
 const fakeTimer = window.setInterval(() => {
   if (!isCurrent || !seriesRef.current) return;
+   currentChartTimeRef.current = simTime; 
 
   const path = pathRef.current;
 
@@ -385,12 +386,13 @@ const fakeTimer = window.setInterval(() => {
     const elapsedInCandle = Date.now() - (demoStartRef.current!.time + idx * candleDurationMsRef.current);
     const progressInCandle = Math.min(elapsedInCandle / candleDurationMsRef.current, 1);
 
-    const wickJitter = (Math.random() - 0.5) * Math.abs(to - from) * 0.15;
+    const wickJitter = (Math.random() - 0.5) * Math.abs(to - from) * 0.12;
     simPrice = from + (to - from) * progressInCandle + wickJitter;
   } else {
-    // NORMAL MODE: pure random walk (unchanged)
-    const move = (Math.random() - 0.48) * simPrice * 0.0015;
-    simPrice = Math.max(simPrice + move, 0.01);
+    idleAnchorRef.current += (simPrice - idleAnchorRef.current) * 0.001; // anchor slowly tracks price
+  const noise = (Math.random() - 0.5) * simPrice * 0.0003;
+  const pullToAnchor = (idleAnchorRef.current - simPrice) * 0.0006;
+  simPrice = Math.max(simPrice + noise + pullToAnchor, 0.01);
   }
 
   simPriceRef.current = simPrice;
@@ -513,6 +515,7 @@ seriesRef.current.setData([...data, ...futureCandles]);
         if (!isCurrent) return; // Ignore if component updated
         
         const k = JSON.parse(event.data).k;
+        currentChartTimeRef.current = k.t / 1000; 
         if (onPriceUpdate) onPriceUpdate(parseFloat(k.c).toFixed(2));
         setLivePrice(parseFloat(k.c));
         
@@ -549,6 +552,17 @@ seriesRef.current.update({
     }
   };
 }, [isChartReady, symbol, interval, isDemo, isFakeData, fakeStartPrice]);
+
+useEffect(() => {
+  if (tradeLines && !hadTradeLinesRef.current) {
+    tradeOpenTimeRef.current = currentChartTimeRef.current;
+  }
+  if (!tradeLines) {
+    tradeOpenTimeRef.current = null;
+    idleAnchorRef.current = simPriceRef.current; // ← anchor resets to current price, no snap-back
+  }
+  hadTradeLinesRef.current = !!tradeLines;
+}, [tradeLines]);
 
   useEffect(() => {
     if (isChartReady) updateVisuals(tradeLines);
@@ -950,12 +964,12 @@ const buildDisplayTradeData = (raw: any, fakeEntry: number, isFake: boolean) => 
 
   if (!realEntry || !realTp || !realSl || !fakeEntry) return raw;
 
-  // Clamp risk % to a believable range (e.g. 0.4% – 2% of entry)
+  // Realistic 15m intraday risk: 0.05% – 0.3% of entry
   let riskPct = Math.abs(realEntry - realSl) / realEntry;
-  riskPct = Math.min(Math.max(riskPct, 0.004), 0.02);
+  riskPct = Math.min(Math.max(riskPct, 0.0005), 0.003);
 
   const slDistance = fakeEntry * riskPct;
-  const tpDistance = slDistance * 3; // 1:3 risk:reward
+  const tpDistance = slDistance * 1.5; // 1:1.5 reward, tighter than before
 
   const tp = isBuy ? fakeEntry + tpDistance : fakeEntry - tpDistance;
   const sl = isBuy ? fakeEntry - slDistance : fakeEntry + slDistance;
@@ -1006,8 +1020,10 @@ const [userProfile, setUserProfile] = useState({
   name: "",
 });
 const [tradeStatusText, setTradeStatusText] = useState<string | null>(null);
-
+const [fakeTotalPnl, setFakeTotalPnl] = useState(10000);
 const [showModeMenu, setShowModeMenu] = useState(false);
+const [activeTradeWidgetIndex, setActiveTradeWidgetIndex] = useState<number | null>(null);
+const [plannedOutcome, setPlannedOutcome] = useState<"tp" | "sl">("tp");
 
 const insertMode = (mode: string) => {
   setPrompt(prev => prev ? `${prev} /${mode} ` : `/${mode} `);
@@ -1050,9 +1066,9 @@ useEffect(() => {
   const slHit = isBuy ? price <= sl : price >= sl;
 
   if (tpHit || slHit) {
-    hasClosedRef.current = true; // lock immediately so it can't fire again
-
-    handleCloseOrder(activeSymbol);
+    hasClosedRef.current = true; 
+    const exactExitPrice = tpHit ? tp : sl; 
+    handleCloseOrder(activeSymbol, exactExitPrice);
 
     if (tpHit) {
       toast(`TAKE PROFIT HIT ${sl}`);
@@ -1070,33 +1086,6 @@ useEffect(() => {
     };
     getUser();
   }, []);
-
-  useEffect(() => {
-  if (!isExecuted || !activeLines || !currentPrice) return;
-
-  const price = parseFloat(currentPrice);
-  const { tp, sl, side } = activeLines;
-  const isBuy = side.toUpperCase() === "BUY";
-
-  // Check if TP hit
-  const tpHit = isBuy ? price >= tp : price <= tp;
-  // Check if SL hit
-  const slHit = isBuy ? price <= sl : price >= sl;
-
-  if (tpHit || slHit) {
-    
-    // 1. Call your Close API to clean up any remaining orphaned TP/SL orders on Binance
-    handleCloseOrder(activeSymbol);
-
-    // 2. Toast Notify
-    if(tpHit){
-      toast(`TAKE PROFIT HIT ${sl}`)
-    } else {
-      toast.error(`STOP LOSS HIT ${sl}`)
-    }
-
-  }
-}, [currentPrice, isExecuted, activeLines, activeSymbol]);
 
   
  useEffect(() => {
@@ -1133,10 +1122,16 @@ const handleAccept = async (tradeParams: TradeParams) => {
 
   if (isFakeData) {
     await new Promise(res => setTimeout(res, 600));
+    const amount = parseFloat(tradeParams.amount);
+  setFakeTotalPnl(prev => prev - amount); 
+
     setConfirmedEntryPrice(tradeParams.entry);
     setIsExecuted(true);
     setIsPositionClosed(false);
-    setDemoTargetPrice(parseFloat(tradeParams.tp));
+     const target = plannedOutcome === "tp" 
+    ? parseFloat(tradeParams.tp) 
+    : parseFloat(tradeParams.sl);
+  setDemoTargetPrice(target);
     setMessages(prev => [
       ...prev,
       {
@@ -1147,14 +1142,19 @@ const handleAccept = async (tradeParams: TradeParams) => {
               Order placed
             </div>
             {!isPositionClosed && (
-          <button 
-            className={cn(
-              "mt-1 self-start px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer bg-white text-black"
-            )}
-          >
-            Close position
-          </button>
-        )}
+  <button 
+    onClick={() => handleCloseOrder(tradeParams.symbol)}
+    disabled={isClosing}
+    className={cn(
+      "mt-1 self-start px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
+      isClosing 
+        ? "opacity-40 cursor-not-allowed bg-white text-black" 
+        : "cursor-pointer bg-white text-black"
+    )}
+  >
+    {isClosing ? "Closing" : "Close position"}
+  </button>
+)}
           </motion.div>
         )
       }
@@ -1251,10 +1251,19 @@ const handleReset = () => {
   setDemoTargetPrice(null);
 };
 
+const calcRealizedPnl = (exitPrice: number) => {
+  if (!activeTradeParams) return 0;
+  const entry = parseFloat(activeTradeParams.entry);
+  const amount = parseFloat(activeTradeParams.amount);
+  const leverage = parseFloat(activeTradeParams.leverage);
+  const isBuy = String(activeTradeParams.side).toUpperCase() === "BUY";
+  const move = isBuy ? (exitPrice - entry) / entry : (entry - exitPrice) / entry;
+  return amount * leverage * move;
+};
 
   // Inside VibeTradingUI component
-const handleCloseOrder = async (symbol: string) => {
-  if(isPositionClosed){
+const handleCloseOrder = async (symbol: string , exitPriceOverride?: number) => {
+  if(isPositionClosed || isClosing){
     setMessages(prev => [
       ...prev,
       {
@@ -1273,6 +1282,11 @@ const handleCloseOrder = async (symbol: string) => {
   if (isFakeData) {
     await new Promise(res => setTimeout(res, 500)); // small fake delay for realism
 
+    const exitPrice = exitPriceOverride ?? parseFloat(currentPrice || "0");
+    const pnl = calcRealizedPnl(exitPrice);
+    const amount = parseFloat(activeTradeParams?.amount || "0");
+    setFakeTotalPnl(prev => prev + amount + pnl); 
+
     setIsPositionClosed(true);
     setMessages(prev => [
       ...prev,
@@ -1288,6 +1302,12 @@ const handleCloseOrder = async (symbol: string) => {
 
     setIsWidgetActive(false);
     setActiveLines(null);
+    setIsExecuted(false);        // ← add this
+    setDemoTargetPrice(null);    // ← add this
+    setConfirmedEntryPrice(null);// ← add this
+    hasClosedRef.current = false;
+    setIsPositionClosed(false);   // ← add here
+    setIsRejected(false);
     setIsClosing(false);
     return;
   }
@@ -1324,6 +1344,12 @@ const handleCloseOrder = async (symbol: string) => {
 
     setIsWidgetActive(false);
     setActiveLines(null);
+    setIsExecuted(false);         // ← add this too, for the real path
+    setDemoTargetPrice(null);     // ← add this
+    setConfirmedEntryPrice(null); // ← add this
+    hasClosedRef.current = false;
+    setIsPositionClosed(false);   // ← add here
+    setIsRejected(false);
 
   } catch (error) {
     console.error("Close Error:", error);
@@ -1437,10 +1463,12 @@ if (wants_to_trade && trade_data) {
       tp: parseFloat(displayTradeData.take_profit),
       sl: parseFloat(displayTradeData.stop_loss),
       side: displayTradeData.side,
+       startTime: Math.floor(Date.now() / 1000),
     });
   }
 
-  setMessages(prev => [
+   setMessages(prev => {
+   const newMessages = [
     ...prev,
     {
       role: "ai",
@@ -1464,8 +1492,13 @@ if (wants_to_trade && trade_data) {
         />
       ),
     },
-  ]);
+  ];
+  setActiveTradeWidgetIndex(newMessages.length - 1);
+  return newMessages;
+});
 }
+
+
 
   } catch (error) {
     console.error("Error:", error);
@@ -1494,7 +1527,16 @@ const handleClearMemory = async () => {
   }
 };
 
+
+
   return (
+    <>
+       <Navbar 
+  fakePnl={isFakeData ? fakeTotalPnl : null}
+  onSetFakePnl={(amount) => setFakeTotalPnl(amount)}
+  plannedOutcome={plannedOutcome}
+  onSetPlannedOutcome={setPlannedOutcome}
+/>
     <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
     {showPricing && (
   <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
@@ -1512,17 +1554,6 @@ const handleClearMemory = async () => {
 
       {/* LEFT SIDE: 70% (Exactly as you wanted it) */}
       <div className="flex-[7] flex flex-col min-w-0 relative">
-<div className="hidden md:absolute md:block bg-black p-3 text-white text-2xl theseason rounded-xl left-2 bottom-5 z-50 cursor-pointer">
-  RICHACLE
-</div>
-
-
-
-{!showAgent && (
-  <div className="absolute block md:hidden bg-black p-3 text-white text-xl theseason rounded-xl left-0 bottom-5 z-50 cursor-pointer">
-    RICHACLE
-  </div>
-)}
 
         <AdvancedChart isDemo={isDemo}  isFakeData={isFakeData}
   fakeStartPrice={65000} demoTargetPrice={demoTargetPrice}
@@ -1592,7 +1623,9 @@ const handleClearMemory = async () => {
                   
 {React.isValidElement(msg.content) && msg.content.type === TradeWidget 
   ? React.cloneElement(msg.content as React.ReactElement<TradeWidgetProps>, { 
-      disabled: isTrading || isExecuted || isRejected, 
+      disabled: i === activeTradeWidgetIndex 
+        ? (isTrading || isExecuted || isRejected || !isWidgetActive) 
+        : true,   
       onAccept: handleAccept, 
       price: isExecuted && confirmedEntryPrice 
              ? confirmedEntryPrice.toString() 
@@ -1743,6 +1776,7 @@ const handleClearMemory = async () => {
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       `}} />
     </div>
+    </>
   );
 }
 
