@@ -1468,7 +1468,7 @@ if (wants_to_trade && trade_data) {
   }
 
    setMessages(prev => {
-   const newMessages = [
+   const newMessages : Message[] = [
     ...prev,
     {
       role: "ai",
