@@ -26,7 +26,34 @@ import { Input } from "@/components/ui/input";
  * same as the previous version.
  */
 
-const DEFAULT_DATA = {
+interface TradingSignalData {
+  winRate: number;
+  name: string;
+  expiry: string;
+  series: number[];
+}
+
+interface MarkerData {
+  key: "tp" | "cur" | "sl";
+  price: string;
+  setPrice: (price: string) => void;
+  topPct?: number;
+}
+
+interface SparklineProps {
+  series: number[];
+  markers: MarkerData[];
+  direction: "long" | "short";
+}
+
+interface PriceMarkerProps {
+  topPct: number;
+  variant: "tp" | "cur" | "sl";
+  price: string;
+  setPrice: (price: string) => void;
+}
+
+const DEFAULT_DATA: TradingSignalData = {
   winRate: 79,
   name: "Claude Fable 5",
   expiry: "EXP 25 JUL 2026",
@@ -44,7 +71,7 @@ const ACCENT = {
 const ghostInput =
   "!bg-transparent !border-none !outline-none !ring-0 !shadow-none p-0 h-auto";
 
-function Sparkline({ series, markers, direction }) {
+function Sparkline({ series, markers, direction }: SparklineProps) {
   const chartData = series.map((v, i) => ({ i, v }));
   const last = series[series.length - 1];
   const min = Math.min(...series);
@@ -111,14 +138,14 @@ function Sparkline({ series, markers, direction }) {
       </div>
 
       {/* TP / current / SL price lines, continuing past the chart's end */}
-      {positionedMarkers.map(({ key, ...rest }) => (
-        <PriceMarker key={key} variant={key} {...rest} />
+      {positionedMarkers.map(({ key, topPct, ...rest }) => (
+        <PriceMarker key={key} variant={key} topPct={topPct as number} {...rest} />
       ))}
     </div>
   );
 }
 
-function PriceMarker({ topPct, variant, price, setPrice }) {
+function PriceMarker({ topPct, variant, price, setPrice }: PriceMarkerProps) {
   const style =
     variant === "tp"
       ? { line: "rgba(48,209,88,0.45)", bg: ACCENT.long.tint, text: "#30D158", ring: ACCENT.long.ring }
@@ -147,27 +174,27 @@ function PriceMarker({ topPct, variant, price, setPrice }) {
   );
 }
 
-export default function TradingSignalCard({ data = DEFAULT_DATA }) {
-  const [avatar, setAvatar] = useState(null);
+export default function TradingSignalCard({ data = DEFAULT_DATA }: { data?: TradingSignalData }) {
+  const [avatar, setAvatar] = useState<string | null>(null);
   const [heading, setHeading] = useState("Untitled signal");
   const [winRate, setWinRate] = useState(String(data.winRate));
   const [name, setName] = useState(data.name);
   const [expiry, setExpiry] = useState(data.expiry);
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [tpPrice, setTpPrice] = useState("65,800");
   const [curPrice, setCurPrice] = useState("65,800");
   const [slPrice, setSlPrice] = useState("65,800");
-  const [direction, setDirection] = useState("long");
+  const [direction, setDirection] = useState<"long" | "short">("long");
 
-  const markers = [
+  const markers: MarkerData[] = [
     { key: "tp", price: tpPrice, setPrice: setTpPrice },
     { key: "cur", price: curPrice, setPrice: setCurPrice },
     { key: "sl", price: slPrice, setPrice: setSlPrice },
   ];
 
   const handleAvatarClick = () => fileInputRef.current?.click();
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setAvatar(URL.createObjectURL(file));
   };
