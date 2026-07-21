@@ -225,7 +225,7 @@ export default function TradingSignalCard({ data = DEFAULT_DATA }: { data?: Trad
             type="button"
             onClick={handleAvatarClick}
             aria-label="Change image"
-            className={`rc-avatar-btn w-11 h-11 rounded-full border-none p-0 cursor-pointer overflow-hidden flex items-center justify-center shrink-0 bg-cover bg-center ring-1 ring-white/[0.1] ${
+            className={`rc-avatar-btn w-11 h-11 rounded-full border-none p-0 cursor-pointer overflow-hidden flex items-center justify-center shrink-0 bg-cover bg-center ${
               avatar ? "" : "bg-[linear-gradient(160deg,_#2c2c2e,_#0e0e0f)]"
             }`}
             style={avatar ? { backgroundImage: `url(${avatar})` } : undefined}
@@ -290,7 +290,7 @@ export default function TradingSignalCard({ data = DEFAULT_DATA }: { data?: Trad
           <span className="text-[13px] font-medium  ml-2 pb-1.5">Win Rate</span>
           </div>
 
-          <span className="ml-auto uppercase  theseason px-2.5 py-1">
+          <span className="ml-auto text-xl uppercase  theseason px-2.5 py-1">
             RICHACLE
           </span>
         </div>
