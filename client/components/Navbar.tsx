@@ -214,7 +214,7 @@ const toggleMobileTip = () => {
         <div className={`flex justify-between md:px-12 px-3 py-3 h-12 items-center ${mobileOpen ? "bg-black" : "bg-transparent"}`}>
           {/* Logo */}
           <Link href="/dashboard" className="flex-shrink-0">
-            <img src="/logo.png" alt="Logo" className="h-7 w-7 object-cover" />
+            <img src="/logo.png" alt="Logo" className="h-7 w-7 " />
           </Link>
 
           <div className="relative">
