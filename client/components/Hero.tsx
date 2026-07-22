@@ -752,7 +752,7 @@ function FakeTradeChat() {
 </div>
 
               <Select value={selectedModel} onValueChange={setSelectedModel}>
-                <SelectTrigger className="border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70 hover:text-white transition-colors cursor-pointer outline-none">
+                <SelectTrigger className=" border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70  hover:text-white transition-colors cursor-pointer outline-none">
                   <SelectValue />
                 </SelectTrigger>
 

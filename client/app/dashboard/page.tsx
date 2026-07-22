@@ -1714,7 +1714,7 @@ const handleClearMemory = async () => {
   />
 </div>
                 <div className="flex justify-between items-center mt-auto">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                 <div className="relative">
   <Plus
     size={40}
