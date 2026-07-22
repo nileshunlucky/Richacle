@@ -220,7 +220,7 @@ const toggleMobileTip = () => {
           <div className="relative">
   <div 
     onClick={() => fakePnl != null && setShowCustomizePanel(v => !v)}
-    className={fakePnl != null ? "cursor-pointer" : "", "flex gap-3 items-center bg-zinc-900 rounded "}
+    className={`flex gap-3 items-center bg-zinc-900 rounded ${fakePnl != null ? "cursor-pointer" : ""}`}
   >
    <h1 className="p-1 px-3"> $ {new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
