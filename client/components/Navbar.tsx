@@ -213,14 +213,15 @@ const toggleMobileTip = () => {
         {/* Changed bg-black to bg-transparent */}
         <div className={`flex justify-between md:px-12 px-3 py-3 h-12 items-center ${mobileOpen ? "bg-black" : "bg-transparent"}`}>
           {/* Logo */}
-          <Link href="/dashboard" className="flex-shrink-0">
+          <Link href="/dashboard" className="flex items-center gap-3">
             <img src="/logo.png" alt="Logo" className="h-7 w-7 " />
+            <span className="theseason text-2xl md:flex hidden uppercase">richacle</span>
           </Link>
 
           <div className="relative">
   <div 
     onClick={() => fakePnl != null && setShowCustomizePanel(v => !v)}
-    className={`flex gap-3 items-center bg-zinc-900 rounded ${fakePnl != null ? "cursor-pointer" : ""}`}
+    className={`flex gap-1 items-center bg-zinc-900 rounded ${fakePnl != null ? "cursor-pointer" : ""}`}
   >
    <h1 className="p-1 px-3"> $ {new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
@@ -229,7 +230,7 @@ const toggleMobileTip = () => {
 
       <button 
                     onClick={() => setIsModalOpen(true)}
-                    className="flex cursor-pointer items-center bg-white text-black p-1 px-2 font-semibold rounded-r transition-colors"
+                    className="flex cursor-pointer items-center bg-white text-black p-1 px-2 rounded-r transition-colors"
                   >
                     Binance
                   </button>
