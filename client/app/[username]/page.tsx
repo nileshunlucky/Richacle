@@ -465,25 +465,9 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
   // ── Loading state ──────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <main className="min-h-screen bg-black flex flex-col justify-between items-center text-white text-center p-6">
-        <div className="h-12 w-full opacity-0 pointer-events-none" aria-hidden="true" />
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.5, ease: "easeOut" }}
-          className="flex flex-col items-center justify-center gap-5"
-        >
-          <img className="h-12 w-auto object-contain" src="/logo.png" alt="logo" />
-        </motion.div>
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="mb-7"
-        >
-          <p className="text-zinc-500 text-lg">from</p>
-          <p className="theseason text-xl tracking-wider">RICHACLE</p>
-        </motion.div>
+      <main className="h-screen bg-black flex justify-center items-center text-white text-center ">
+                  <p className="theseason md:text-3xl text-xl">RICHACLE</p>
+
       </main>
     );
   }
@@ -714,7 +698,7 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
     {user.netWorthChange.split(" ")[0]}
   </span>
   <span className={`text-xs font-semibold px-2 py-0.5 rounded `}>
-    ({user.netWorthChange.split(" ")[1]})
+    {user.netWorthChange.split(" ")[1]}
   </span>
 </div>
             </motion.div>

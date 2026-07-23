@@ -31,7 +31,6 @@ export default function Navbar() {
       <div className="flex items-center justify-between w-full">
         
         <Link href="/" className="flex items-center gap-1">
-        <img className="h-8" src="/logo.png"/>
           <h1 className="text-2xl theseason">RICHACLE</h1>
         </Link>
 
