@@ -20,6 +20,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/logo.png",
   },
+  manifest: "/manifest.json",
 };
 
 export const viewport: Viewport = {
@@ -79,6 +80,13 @@ export default function RootLayout({
           strategy="afterInteractive" 
           defer 
         />
+        <Script id="register-sw" strategy="afterInteractive">
+  {`
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(() => {});
+    }
+  `}
+</Script>
 
         <Toaster position="bottom-left" richColors />
         {children}

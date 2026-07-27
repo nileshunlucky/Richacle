@@ -397,17 +397,13 @@ const fakeTimer = window.setInterval(() => {
 
   simPriceRef.current = simPrice;
 
- const wickJitter = simPrice * 0.0015; // max possible wick size
-const upperWick = Math.random() ** 3 * wickJitter;   // mostly tiny, rare long spikes
-const lowerWick = Math.random() ** 3 * wickJitter;   // independent draw = asymmetric wicks
-
-const currentCandle = {
-  time: simTime as LightweightCharts.UTCTimestamp,
-  open: candleOpen,
-  high: Math.max(candleOpen, simPrice) + upperWick,
-  low: Math.min(candleOpen, simPrice) - lowerWick,
-  close: simPrice,
-};
+  const currentCandle = {
+    time: simTime as LightweightCharts.UTCTimestamp,
+    open: candleOpen,
+    high: Math.max(candleOpen, simPrice),
+    low: Math.min(candleOpen, simPrice),
+    close: simPrice,
+  };
 
   const futureCandlesNow = Array.from({ length: futureCandlesBox }, (_, i) => ({
     time: (simTime + intervalSecs * (i + 1)) as LightweightCharts.UTCTimestamp,
@@ -435,17 +431,13 @@ const scheduleRoll = () => {
   rollTimeoutId = setTimeout(() => {
     if (!isCurrent) return;
 
-    const wickJitter = simPrice * 0.0015;
-const upperWick = Math.random() ** 3 * wickJitter;
-const lowerWick = Math.random() ** 3 * wickJitter;
-
-historicalData = [...historicalData, {
-  time: simTime as LightweightCharts.UTCTimestamp,
-  open: candleOpen,
-  high: Math.max(candleOpen, simPrice) + upperWick,
-  low: Math.min(candleOpen, simPrice) - lowerWick,
-  close: simPrice,
-}];
+    historicalData = [...historicalData, {
+      time: simTime as LightweightCharts.UTCTimestamp,
+      open: candleOpen,
+      high: Math.max(candleOpen, simPrice),
+      low: Math.min(candleOpen, simPrice),
+      close: simPrice,
+    }];
 
     if (path != null && pathIndexRef.current < path.length - 1) {
       pathIndexRef.current += 1;
