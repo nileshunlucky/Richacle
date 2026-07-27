@@ -46,10 +46,10 @@ function ModelSelectorCard() {
       </p>
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1 text-orange-500 text-sm font-medium mt-3 hover:text-orange-400 transition-colors"
+        className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent text-sm font-medium mt-3  transition-colors"
       >
         Explore models
-        <ChevronRight />
+        <ChevronRight className="text-white" />
       </Link>
 
       {/* Card */}
@@ -199,10 +199,10 @@ const after = (ms: number, fn: () => void) => {
       </p>
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1 text-orange-500 text-sm font-medium mt-3 hover:text-orange-400 transition-colors"
+        className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent text-sm font-medium mt-3  transition-colors"
       >
         Learn about market insights
-        <ChevronRight/>
+        <ChevronRight className="text-white" />
       </Link>
 
       {/* Card */}
@@ -301,10 +301,10 @@ function PredictedTradeCard() {
       </p>
       <Link
         href="/dashboard"
-        className="inline-flex items-center gap-1 text-orange-500 text-sm font-medium mt-3 hover:text-orange-400 transition-colors"
+        className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent text-sm font-medium mt-3  transition-colors"
       >
         See prediction accuracy
-        <ChevronRight className="w-4 h-4" />
+        <ChevronRight className="w-4 h-4 text-white" />
       </Link>
 
       {/* Card */}

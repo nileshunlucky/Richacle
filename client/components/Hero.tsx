@@ -821,7 +821,7 @@ export default function Hero() {
     
       {/* ---------- Hero copy ---------- */}
       <section className="mx-auto max-w-5xl px-6 pt-28 pb-16 text-center sm:pt-36 flex items-center flex-col gap-10" >
-        <h1 className="md:text-6xl text-2xl font-semibold  text-white">
+        <h1 className="md:text-6xl text-2xl font-semibold pulse">
           Richacle is your oracle agent
           <br />
           for researching & predicting trade.
@@ -836,8 +836,8 @@ export default function Hero() {
           </button></Link>
         </div>
 
-        <Link href="/dashboard"><h1 className="text-orange-500 hover:text-orange-400 font-semibold md:text-xl flex items-center justify-center gap-1 cursor-pointer">
-          Learn more about oracle agent <ChevronRight />
+        <Link href="/dashboard"><h1 className="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent  font-semibold md:text-xl flex items-center justify-center gap-1 cursor-pointer">
+          Learn more about oracle agent <ChevronRight className="text-white" />
         </h1></Link>
       </section>
 
