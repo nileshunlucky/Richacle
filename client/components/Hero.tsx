@@ -822,10 +822,10 @@ export default function Hero() {
       {/* ---------- Hero copy ---------- */}
       <section className="mx-auto max-w-5xl px-6 pt-28 pb-16 text-center sm:pt-36 flex items-center flex-col gap-10" >
         <h1 className="md:text-7xl text-3xl font-semibold 
-        bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent  ">
-          Clarity <span className="theseason">research</span> gets
+        bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent theseason ">
+          Every prediction begins
           <br />
-accurate prediction. 
+with clarity research
         </h1>
 
         <div className=" flex items-center justify-center gap-3 sm:flex-row">
