@@ -821,10 +821,11 @@ export default function Hero() {
     
       {/* ---------- Hero copy ---------- */}
       <section className="mx-auto max-w-5xl px-6 pt-28 pb-16 text-center sm:pt-36 flex items-center flex-col gap-10" >
-        <h1 className="md:text-6xl text-2xl font-semibold pulse">
-          Richacle is your oracle agent
+        <h1 className="md:text-7xl text-3xl font-semibold 
+        bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent  ">
+          Clarity <span className="theseason">research</span> gets
           <br />
-          for researching & predicting trade.
+accurate prediction. 
         </h1>
 
         <div className=" flex items-center justify-center gap-3 sm:flex-row">
