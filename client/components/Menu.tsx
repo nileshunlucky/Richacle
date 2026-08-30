@@ -45,7 +45,7 @@ function MenuContent() {
     if (!email) return;
     const fetchBinance = async () => {
       try {
-        const userRes = await fetch(`https://api.richacle.com/user/${email}`);
+        const userRes = await fetch(`https://richacle.onrender.com/user/${email}`);
         const userData = await userRes.json();
         setUserProfile({
           avatarUrl: userData?.avatar || "",
