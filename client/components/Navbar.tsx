@@ -132,8 +132,16 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
         });
         const balData = await balRes.json();
 
-        setTotalPnl(balData?.equity);
-        setStrategiesPerf(balData?.unrealized_pnl);
+        setTotalPnl(
+  balData?.equity !== undefined && balData?.equity !== null
+    ? Number(balData.equity)
+    : 0
+);
+setStrategiesPerf(
+  balData?.unrealized_pnl !== undefined && balData?.unrealized_pnl !== null
+    ? Number(balData.unrealized_pnl)
+    : 0
+);
       } else {
         // Optional: clear PNL if keys aren't present
         setTotalPnl(0);
