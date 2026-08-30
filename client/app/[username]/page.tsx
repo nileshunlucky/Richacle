@@ -151,7 +151,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
       try {
         setLoading(true);
 
-        const apiResponse = await fetch(`https://api.richacle.com/api/user/${username}`);
+        const apiResponse = await fetch(`https://richacle.onrender.com/api/user/${username}`);
         if (!apiResponse.ok) {
           setError(true);
           return;
@@ -173,7 +173,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         const formData = new FormData();
         formData.append("email", profileEmail);
 
-        const tradeResponse = await fetch("https://api.richacle.com/api/trade-history", {
+        const tradeResponse = await fetch("https://richacle.onrender.com/api/trade-history", {
           method: "POST",
           body: formData,
         });
@@ -181,7 +181,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         const formxData = new FormData();
 formxData.append("email", profileEmail);
 
-const res = await fetch("https://api.richacle.com/api/trade-log", {
+const res = await fetch("https://richacle.onrender.com/api/trade-log", {
   method: "POST",
   body: formxData,
 });
@@ -192,7 +192,7 @@ if (tradeLogData.status === "success") {
 
         const form = new FormData();
         form.append("email", profileEmail);
-        const balRes = await fetch("https://api.richacle.com/api/balance", {
+        const balRes = await fetch("https://richacle.onrender.com/api/balance", {
           method: "POST",
           body: form,
         });
@@ -429,7 +429,7 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
       if (editForm.bio) formData.append("bio", editForm.bio);
       if (imageFile) formData.append("profile_image", imageFile);
 
-      const response = await fetch("https://api.richacle.com/api/user/edit", {
+      const response = await fetch("https://richacle.onrender.com/api/user/edit", {
         method: "POST",
         body: formData,
       });

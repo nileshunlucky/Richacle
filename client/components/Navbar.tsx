@@ -13,7 +13,6 @@ import {
   Search
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import {Switch} from "@/components/ui/switch"
 import {
   Tooltip,
   TooltipContent,
@@ -27,14 +26,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 
-interface NavbarProps {
-  fakePnl?: number | null;
-  onSetFakePnl?: (amount: number) => void;
-  plannedOutcome?: "tp" | "sl";
-  onSetPlannedOutcome?: (outcome: "tp" | "sl") => void;
-}
-
-
 const avatarVariants = {
   initial: { opacity: 0, scale: 0.88 },
   animate: {
@@ -44,15 +35,11 @@ const avatarVariants = {
   },
 };
 
-const cn = (...classes: (string | boolean | undefined | null)[]) => 
-  classes.filter(Boolean).join(" ");
-
-export default function Navbar({ fakePnl, onSetFakePnl, plannedOutcome, onSetPlannedOutcome  }: NavbarProps) {
+export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [email, setEmail] = useState("");
    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [isDemo, setIsDemo] = useState(false)
     const [avatar, setAvatar] = useState("")
     const [apiKey, setApiKey] = useState("")
   const [apiSecret, setApiSecret] = useState("")
@@ -61,8 +48,6 @@ export default function Navbar({ fakePnl, onSetFakePnl, plannedOutcome, onSetPla
   const [totalPnl, setTotalPnl] = useState(0)
 const [strategiesPerf, setStrategiesPerf] = useState(0)
  const [showMobileTip, setShowMobileTip] = useState(false);
- const [showCustomizePanel, setShowCustomizePanel] = useState(false);
-  const [customAmount, setCustomAmount] = useState("");
 
     // Fetch user session
   useEffect(() => {
@@ -80,12 +65,11 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
   const fetchBinance = async () => {
     try {
       // 1. Fetch User Data (Binance Keys)
-      const userRes = await fetch(`https://api.richacle.com/user/${email}`);
+      const userRes = await fetch(`https://richacle.onrender.com/user/${email}`);
       const userData = await userRes.json();
       
       setApiKey(userData?.binance?.apiKey);
       setApiSecret(userData?.binance?.apiSecret);
-      setIsDemo(userData?.binance?.demo);
       setAvatar(userData?.avatar);
       setUsername(userData?.username)
 
@@ -114,9 +98,8 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
       form.append("email", email);
       form.append("apiKey", apiKey);
       form.append("apiSecret", apiSecret);
-      form.append("isDemo", String(isDemo));
       
-      const res = await fetch("https://api.richacle.com/api/binance", {
+      const res = await fetch("https://richacle.onrender.com/api/binance", {
         method: "POST",
         body: form,
       });
@@ -138,14 +121,12 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
   useEffect(() => {
   if (!email) return;
 
-  if (fakePnl != null) return;
-
   const fetchData = async () => {
     try {
       if (apiKey && apiSecret) {
         const form = new FormData();
         form.append("email", email);
-        const balRes = await fetch("https://api.richacle.com/api/balance", {
+        const balRes = await fetch("https://richacle.onrender.com/api/balance", {
           method: "POST",
           body: form,
         });
@@ -166,9 +147,7 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
   };
 
   fetchData(); 
-}, [email, apiKey, apiSecret, fakePnl]);
-
-  const displayedPnl = fakePnl != null ? fakePnl : totalPnl;
+}, [email, apiKey, apiSecret]);
 
 const toggleMobileTip = () => {
     // Only show tooltip on small screens
@@ -185,7 +164,7 @@ const toggleMobileTip = () => {
         const form = new FormData();
         form.append("email", email);
 
-        const res = await fetch("https://api.richacle.com/add-user", {
+        const res = await fetch("https://richacle.onrender.com/add-user", {
           method: "POST",
           body: form,
         });
@@ -218,14 +197,11 @@ const toggleMobileTip = () => {
           
 
           <div className="relative">
-  <div 
-    onClick={() => fakePnl != null && setShowCustomizePanel(v => !v)}
-    className={`flex gap-1 items-center bg-zinc-900 rounded ${fakePnl != null ? "cursor-pointer" : ""}`}
-  >
+  <div className="flex gap-1 items-center bg-zinc-900 rounded">
    <h1 className="p-1 px-3"> $ {new Intl.NumberFormat("en-US", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(displayedPnl)}</h1>
+    }).format(totalPnl)}</h1>
 
       <button 
                     onClick={() => setIsModalOpen(true)}
@@ -234,69 +210,6 @@ const toggleMobileTip = () => {
                     Binance
                   </button>
   </div>
-
-{fakePnl != null && (
-  <AnimatePresence>
-    {showCustomizePanel && (
-      <>
-        {/* click-away layer */}
-        <div className="fixed inset-0 z-40" onClick={() => setShowCustomizePanel(false)} />
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          className="absolute top-full mt-2 left-1/2 -translate-x-1/2 z-50 w-56 bg-zinc-950 border border-white/10 rounded-xl p-3 shadow-2xl"
-        >
-<div className="flex gap-2 mt-1">
-  <input
-    type="text"
-    inputMode="decimal"
-    value={customAmount}
-    onChange={(e) => setCustomAmount(e.target.value.replace(/[^0-9.]/g, ''))}
-    placeholder="$10,000"
-    className="flex-1 bg-black border border-white/10 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-white/30"
-  />
-  <button
-    onClick={() => {
-      const amt = parseFloat(customAmount);
-      if (!isNaN(amt)) onSetFakePnl?.(amt);
-      setCustomAmount("");
-    }}
-    className="flex-1 bg-zinc-100 text-zinc-950 px-3 rounded-lg text-xs font-semibold hover:bg-white cursor-pointer"
-  >
-    Set
-  </button>
-</div>
-
-<div className="flex gap-2 mt-1">
-  <button
-    onClick={() => onSetPlannedOutcome?.("tp")}
-    className={cn(
-      "flex-1 px-2 py-1.5 rounded-lg text-xs font-semibold cursor-pointer border transition-colors",
-      plannedOutcome === "tp" 
-        ? "bg-green-700/30 text-green-300 border-green-600" 
-        : "bg-transparent text-zinc-500 border-white/10 hover:border-white/20"
-    )}
-  >
-    TP
-  </button>
-  <button
-    onClick={() => onSetPlannedOutcome?.("sl")}
-    className={cn(
-      "flex-1 px-2 py-1.5 rounded-lg text-xs font-semibold cursor-pointer border transition-colors",
-      plannedOutcome === "sl" 
-        ? "bg-red-700/30 text-red-300 border-red-600" 
-        : "bg-transparent text-zinc-500 border-white/10 hover:border-white/20"
-    )}
-  >
-    SL
-  </button>
-</div>
-        </motion.div>
-      </>
-    )}
-  </AnimatePresence>
-  )}
 </div>
 
            <ul className="flex md:gap-5 items-center text-sm font-semibold">
@@ -345,15 +258,6 @@ const toggleMobileTip = () => {
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
               <h2 className="text-xl font-semibold">Binance</h2>
-
-          </div>
-          <div className="flex flex-col items-center gap-1">
-              <p className="text-sm text-zinc-500">{isDemo ? 'Demo' : 'Real'}</p>
-            <Switch
-            className="cursor-pointer" 
-              checked={isDemo} 
-              onCheckedChange={setIsDemo} 
-            />
           </div>
         </div>
 
@@ -380,9 +284,7 @@ const toggleMobileTip = () => {
             />
           </div>
 
-          {/* IP Address - HIDDEN IF DEMO */}
-          {!isDemo && (
-            <div className="space-y-2">
+          <div className="space-y-2">
               <label className="text-xs text-zinc-400 ml-1 flex items-center gap-2">
                 Public IPv4 address
                 <Tooltip open={showMobileTip || undefined}>
@@ -404,7 +306,6 @@ const toggleMobileTip = () => {
                 <Copy size={16} className="text-zinc-500" />
               </div>
             </div>
-          )}
 
           <div className="pt-4 flex gap-3">
             <button 

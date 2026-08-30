@@ -46,7 +46,7 @@ export default function Journal({ email, onClose }: JournalProps) {
     try {
       const formData = new FormData();
       formData.append("email", email);
-      const res = await fetch("https://api.richacle.com/api/trade-history", {
+      const res = await fetch("https://richacle.onrender.com/api/trade-history", {
         method: "POST",
         body: formData,
       });

@@ -32,7 +32,7 @@ export default function Home() {
 
         // NOTE: Replace this endpoint with your real global "all users" or "leaderboard" endpoint
         // Step 1: Fetch the core list of users
-        const usersRes = await fetch("https://api.richacle.com/users-full")
+        const usersRes = await fetch("https://richacle.onrender.com/users-full")
         if (!usersRes.ok) throw new Error("Failed to fetch traders list")
         const dynamicTraders = await usersRes.ok ? await usersRes.json() : []
 
@@ -49,7 +49,7 @@ export default function Home() {
                 const formData = new FormData()
                 formData.append("email", traderEmail)
 
-                const balRes = await fetch("https://api.richacle.com/api/balance", {
+                const balRes = await fetch("https://richacle.onrender.com/api/balance", {
                   method: "POST",
                   body: formData,
                 })

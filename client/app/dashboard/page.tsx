@@ -68,11 +68,6 @@ interface AdvancedChartProps {
   tradeLines: TradeLines | null;
   onPriceUpdate: (price: string) => void;
   symbol?: string;
-  isDemo?: boolean;
-  isFakeData?: boolean;       
-  fakeStartPrice?: number;  
-  demoTargetPrice?: number | null; 
-  demoDurationSecs?: number;
 }
 
 interface TradeWidgetProps {
@@ -108,60 +103,7 @@ interface Message {
   content: string | React.ReactNode;
 }
 
-// Generates realistic-looking OHLC candles via a random walk
-function generateFakeCandles(count: number, startPrice: number, intervalSecs: number) {
-  const data = [];
-  let price = startPrice;
-  const now = Math.floor(Date.now() / 1000);
-  const startTime = now - intervalSecs * count;
-
-  for (let i = 0; i < count; i++) {
-    const open = price;
-    // Random walk with slight upward drift, tweak volatility to taste
-    const volatility = open * 0.002; // 0.2% per candle
-    const drift = (Math.random() - 0.48) * volatility * 2;
-    const close = Math.max(open + drift, 0.01);
-
-    const high = Math.max(open, close) + Math.random() * volatility * 0.5;
-    const low = Math.min(open, close) - Math.random() * volatility * 0.5;
-
-    data.push({
-      time: (startTime + i * intervalSecs) as LightweightCharts.UTCTimestamp,
-      open,
-      high,
-      low,
-      close,
-    });
-
-    price = close;
-  }
-  return data;
-}
-
-function generateBridgePath(start: number, target: number, steps: number, volatility = 2.4) {
-  const path: number[] = [start];
-  const totalMove = target - start;
-  const avgStep = totalMove / steps;
-
-  const rawWalk: number[] = [0];
-  for (let i = 1; i <= steps; i++) {
-    const taper = i > steps - 2 ? 0.6 : 1; // was 0.3 over last 3 — too flat; now 0.6 over last 2
-    const noise = (Math.random() - 0.5) * Math.abs(avgStep) * volatility * 4 * taper;
-    rawWalk.push(rawWalk[i - 1] + noise);
-  }
-
-  const endValue = rawWalk[steps];
-  for (let i = 0; i <= steps; i++) {
-    const t = i / steps;
-    const corrected = rawWalk[i] - t * endValue;
-    path[i] = start + totalMove * t + corrected;
-  }
-
-  path[steps] = target;
-  return path;
-}
-
-const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", isDemo = false,  isFakeData = false, fakeStartPrice = 62000 , demoTargetPrice = null, demoDurationSecs = 15}: AdvancedChartProps) {
+const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT" }: AdvancedChartProps) {
   // 1. Properly typed refs using the imported library types
   const chartInstance = useRef<LightweightCharts.IChartApi | null>(null);
   const seriesRef = useRef<LightweightCharts.ISeriesApi<"Candlestick"> | null>(null);
@@ -169,19 +111,8 @@ const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, s
   const slFillRef = useRef<LightweightCharts.ISeriesApi<"Baseline"> | null>(null);
 
   const currentChartTimeRef = useRef<number>(Math.floor(Date.now() / 1000));
-const tradeOpenTimeRef = useRef<number | null>(null);
-const hadTradeLinesRef = useRef(false);
-
-  const pathRef = useRef<number[] | null>(null);
-const pathIndexRef = useRef(0);
-const candleDurationMsRef = useRef(2000);
-
-  const simPriceRef = useRef<number>(fakeStartPrice);
-const demoTargetRef = useRef<number | null>(null);
-const demoStartRef = useRef<{ price: number; time: number } | null>(null);
-const demoDurationRef = useRef<number>(15);
-const idleAnchorRef = useRef<number>(fakeStartPrice);
-  
+  const tradeOpenTimeRef = useRef<number | null>(null);
+  const hadTradeLinesRef = useRef(false);
 
   const container = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -296,23 +227,6 @@ slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, valu
     };
   }, []);
 
-useEffect(() => {
-  demoDurationRef.current = demoDurationSecs;
-  if (demoTargetPrice != null) {
-    demoTargetRef.current = demoTargetPrice;
-    demoStartRef.current = { price: simPriceRef.current, time: Date.now() };
-
-    const steps = 14; // fewer, chunkier candles (was 40)
-    pathRef.current = generateBridgePath(simPriceRef.current, demoTargetPrice, steps, 2.4); // more volatility per step
-    pathIndexRef.current = 0;
-    candleDurationMsRef.current = (demoDurationSecs * 1000) / steps;
-  } else {
-    demoTargetRef.current = null;
-    demoStartRef.current = null;
-    pathRef.current = null;
-  }
-}, [demoTargetPrice, demoDurationSecs]);
-
   // Effect 2: track badge Y-positions, independent of chart creation
   useEffect(() => {
     if (!tradeLines || !seriesRef.current) {
@@ -347,117 +261,6 @@ useEffect(() => {
 
   seriesRef.current.setData([]);
 
-  // --- FAKE DATA PATH ---
-  if (isFakeData) {
-    const data = generateFakeCandles(300, fakeStartPrice, intervalSecs);
-    const lastCandle = data[data.length - 1];
-
-    const futureCandles = Array.from({ length: futureCandlesBox }, (_, i) => ({
-      time: (lastCandle.time + intervalSecs * (i + 1)) as LightweightCharts.UTCTimestamp,
-      open: lastCandle.close, high: lastCandle.close,
-      low: lastCandle.close, close: lastCandle.close,
-    }));
-
-    seriesRef.current!.setData([...data, ...futureCandles]);
-    chartInstance.current?.timeScale().fitContent();
-    if (tradeLines) updateVisuals(tradeLines);
-    onPriceUpdate(lastCandle.close.toFixed(2));
-    setLivePrice(lastCandle.close);
-
-    let simPrice = lastCandle.close;
-simPriceRef.current = simPrice;
-let simTime = lastCandle.time as number;
-let candleOpen = simPrice;
-let historicalData = data.slice(0, -1);
-const desiredCandleCount = 14;
-
-const fakeTimer = window.setInterval(() => {
-  if (!isCurrent || !seriesRef.current) return;
-   currentChartTimeRef.current = simTime; 
-
-  const path = pathRef.current;
-
-  if (path != null) {
-    // SCRIPTED MODE: interpolate smoothly between the current planned point and the next
-    const idx = pathIndexRef.current;
-    const from = path[idx];
-    const to = path[Math.min(idx + 1, path.length - 1)];
-
-    const elapsedInCandle = Date.now() - (demoStartRef.current!.time + idx * candleDurationMsRef.current);
-    const progressInCandle = Math.min(elapsedInCandle / candleDurationMsRef.current, 1);
-
-    const wickJitter = (Math.random() - 0.5) * Math.abs(to - from) * 0.12;
-    simPrice = from + (to - from) * progressInCandle + wickJitter;
-  } else {
-    idleAnchorRef.current += (simPrice - idleAnchorRef.current) * 0.001; // anchor slowly tracks price
-  const noise = (Math.random() - 0.5) * simPrice * 0.0003;
-  const pullToAnchor = (idleAnchorRef.current - simPrice) * 0.0006;
-  simPrice = Math.max(simPrice + noise + pullToAnchor, 0.01);
-  }
-
-  simPriceRef.current = simPrice;
-
-  const currentCandle = {
-    time: simTime as LightweightCharts.UTCTimestamp,
-    open: candleOpen,
-    high: Math.max(candleOpen, simPrice),
-    low: Math.min(candleOpen, simPrice),
-    close: simPrice,
-  };
-
-  const futureCandlesNow = Array.from({ length: futureCandlesBox }, (_, i) => ({
-    time: (simTime + intervalSecs * (i + 1)) as LightweightCharts.UTCTimestamp,
-    open: simPrice, high: simPrice, low: simPrice, close: simPrice,
-  }));
-
-  seriesRef.current.setData([...historicalData, currentCandle, ...futureCandlesNow]);
-
-  onPriceUpdate(simPrice.toFixed(2));
-  setLivePrice(simPrice);
-}, 300);
-
-// Demo candles roll every ~2s regardless of the chart's actual timeframe,
-// so a 15s scripted move produces ~7-8 visible candles instead of 1.
-
-const idleRollMs = 10000; 
-const demoRollMs = (demoDurationSecs * 1000) / desiredCandleCount;
-
-let rollTimeoutId: ReturnType<typeof setTimeout>;
-
-const scheduleRoll = () => {
-  const path = pathRef.current;
-  const delay = path != null ? candleDurationMsRef.current : idleRollMs;
-
-  rollTimeoutId = setTimeout(() => {
-    if (!isCurrent) return;
-
-    historicalData = [...historicalData, {
-      time: simTime as LightweightCharts.UTCTimestamp,
-      open: candleOpen,
-      high: Math.max(candleOpen, simPrice),
-      low: Math.min(candleOpen, simPrice),
-      close: simPrice,
-    }];
-
-    if (path != null && pathIndexRef.current < path.length - 1) {
-      pathIndexRef.current += 1;
-    }
-
-    simTime += intervalSecs;
-    candleOpen = simPrice;
-
-    scheduleRoll();
-  }, delay);
-};
-
-scheduleRoll();
-
-return () => {
-  isCurrent = false;
-  window.clearInterval(fakeTimer);
-  clearTimeout(rollTimeoutId);
-};
-  }
   const binanceSymbol = symbol.replace("/", "").toUpperCase();
 
   // 1. Immediate Cleanup of existing socket
@@ -467,13 +270,8 @@ return () => {
     wsRef.current = null;
   }
 
-  const restBase = isDemo 
-    ? "https://testnet.binancefuture.com/fapi/v1" 
-    : "https://fapi.binance.com/fapi/v1";
-  
-  const wsBase = isDemo 
-  ? "stream.binancefuture.com/market" 
-  : "fstream.binance.com/market";
+  const restBase = "https://fapi.binance.com/fapi/v1";
+  const wsBase = "fstream.binance.com/market";
 
   type BinanceKline = [number, string, string, string, string, string, number, string, number, string, string, string];
 
@@ -551,7 +349,7 @@ seriesRef.current.update({
       wsRef.current = null;
     }
   };
-}, [isChartReady, symbol, interval, isDemo, isFakeData, fakeStartPrice]);
+}, [isChartReady, symbol, interval]);
 
 useEffect(() => {
   if (tradeLines && !hadTradeLinesRef.current) {
@@ -559,7 +357,6 @@ useEffect(() => {
   }
   if (!tradeLines) {
     tradeOpenTimeRef.current = null;
-    idleAnchorRef.current = simPriceRef.current; // ← anchor resets to current price, no snap-back
   }
   hadTradeLinesRef.current = !!tradeLines;
 }, [tradeLines]);
@@ -954,39 +751,10 @@ useEffect(() => {
   );
 });
 
-const buildDisplayTradeData = (raw: any, fakeEntry: number, isFake: boolean) => {
-  if (!isFake) return raw;
-
-  const realEntry = parseFloat(raw.entry_price || fakeEntry || "0");
-  const realTp = parseFloat(raw.take_profit);
-  const realSl = parseFloat(raw.stop_loss);
-  const isBuy = String(raw.side).toUpperCase() === "BUY";
-
-  if (!realEntry || !realTp || !realSl || !fakeEntry) return raw;
-
-  // Realistic 15m intraday risk: 0.05% – 0.3% of entry
-  let riskPct = Math.abs(realEntry - realSl) / realEntry;
-  riskPct = Math.min(Math.max(riskPct, 0.0005), 0.003);
-
-  const slDistance = fakeEntry * riskPct;
-  const tpDistance = slDistance * 1.5; // 1:1.5 reward, tighter than before
-
-  const tp = isBuy ? fakeEntry + tpDistance : fakeEntry - tpDistance;
-  const sl = isBuy ? fakeEntry - slDistance : fakeEntry + slDistance;
-
-  return {
-    ...raw,
-    entry_price: fakeEntry,
-    take_profit: tp,
-    stop_loss: sl,
-  };
-};
-
 function VibeTradingUIContent() {
 
   const searchParams = useSearchParams();
 
-  const [isDemo, setIsDemo] = useState(false);
   const [prompt, setPrompt] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -1012,18 +780,14 @@ const [isWidgetActive, setIsWidgetActive] = useState(false);
 const [isPositionClosed, setIsPositionClosed] = useState(false);
 const [isRejected, setIsRejected] = useState(false);
 const [showJournal, setShowJournal] = useState(false);
-const [demoTargetPrice, setDemoTargetPrice] = useState<number | null>(null);
-const [isFakeData, setIsFakeData] = useState(false);
 const [userProfile, setUserProfile] = useState({
   avatarUrl: "",
   username: "",
   name: "",
 });
 const [tradeStatusText, setTradeStatusText] = useState<string | null>(null);
-const [fakeTotalPnl, setFakeTotalPnl] = useState(10000);
 const [showModeMenu, setShowModeMenu] = useState(false);
 const [activeTradeWidgetIndex, setActiveTradeWidgetIndex] = useState<number | null>(null);
-const [plannedOutcome, setPlannedOutcome] = useState<"tp" | "sl">("tp");
 
 const insertMode = (mode: string) => {
   setPrompt(prev => prev ? `${prev} /${mode} ` : `/${mode} `);
@@ -1082,7 +846,6 @@ useEffect(() => {
     const getUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       setEmail(session?.user?.email || "");
-      setIsFakeData(session?.user?.email === "nileshinde001@gmail.com");
     };
     getUser();
   }, []);
@@ -1094,7 +857,7 @@ useEffect(() => {
   const fetchBinance = async () => {
     try {
       // 1. Fetch User Data (Binance Keys)
-      const userRes = await fetch(`https://api.richacle.com/user/${email}`);
+      const userRes = await fetch(`https://richacle.onrender.com/user/${email}`);
       const userData = await userRes.json();
 
       setUserProfile({
@@ -1103,7 +866,6 @@ useEffect(() => {
       name: userData?.name || "",
     });
       
-      setIsDemo(userData?.binance?.demo);
       setIsConfigLoaded(true);
 
     } catch (error) {
@@ -1120,49 +882,6 @@ const handleAccept = async (tradeParams: TradeParams) => {
   setActiveTradeParams(tradeParams);
   setIsTrading(true);
 
-  if (isFakeData) {
-    await new Promise(res => setTimeout(res, 600));
-    const amount = parseFloat(tradeParams.amount);
-  setFakeTotalPnl(prev => prev - amount); 
-
-    setConfirmedEntryPrice(tradeParams.entry);
-    setIsExecuted(true);
-    setIsPositionClosed(false);
-     const target = plannedOutcome === "tp" 
-    ? parseFloat(tradeParams.tp) 
-    : parseFloat(tradeParams.sl);
-  setDemoTargetPrice(target);
-    setMessages(prev => [
-      ...prev,
-      {
-        role: "ai",
-        content: (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-2 flex flex-col gap-2">
-            <div className=" flex items-center">
-              Order placed
-            </div>
-            {!isPositionClosed && (
-  <button 
-    onClick={() => handleCloseOrder(tradeParams.symbol)}
-    disabled={isClosing}
-    className={cn(
-      "mt-1 self-start px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-      isClosing 
-        ? "opacity-40 cursor-not-allowed bg-white text-black" 
-        : "cursor-pointer bg-white text-black"
-    )}
-  >
-    {isClosing ? "Closing" : "Close position"}
-  </button>
-)}
-          </motion.div>
-        )
-      }
-    ]);
-    setIsTrading(false);
-    return;
-  }
-  
   try {
     const formData = new FormData();
     formData.append("email", email);
@@ -1173,7 +892,7 @@ const handleAccept = async (tradeParams: TradeParams) => {
     formData.append("tp", tradeParams.tp);
     formData.append("sl", tradeParams.sl);
 
-    const response = await fetch("https://api.richacle.com/api/execute-trade", {
+    const response = await fetch("https://richacle.onrender.com/api/execute-trade", {
       method: "POST",
       body: formData,
     });
@@ -1188,9 +907,6 @@ const handleAccept = async (tradeParams: TradeParams) => {
     setConfirmedEntryPrice(result.entryPrice);
     setIsExecuted(true);
     setIsPositionClosed(false)
-    if (activeLines) {
-  setDemoTargetPrice(activeLines.tp);
-}
     setMessages(prev => [
       ...prev,
       {
@@ -1236,7 +952,6 @@ const handleReject = () => {
   setIsWidgetActive(false);
   setActiveLines(null);
   setIsRejected(true);
-  setDemoTargetPrice(null);
 };
 
 // Called on full reset (trade closed, new session)
@@ -1248,17 +963,6 @@ const handleReset = () => {
   setActiveLines(null);
   setIsWidgetActive(false);
   setIsRejected(false);
-  setDemoTargetPrice(null);
-};
-
-const calcRealizedPnl = (exitPrice: number) => {
-  if (!activeTradeParams) return 0;
-  const entry = parseFloat(activeTradeParams.entry);
-  const amount = parseFloat(activeTradeParams.amount);
-  const leverage = parseFloat(activeTradeParams.leverage);
-  const isBuy = String(activeTradeParams.side).toUpperCase() === "BUY";
-  const move = isBuy ? (exitPrice - entry) / entry : (entry - exitPrice) / entry;
-  return amount * leverage * move;
 };
 
   // Inside VibeTradingUI component
@@ -1279,45 +983,12 @@ const handleCloseOrder = async (symbol: string , exitPriceOverride?: number) => 
   }
   setIsClosing(true); // Re-use the trading loading state
 
-  if (isFakeData) {
-    await new Promise(res => setTimeout(res, 500)); // small fake delay for realism
-
-    const exitPrice = exitPriceOverride ?? parseFloat(currentPrice || "0");
-    const pnl = calcRealizedPnl(exitPrice);
-    const amount = parseFloat(activeTradeParams?.amount || "0");
-    setFakeTotalPnl(prev => prev + amount + pnl); 
-
-    setIsPositionClosed(true);
-    setMessages(prev => [
-      ...prev,
-      {
-        role: "ai",
-        content: (
-          <div className="text-left p-4">
-            Position for {symbol} has been closed.
-          </div>
-        )
-      }
-    ]);
-
-    setIsWidgetActive(false);
-    setActiveLines(null);
-    setIsExecuted(false);        // ← add this
-    setDemoTargetPrice(null);    // ← add this
-    setConfirmedEntryPrice(null);// ← add this
-    hasClosedRef.current = false;
-    setIsPositionClosed(false);   // ← add here
-    setIsRejected(false);
-    setIsClosing(false);
-    return;
-  }
-  
   try {
     const formData = new FormData();
     formData.append("email", email);
     formData.append("symbol", symbol);
 
-    const response = await fetch("https://api.richacle.com/api/close-position", {
+    const response = await fetch("https://richacle.onrender.com/api/close-position", {
       method: "POST",
       body: formData,
     });
@@ -1344,11 +1015,10 @@ const handleCloseOrder = async (symbol: string , exitPriceOverride?: number) => 
 
     setIsWidgetActive(false);
     setActiveLines(null);
-    setIsExecuted(false);         // ← add this too, for the real path
-    setDemoTargetPrice(null);     // ← add this
-    setConfirmedEntryPrice(null); // ← add this
+    setIsExecuted(false);
+    setConfirmedEntryPrice(null);
     hasClosedRef.current = false;
-    setIsPositionClosed(false);   // ← add here
+    setIsPositionClosed(false);
     setIsRejected(false);
 
   } catch (error) {
@@ -1397,7 +1067,7 @@ const handleSend = async () => {
     formData.append("email", email);
     formData.append("prompt", currentPrompt);
 
-    const response = await fetch("https://api.richacle.com/api/chat", {
+    const response = await fetch("https://richacle.onrender.com/api/chat", {
       method: "POST",
       body: formData,
     });
@@ -1449,8 +1119,7 @@ const handleSend = async () => {
 
     // If Oracle detected trade intent, show analysis + widget
 if (wants_to_trade && trade_data) {
-  const fakeEntry = parseFloat(currentPrice || "0");
-  const displayTradeData = buildDisplayTradeData(trade_data, fakeEntry, isFakeData);
+  const displayTradeData = trade_data;
 
   setLastResearch(displayTradeData);
   setIsRejected(false);
@@ -1520,7 +1189,7 @@ const handleClearMemory = async () => {
   try {
     const formData = new FormData();
     formData.append("email", email);
-    await fetch("https://api.richacle.com/api/clear-memory", { method: "POST", body: formData });
+    await fetch("https://richacle.onrender.com/api/clear-memory", { method: "POST", body: formData });
     setMessages([])
   } catch {
     toast.error("Failed to New Chat.");
@@ -1531,12 +1200,7 @@ const handleClearMemory = async () => {
 
   return (
     <>
-       <Navbar 
-  fakePnl={isFakeData ? fakeTotalPnl : null}
-  onSetFakePnl={(amount) => setFakeTotalPnl(amount)}
-  plannedOutcome={plannedOutcome}
-  onSetPlannedOutcome={setPlannedOutcome}
-/>
+       <Navbar />
     <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
     {showPricing && (
   <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
@@ -1555,9 +1219,7 @@ const handleClearMemory = async () => {
       {/* LEFT SIDE: 70% (Exactly as you wanted it) */}
       <div className="flex-[7] flex flex-col min-w-0 relative">
 
-        <AdvancedChart isDemo={isDemo}  isFakeData={isFakeData}
-  fakeStartPrice={65000} demoTargetPrice={demoTargetPrice}
-  demoDurationSecs={60}  symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
+        <AdvancedChart symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice}/>
       </div>
       
 

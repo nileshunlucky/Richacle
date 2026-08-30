@@ -45,7 +45,7 @@ export default function Home() {
       period: "/month",
       features: [
         "Everything in Pro, Plus",
-        "10x usage on OpenAI, Claude, Gemini, Grok, DeepSeek models",
+        "20x usage on OpenAI, Claude, Gemini, Grok, DeepSeek models",
         "Priority access to new features",
       ],
       cta: "Get Premium",
