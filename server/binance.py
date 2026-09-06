@@ -75,6 +75,10 @@ async def autocomplete(
     apiSecret: str = Form(...), 
     isDemo: bool = Form(...), 
 ):
+    user = users_collection.find_one({"email": email})
+    if not user: raise HTTPException(status_code=404, detail="User not found")
+    if int(user.get("active", True)) < 1: raise HTTPException(status_code=403, detail="Credits exhausted")
+
     # 1. Initialize the Binance client
     exchange = ccxt.binance({
         'apiKey': apiKey,

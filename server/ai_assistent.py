@@ -57,12 +57,31 @@ async def get_live_price(symbol: str):
         return None
 
 @router.post("/api/chat")
-async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
+async def autocomplete(
+    email: str = Form(...),
+    prompt: str = Form(...),
+    price: str = Form(None),
+    timeframe: str = Form(None),
+    model: str = Form(None),
+    symbol: str = Form(None),
+):
     user = users_collection.find_one({"email": email})
     if not user: raise HTTPException(status_code=404, detail="User not found")
     if int(user.get("credits", 0)) < 1: raise HTTPException(status_code=403, detail="Credits exhausted")
 
     history = user.get("history", [])
+
+    # normalize inputs coming from the frontend
+    ai_label = (model or "Richacle").strip() or "Richacle"
+    default_symbol = (symbol or "BTC/USDT").strip().upper()
+    tf = (timeframe or "15m").strip()
+
+    # frontend already streams live price via websocket — use it directly,
+    # falls back to None if it hasn't arrived yet (e.g. right after page load)
+    try:
+        current_price = float(price) if price not in (None, "", "null") else None
+    except ValueError:
+        current_price = None
 
     try:
         # STEP 1: Detect intent + get reply in one call
@@ -74,12 +93,16 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                 {
                     "role": "system",
                     "content": (
-                        f"You are Richacle AI (research trading fot Prediction Market).\n"
+                        f"You are {ai_label} AI (research trading for Prediction Market).\n"
+                        f"The user is currently viewing {default_symbol} on the {tf} timeframe"
+                        + (f", with a live price of {current_price}." if current_price else ".") +
+                        "\n"
                         "Always respond with a JSON object with exactly three keys:\n"
                         '- "reply": short, simple friendly response. if user ask about market data give a short summary clear valuable details (if its deeply ask give it bigger summary). If user asks for a price, write "The current price of {symbol} is {{LIVE_PRICE}}" — use exactly {{LIVE_PRICE}} as placeholder.\n'
                         '- "wants_to_trade": true if the user wants to open/enter or /trade (command) to trade on any crypto, false otherwise.'
                         '- "wants_price": true if user is asking for the current/live price of any crypto, false otherwise.\n'
-                        '- "symbol": trading pair in BASE/USDT format if wants_to_trade or wants_price is true (e.g. "BTC/USDT"), otherwise null.'
+                        '- "symbol": trading pair in BASE/USDT format if wants_to_trade or wants_price is true '
+                        f'(default to {default_symbol} if the user does not clearly mention a different coin), otherwise null.'
                     )
                 },
                  *history,
@@ -91,7 +114,7 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         chat_res = data.get("reply", "")
         wants_to_trade = data.get("wants_to_trade", False)
         wants_price    = data.get("wants_price", False)
-        detected_symbol = (data.get("symbol") or "BTC/USDT").strip().upper()
+        detected_symbol = (data.get("symbol") or default_symbol).strip().upper()
 
         # Update memory
         history.append({"role": "user", "content": prompt})
@@ -103,7 +126,13 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         )
 
         if wants_price and not wants_to_trade:
-            live_price = await get_live_price(detected_symbol)
+            # only hit the live-price fallback if the user asked about a
+            # different coin than the one already streaming on the frontend
+            if detected_symbol == default_symbol and current_price:
+                live_price = current_price
+            else:
+                live_price = await get_live_price(detected_symbol)
+
             if live_price:
                 chat_res = chat_res.replace("{{LIVE_PRICE}}", f"${live_price:,.2f}")
                 chat_res = chat_res.replace("{LIVE_PRICE}", f"${live_price:,.2f}")
@@ -122,8 +151,13 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
         trade_data = None
         if wants_to_trade:
             try:
-                # Get live price
-                live_price = await get_live_price(detected_symbol)
+                # reuse the frontend's live price when it matches the symbol
+                # in view, only refetch when the user asked about a different coin
+                if detected_symbol == default_symbol and current_price:
+                    live_price = current_price
+                else:
+                    live_price = await get_live_price(detected_symbol)
+
                 price_context = f"The current live price for {detected_symbol} is {live_price}." if live_price else "Use recent 2026 technical levels."
 
                 # Generate prediction
@@ -133,6 +167,8 @@ async def autocomplete(email: str = Form(...), prompt: str = Form(...)):
                         {"role": "system", "content": (
                             f"You are a real-time crypto research and prediction AI.\n"
                             f"Context: {price_context}\n"
+                            f"The user is trading on the {tf} timeframe — scale TP/SL distance to match this timeframe's typical volatility "
+                            f"(tighter targets for lower timeframes like 1m/5m, wider targets for higher timeframes like 4h/1d).\n"
                             f"1. Symbol: Use {detected_symbol}.\n"
                             f"2. Side: Predict BUY or SELL.\n"
                             f"3. Leverage: 1-125 based on volatility.\n"
