@@ -12,7 +12,8 @@ import {
   Copy,
   Loader2,
   Search,
-  Wallet
+  WalletMinimal,
+  RotateCcw 
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -37,7 +38,14 @@ const avatarVariants = {
   },
 };
 
-export default function Navbar() {
+interface NavbarProps {
+  tradingMode?: "paper" | "binance";
+  paperBalance?: number;
+  onModeChange?: (mode: "paper" | "binance") => void;
+   onResetPaper?: () => void;
+}
+
+export default function Navbar({ tradingMode = "paper", paperBalance = 10000, onModeChange, onResetPaper }: NavbarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -228,25 +236,48 @@ const toggleMobileTip = () => {
 
           <div className="relative">
   <div className="flex gap-1 items-center bg-zinc-900 rounded">
-   <h1 className="p-1 px-3"> $ {new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    }).format(totalPnl)}</h1>
+    <h1 className="p-1 px-3">
+      $ {new Intl.NumberFormat("en-US", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(tradingMode === "paper" ? paperBalance : totalPnl)}
+    </h1>
 
-      <button 
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex cursor-pointer items-center bg-white gap-1 text-black p-1 px-2 rounded-r transition-colors"
-                  >
-                 <svg 
-    xmlns="http://w3.org" 
-    viewBox="0 0 24 24" 
-    fill="currentColor" 
-    className="h-5 w-5"
-  >
-    <path d="M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z" />
-  </svg>
-                 < p className="md:flex hidden font-semibold">Binance Future</p>
-                  </button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+  <button className="flex cursor-pointer items-center bg-white gap-1 text-black p-1 px-2 rounded-r transition-colors">
+    {tradingMode === "paper" ? (
+      <WalletMinimal className="h-5 w-5" />
+    ) : (
+      <svg xmlns="http://w3.org" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+        <path d="M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z" />
+      </svg>
+    )}
+    <p className="md:flex hidden font-semibold">
+      {tradingMode === "paper" ? "Paper Trading" : "Binance Future"}
+    </p>
+  </button>
+</DropdownMenuTrigger>
+    {tradingMode === "paper" && (
+    <button className=" p-1 cursor-pointer rounded" onClick={onResetPaper}>
+       <RotateCcw className="h-5 w-5"/>
+    </button>
+  )}
+      <DropdownMenuContent align="end" className="text-white border-0">
+        <DropdownMenuItem className="cursor-pointer" onClick={() => onModeChange?.("paper")}>
+          Paper Trading
+        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer"
+          onClick={() => {
+            onModeChange?.("binance");
+            setIsModalOpen(true);
+          }}
+        >
+          Binance Futures
+        </DropdownMenuItem>
+         
+      </DropdownMenuContent>
+    </DropdownMenu>
   </div>
 </div>
 
@@ -374,8 +405,6 @@ const toggleMobileTip = () => {
     </div>
   )}
 </AnimatePresence>
-
-      
     </nav>
   );
 }

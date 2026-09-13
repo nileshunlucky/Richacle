@@ -399,7 +399,7 @@ const calcQty = () => {
   <SelectTrigger className="border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70  hover:text-white transition-colors cursor-pointer outline-none">
     <SelectValue />
   </SelectTrigger>
-  <SelectContent side="top" sideOffset={3} align="start" position="popper" className="text-white">
+  <SelectContent side="top" sideOffset={3} align="start" position="popper" className="text-white border-0">
     {timeframes.map((tf) => (
       <SelectItem
         key={tf}
@@ -798,6 +798,25 @@ const [tradeStatusText, setTradeStatusText] = useState<string | null>(null);
 const [showModeMenu, setShowModeMenu] = useState(false);
 const [activeTradeWidgetIndex, setActiveTradeWidgetIndex] = useState<number | null>(null);
 const [isVerified, setIsVerified] = useState(false);
+const [tradingMode, setTradingMode] = useState<"paper" | "binance">("paper");
+const [paperBalance, setPaperBalance] = useState(10000);
+
+// load saved mode/balance once
+useEffect(() => {
+  const savedMode = localStorage.getItem("richacle_mode");
+  const savedBalance = localStorage.getItem("richacle_paper_balance");
+  if (savedMode === "binance" || savedMode === "paper") setTradingMode(savedMode);
+  if (savedBalance) setPaperBalance(parseFloat(savedBalance));
+}, []);
+
+useEffect(() => {
+  localStorage.setItem("richacle_mode", tradingMode);
+}, [tradingMode]);
+
+useEffect(() => {
+  localStorage.setItem("richacle_paper_balance", paperBalance.toString());
+}, [paperBalance]);
+
 
 const insertMode = (mode: string) => {
   setPrompt(prev => prev ? `${prev} /${mode} ` : `/${mode} `);
@@ -814,11 +833,16 @@ const models = [
   { id: "deepseek-v3.2", name: "Deepseek V3.2" },
 ]
 
- const calcTerminalPnl = () => {
-  if (!activeLines || !currentPrice) return { pnl: 0, roi: 0 };
+const handleResetPaperBalance = () => {
+  setPaperBalance(10000);
+};
+
+const calcTerminalPnl = (priceOverride?: number) => {
+  if (!activeLines) return { pnl: 0, roi: 0 };
   const { entry, side, amount = 0, leverage = 1 } = activeLines;
   const isBuy = side.toUpperCase() === "BUY";
-  const price = parseFloat(currentPrice);
+  const price = priceOverride ?? parseFloat(currentPrice || "0");
+  if (!price) return { pnl: 0, roi: 0 };
   const move = isBuy ? (price - entry) / entry : (entry - price) / entry;
   const roi = move * leverage;
   return { pnl: amount * roi, roi: roi * 100 };
@@ -910,6 +934,27 @@ const handleAccept = async (tradeParams: TradeParams) => {
   setActiveTradeParams(tradeParams);
   setIsTrading(true);
 
+   if (tradingMode === "paper") {
+    setConfirmedEntryPrice(tradeParams.entry);
+    setIsExecuted(true);
+    setIsPositionClosed(false);
+    setMessages(prev => [
+  ...prev,
+  {
+    role: "ai",
+    content: (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-2 flex flex-col gap-2">
+        <div className="flex items-center">
+          Order placed {tradeParams.symbol}
+        </div>
+      </motion.div>
+    )
+  }
+]);
+    setIsTrading(false);
+    return;
+  }
+
   try {
     const formData = new FormData();
     formData.append("email", email);
@@ -936,32 +981,16 @@ const handleAccept = async (tradeParams: TradeParams) => {
     setIsExecuted(true);
     setIsPositionClosed(false)
     setMessages(prev => [
-      ...prev,
-      {
-        role: "ai",
-        content: (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-2 flex flex-col gap-2">
-            <div className=" flex items-center">
-              Order placed
-            </div>
-            {!isPositionClosed && (
-          <button 
-            onClick={() => handleCloseOrder(tradeParams.symbol)} 
-            disabled={isClosing}
-            className={cn(
-              "mt-1 self-start px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors",
-              isClosing 
-                ? "opacity-40 cursor-not-allowed  bg-white text-black" 
-                : "cursor-pointer bg-white text-black"
-            )}
-          >
-            {isClosing ? "Closing" : "Close position"}
-          </button>
-        )}
-          </motion.div>
-        )
-      }
-    ]);
+  ...prev,
+  {
+    role: "ai",
+    content: (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-2 flex flex-col gap-2">
+        <div className="flex items-center">Order placed {tradeParams.symbol}</div>
+      </motion.div>
+    )
+  }
+]);
   } catch (error) {
     console.error("Trade Error:", error);
     if (error instanceof Error) {
@@ -1009,6 +1038,36 @@ const handleCloseOrder = async (symbol: string , exitPriceOverride?: number) => 
     ]);
     return;
   }
+
+  if (tradingMode === "paper") {
+    setIsClosing(true);
+    const exitPrice = exitPriceOverride ?? parseFloat(currentPrice || "0");
+    const { pnl } = calcTerminalPnl(exitPrice);
+    setPaperBalance(prev => Math.max(0, prev + pnl));
+
+    setMessages(prev => [
+      ...prev,
+      {
+        role: "ai",
+        content: (
+          <div className="text-left p-4">
+            Position for {symbol} closed. PnL: {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)} USD
+          </div>
+        )
+      }
+    ]);
+
+    setIsWidgetActive(false);
+    setActiveLines(null);
+    setIsExecuted(false);
+    setConfirmedEntryPrice(null);
+    hasClosedRef.current = false;
+    setIsPositionClosed(false);
+    setIsRejected(false);
+    setIsClosing(false);
+    return;
+  }
+
   setIsClosing(true); // Re-use the trading loading state
 
   try {
@@ -1232,7 +1291,7 @@ const handleClearMemory = async () => {
 
   return (
     <>
-       <Navbar />
+       <Navbar tradingMode={tradingMode} paperBalance={paperBalance} onModeChange={setTradingMode} onResetPaper={handleResetPaperBalance}/>
     <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
     {showPricing && (
   <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
@@ -1253,7 +1312,7 @@ const handleClearMemory = async () => {
   <AdvancedChart symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice} onIntervalChange={setActiveTimeframe}/>
 
   {/* Terminal — Positions panel */}
-  <div className="shrink-0 bg-black px-4 py-3">
+  <div className="shrink-0 bg-black px-4 py-3 mb-7 md:mb-0">
     <div className="rounded-2xl bg-black  overflow-hidden">
 
       {/* Tabs */}
@@ -1286,21 +1345,21 @@ const handleClearMemory = async () => {
 
           return (
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-collapse ">
                 <thead>
-                  <tr className="text-[11px] uppercase tracking-wide text-white/30">
+                  <tr className="text-[11px] uppercase  text-white">
                     <th className="font-medium px-5 py-3">Symbol</th>
                     <th className="font-medium px-3 py-3">Size</th>
                     <th className="font-medium px-3 py-3">Value</th>
                     <th className="font-medium px-3 py-3">Ent. Price</th>
                     <th className="font-medium px-3 py-3">Liq. Price</th>
                     <th className="font-medium px-3 py-3">Oracle</th>
-                    <th className="font-medium px-3 py-3">Margin</th>
                     <th className="font-medium px-5 py-3 text-right">PNL</th>
+                    <th className="font-medium px-3 py-3">Close position</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr className="relative text-[13px] font-mono">
+                  <tr className="relative text-[13px] ">
                     <td className="relative px-5 py-4">
                       <span className={cn(
                         "absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-8 rounded-r",
@@ -1345,14 +1404,6 @@ const handleClearMemory = async () => {
                     <td className="px-3 py-4">
                       <span className="text-white/80">{price ? price.toFixed(3) : "—"}</span>
                     </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-white/80">
-                          {(activeLines.amount || 0).toFixed(2)} <span className="text-white/30">⇄</span>
-                        </span>
-                        <span className="text-white/30 text-[11px]">USDC</span>
-                      </div>
-                    </td>
                     <td className="px-5 py-4 text-right">
                       <div className="flex flex-col items-end">
                         <span className={cn("font-semibold", isProfit ? "text-[#00E676]" : "text-[#FF1744]")}>
@@ -1363,19 +1414,22 @@ const handleClearMemory = async () => {
                         </span>
                       </div>
                     </td>
+                    <td className="px-3 py-4">
+                       
+                <button
+                  onClick={() => handleCloseOrder(activeSymbol)}
+                  disabled={isClosing}
+                  className="px-4 py-2 rounded-lg text-[11px] font-semibold uppercase text-white/60 hover:text-white transition-colors cursor-pointer disabled:opacity-30"
+                >
+                 X
+                </button>
+              
+                    </td>
                   </tr>
                 </tbody>
               </table>
 
-              <div className="flex justify-end px-5 pb-4 pt-1">
-                <button
-                  onClick={() => handleCloseOrder(activeSymbol)}
-                  disabled={isClosing}
-                  className="px-3 py-1.5 rounded-lg text-[11px] font-semibold uppercase tracking-wide border border-white/10 text-white/60 hover:text-white hover:border-white/25 transition-colors cursor-pointer disabled:opacity-30"
-                >
-                  {isClosing ? "Closing..." : "Close position"}
-                </button>
-              </div>
+             
             </div>
           );
         })()
