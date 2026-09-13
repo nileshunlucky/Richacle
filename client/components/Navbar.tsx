@@ -13,7 +13,8 @@ import {
   Loader2,
   Search,
   WalletMinimal,
-  RotateCcw 
+  RotateCcw ,
+  Lock
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -43,9 +44,10 @@ interface NavbarProps {
   paperBalance?: number;
   onModeChange?: (mode: "paper" | "binance") => void;
    onResetPaper?: () => void;
+   isVerified?: boolean;
 }
 
-export default function Navbar({ tradingMode = "paper", paperBalance = 10000, onModeChange, onResetPaper }: NavbarProps) {
+export default function Navbar({ tradingMode = "paper", paperBalance = 10000, onModeChange, onResetPaper, isVerified = false }: NavbarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -267,14 +269,20 @@ const toggleMobileTip = () => {
         <DropdownMenuItem className="cursor-pointer" onClick={() => onModeChange?.("paper")}>
           Paper Trading
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer"
-          onClick={() => {
-            onModeChange?.("binance");
-            setIsModalOpen(true);
-          }}
-        >
-          Binance Futures
-        </DropdownMenuItem>
+        <DropdownMenuItem className="cursor-pointer" 
+  onClick={() => {
+    if (!isVerified) {
+      toast("Upgrade your plan to unlock Binance Futures.");
+      setShowPricing(true);
+      return;
+    }
+    onModeChange?.("binance");
+    setIsModalOpen(true);
+  }}
+>
+  Binance Future
+  {!isVerified && <Lock size={11} className="ml-2 inline text-zinc-400" />}
+</DropdownMenuItem>
          
       </DropdownMenuContent>
     </DropdownMenu>

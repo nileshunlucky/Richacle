@@ -1291,7 +1291,7 @@ const handleClearMemory = async () => {
 
   return (
     <>
-       <Navbar tradingMode={tradingMode} paperBalance={paperBalance} onModeChange={setTradingMode} onResetPaper={handleResetPaperBalance}/>
+       <Navbar tradingMode={tradingMode} paperBalance={paperBalance} onModeChange={setTradingMode} onResetPaper={handleResetPaperBalance}  isVerified={isVerified}/>
     <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
     {showPricing && (
   <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
