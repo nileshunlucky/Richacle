@@ -269,22 +269,23 @@ const toggleMobileTip = () => {
         <DropdownMenuItem className="cursor-pointer" onClick={() => onModeChange?.("paper")}>
           Paper Trading
         </DropdownMenuItem>
-        <DropdownMenuItem className="cursor-pointer" 
+        
+         <DropdownMenuItem
+  className="cursor-pointer"
   onClick={() => {
     if (!isVerified) {
-      toast("Upgrade your plan to unlock Binance Futures.");
+      toast("Upgrade your plan to unlock Coinbase Futures.");
       setShowPricing(true);
       return;
     }
-    onModeChange?.("binance");
-    setIsModalOpen(true);
+    toast.error("Something went wrong, please try later!");
   }}
 >
-  Binance Future
+  Coinbase
   {!isVerified && <Lock size={11} className="ml-2 inline text-zinc-400" />}
 </DropdownMenuItem>
-         
       </DropdownMenuContent>
+      
     </DropdownMenu>
   </div>
 </div>

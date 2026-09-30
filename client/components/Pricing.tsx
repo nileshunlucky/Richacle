@@ -13,13 +13,13 @@ export default function Home() {
 
   const plans = [
     {
-      name: "Hobby Plan",
+      name: "Hobby",
       price: 20,
       period: "/month",
       features: [
         "Realtime Research",
         "Oracle Agent",
-        "Binance Intergration",
+        "Coinbase Intergration",
         "Tradingview Chart",
       ],
       cta: "Get Hobby",
@@ -27,7 +27,7 @@ export default function Home() {
       featured: false
     },
     {
-      name: "Pro Plan",
+      name: "Pro",
       price: 60,
       period: "/month",
       features: [
@@ -40,7 +40,7 @@ export default function Home() {
       featured: true
     },
     {
-      name: "Premium Plan",
+      name: "Premium",
       price: 200,
       period: "/month",
       features: [

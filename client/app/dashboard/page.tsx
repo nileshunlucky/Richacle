@@ -1488,7 +1488,7 @@ const handleClearMemory = async () => {
               >
                 {typeof msg.content === 'string' ? (
                   <div className={cn(
-                    "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg rounded-tr-none",
+                    "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg",
                     msg.role === "user" ? "bg-zinc-900 text-white" : "bg-transparent text-[#d1d1d1] pl-4"
                   )}>
 {msg.content.split(/(\/scalp-trade|\/swing-trade|\/day-trade)/gi).map((part, i) =>

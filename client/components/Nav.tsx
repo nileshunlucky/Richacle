@@ -27,7 +27,11 @@ export default function Navbar() {
   }, []);
 
   return (
+   <> 
+    <div className="flex items-center justify-center bg-red-700 text-white w-full p-1 gap-1 text-xs"><p className="font-semibold">Limited Offer</p> 2x Credits for 1/100 paid users. <Link href="/pricing"><p className="underline cursor-pointer"> Claim Now!</p></Link></div>
     <nav className="z-50 flex w-full flex-col items-center justify-between px-8 py-6 md:max-w-7xl md:mx-auto">
+
+
       <div className="flex items-center justify-between w-full">
         
         <Link href="/" className="flex items-center gap-1">
@@ -86,5 +90,6 @@ export default function Navbar() {
         )}
       </AnimatePresence>
     </nav>
+    </>
   );
 }

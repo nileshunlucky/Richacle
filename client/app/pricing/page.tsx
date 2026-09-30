@@ -13,13 +13,13 @@ export default function Home() {
 
   const plans = [
     {
-      name: "Hobby Plan",
+      name: "Hobby",
       price: 20,
       period: "/month",
       features: [
         "Realtime Research",
         "Oracle Agent",
-        "Binance Intergration",
+        "Coinbase Intergration",
         "Tradingview Chart",
       ],
       cta: "Get Hobby",
@@ -27,7 +27,7 @@ export default function Home() {
       featured: false
     },
     {
-      name: "Pro Plan",
+      name: "Pro",
       price: 60,
       period: "/month",
       features: [
@@ -40,7 +40,7 @@ export default function Home() {
       featured: true
     },
     {
-      name: "Premium Plan",
+      name: "Premium",
       price: 200,
       period: "/month",
       features: [
@@ -78,8 +78,9 @@ const cardVariants = {
 
 
   return (
+    <>
+     <div className="flex items-center justify-center bg-red-700 text-white w-full p-1 gap-1 text-xs"><p className="font-semibold">Limited Offer</p> 2x Credits for 1/100 paid users. <p className="underline cursor-pointer"> Claim Now!</p></div>
     <div className="bg-black text-white md:pt-28 ">
-    
       {/* Hero Section */}
       <div className="pt-20 pb-16 px-6 relative min-h-screen">
      
@@ -173,5 +174,6 @@ const cardVariants = {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }

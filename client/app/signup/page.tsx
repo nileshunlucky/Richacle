@@ -105,7 +105,7 @@ export default function SignupPage() {
               <div className="text-xl font-bold text-gray-700">Claude</div>
             </div>
             <div className="flex items-center justify-center">
-              <div className="text-xl font-bold text-gray-700">Binance</div>
+              <div className="text-xl font-bold text-gray-700">Coinbase</div>
             </div>
             <div className="flex items-center justify-center">
               <div className="text-xl font-bold text-gray-700">TradingView</div>
