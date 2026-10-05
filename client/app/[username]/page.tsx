@@ -144,7 +144,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     return `${isNegative ? "-" : ""}$${formatted}`;
   }
 
-
   // ── Data fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
     async function getProfileData() {
@@ -167,7 +166,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
         setTargetEmail(profileEmail);
 
-        const { data: { session } } = await supabase.auth.getSession();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
         if (session?.user?.email === profileEmail) setIsOwner(true);
 
         const formData = new FormData();
@@ -179,16 +180,16 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         });
 
         const formxData = new FormData();
-formxData.append("email", profileEmail);
+        formxData.append("email", profileEmail);
 
-const res = await fetch("https://richacle.onrender.com/api/trade-log", {
-  method: "POST",
-  body: formxData,
-});
-const tradeLogData = await res.json();
-if (tradeLogData.status === "success") {
-  setTrades(tradeLogData.trades || []);
-}
+        const res = await fetch("https://richacle.onrender.com/api/trade-log", {
+          method: "POST",
+          body: formxData,
+        });
+        const tradeLogData = await res.json();
+        if (tradeLogData.status === "success") {
+          setTrades(tradeLogData.trades || []);
+        }
 
         const form = new FormData();
         form.append("email", profileEmail);
@@ -204,31 +205,31 @@ if (tradeLogData.status === "success") {
 
         // Net worth should just reflect current balance, regardless of trade history
         if (balData?.equity !== undefined && balData?.equity !== null) {
-  displayNetWorth = `$${Number(balData.equity).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
+          displayNetWorth = `$${Number(balData.equity).toLocaleString(undefined, {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`;
+        }
 
-       if (tradeResponse.ok) {
-  const tradeData = await tradeResponse.json();
-  if (tradeData.status === "success" && tradeData.calendar?.length > 0) {
-    const calendar = [...tradeData.calendar].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-    );
-    const latestPnL = calendar[calendar.length - 1].pnl || 0;
-    isNegative = latestPnL < 0;
+        if (tradeResponse.ok) {
+          const tradeData = await tradeResponse.json();
+          if (tradeData.status === "success" && tradeData.calendar?.length > 0) {
+            const calendar = [...tradeData.calendar].sort(
+              (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+            );
+            const latestPnL = calendar[calendar.length - 1].pnl || 0;
+            isNegative = latestPnL < 0;
 
-    const sign = latestPnL >= 0 ? "+" : "-";
-    const equity = balData?.equity || 0;
-    const pct = equity !== 0 ? (Math.abs(latestPnL) / equity) * 100 : 0;
+            const sign = latestPnL >= 0 ? "+" : "-";
+            const equity = balData?.equity || 0;
+            const pct = equity !== 0 ? (Math.abs(latestPnL) / equity) * 100 : 0;
 
-    displayNetWorthChange = `${sign}$${Math.abs(latestPnL).toLocaleString(undefined, {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
-    })} ${sign}${pct.toFixed(2)}%`;
-  }
-}
+            displayNetWorthChange = `${sign}$${Math.abs(latestPnL).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })} ${sign}${pct.toFixed(2)}%`;
+          }
+        }
 
         const fetchedAvatar =
           apiData.avatar ||
@@ -272,150 +273,147 @@ if (tradeLogData.status === "success") {
     }
   };
 
-const cn = (...classes: (string | boolean | undefined | null)[]) =>
-  classes.filter(Boolean).join(" ");
-  
-  const TradeResultOverlay = ({ 
-  type, 
-  pnl,
-  pnlPercentage,
-  symbol, 
-  onClose,
-  details,
-  profile
-}: { 
-  type: 'WIN' | 'LOSS', 
-  pnl: string,
-  pnlPercentage: string,
-  symbol: string, 
-  onClose: () => void,
-  details: {
-    prompt: string,
-    amount: string,
-    qty: string,
-    odds: string,
-    side: string,
-    entryPrice: string,
-    markPrice: string,
-  },
-  profile: {
-    avatarUrl: string,
-    username: string,
-    name: string,
-  }
-}) => {
-  const isWin = type === 'WIN';
-  
-  return (
-    <motion.div 
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-xl p-4 md:p-6"
-    >
-      <motion.div 
-        initial={{ scale: 0.95, y: 30, opacity: 0 }}
-        animate={{ scale: 1, y: 0, opacity: 1 }}
-        transition={{ type: "spring", damping: 25, stiffness: 150 }}
-        onClick={onClose}
-        className="relative cursor-pointer w-full max-w-[650px] overflow-hidden rounded-[24px] md:rounded-[32px] shadow-[0_32px_120px_-15px_rgba(0,0,0,0.8)]"
-        style={{
-          backgroundColor: '#000000',
-          backgroundImage: "radial-gradient(100% 90% at 50% 100%, #7A001B 0%, #4A0010 30%, #1A0508 60%, #000000 90%, transparent 100%)"
-        }}
+  const cn = (...classes: (string | boolean | undefined | null)[]) =>
+    classes.filter(Boolean).join(" ");
+
+  const TradeResultOverlay = ({
+    type,
+    pnl,
+    pnlPercentage,
+    symbol,
+    onClose,
+    details,
+    profile,
+  }: {
+    type: "WIN" | "LOSS";
+    pnl: string;
+    pnlPercentage: string;
+    symbol: string;
+    onClose: () => void;
+    details: {
+      prompt: string;
+      amount: string;
+      qty: string;
+      odds: string;
+      side: string;
+      entryPrice: string;
+      markPrice: string;
+    };
+    profile: {
+      avatarUrl: string;
+      username: string;
+      name: string;
+    };
+  }) => {
+    const isWin = type === "WIN";
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-xl p-4 md:p-6"
       >
-        <div className="relative z-10 p-5 flex flex-col items-center">
-          
-          {/* USER PROFILE ROW — NEW */}
-          <div className="w-full flex items-center gap-3">
-            {profile.avatarUrl ? (
-              <img
-                src={profile.avatarUrl}
-                alt={profile.name || profile.username || "User"}
-                className="w-12 h-12 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-9 h-9 rounded-full flex items-center justify-center text-white  font-semibold">
-                {(profile.name || profile.username || "U").charAt(0).toUpperCase()}
-              </div>
-            )}
-            <div className="flex flex-col leading-tight">
-              <span className="text-white text-sm font-semibold">{profile.name || "Anonymous"}</span>
-              {profile.username && (
-                <span className="text-zinc-400 text-xs">@{profile.username}</span>
+        <motion.div
+          initial={{ scale: 0.95, y: 30, opacity: 0 }}
+          animate={{ scale: 1, y: 0, opacity: 1 }}
+          transition={{ type: "spring", damping: 25, stiffness: 150 }}
+          onClick={onClose}
+          className="relative cursor-pointer w-full max-w-[650px] overflow-hidden rounded-[24px] md:rounded-[32px] shadow-[0_32px_120px_-15px_rgba(0,0,0,0.8)]"
+          style={{
+            backgroundColor: "#000000",
+            backgroundImage:
+              "radial-gradient(100% 90% at 50% 100%, #7A001B 0%, #4A0010 30%, #1A0508 60%, #000000 90%, transparent 100%)",
+          }}
+        >
+          <div className="relative z-10 p-5 flex flex-col items-center">
+            {/* USER PROFILE ROW */}
+            <div className="w-full flex items-center gap-3">
+              {profile.avatarUrl ? (
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.name || profile.username || "User"}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white  font-semibold">
+                  {(profile.name || profile.username || "U").charAt(0).toUpperCase()}
+                </div>
               )}
+              <div className="flex flex-col leading-tight">
+                <span className="text-white text-sm font-semibold">
+                  {profile.name || "Anonymous"}
+                </span>
+                {profile.username && (
+                  <span className="text-zinc-400 text-xs">@{profile.username}</span>
+                )}
+              </div>
             </div>
 
-            
-          </div>
-          
+            {/* Main Content Container: Mobile Stack, Desktop Row */}
+            <div className="w-full flex flex-col md:flex-row items-stretch md:items-center overflow-hidden">
+              {/* LEFT SIDE: Symbol/Side */}
+              <div className="md:mr-10 p-4 md:p-8 text-left space-y-3">
+                <h4 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-white">
+                  {symbol}
+                </h4>
 
-          {/* Main Content Container: Mobile Stack, Desktop Row */}
-          <div className="w-full flex flex-col md:flex-row items-stretch md:items-center overflow-hidden">
-            
-            {/* LEFT SIDE: Logo & Symbol/Side */}
-            <div className="md:mr-10 p-4 md:p-8 text-left space-y-3">
-              
-
-              <h4 className="text-xl md:text-2xl font-bold tracking-tight uppercase text-white">
-                {symbol}
-              </h4>
-
-              <div className="flex gap-3 items-center text-sm font-semibold text-white">
-                <span>{details.side}</span>
-                <span className="tabular-nums  text-white">{details.qty}</span>
+                <div className="flex gap-3 items-center text-sm font-semibold text-white">
+                  <span>{details.side}</span>
+                  <span className="tabular-nums  text-white">{details.qty}</span>
+                </div>
               </div>
 
-              
-              
-            </div>
+              {/* Separator */}
+              <div className="h-px w-full md:h-40 md:w-px bg-white/10 my-2 md:my-0" />
 
-            
-
-            {/* Separator */}
-            <div className="h-px w-full md:h-40 md:w-px bg-white/10 my-2 md:my-0" />
-
-            {/* RIGHT SIDE: Trade Details */}
-            <div className="p-4 md:p-8 w-full md:w-64 text-left flex flex-col justify-center md:ml-5">
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
-                    <span>Entry Price</span>
-                    <span className="tabular-nums font-semibold text-white">${details.entryPrice}</span>
-                  </div>
-                  <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
-                    <span>Mark Price</span>
-                    <span className="tabular-nums font-semibold text-white">${details.markPrice}</span>
-                  </div>
-                </div>
-
-                <div className="h-px w-full bg-white/10 border-dashed border-zinc-600/20" />
-                
-                <div className="space-y-1">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="text-4xl md:text-5xl font-bold tracking-tighter tabular-nums text-[#CFA968]">
-                      {isWin ? '+' : '-'}${pnl}
+              {/* RIGHT SIDE: Trade Details */}
+              <div className="p-4 md:p-8 w-full md:w-64 text-left flex flex-col justify-center md:ml-5">
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
+                      <span>Entry Price</span>
+                      <span className="tabular-nums font-semibold text-white">
+                        ${details.entryPrice}
+                      </span>
                     </div>
-                    <span className={cn(
-                      "text-sm font-semibold tabular-nums bg-[#CFA968] p-1 px-3 rounded text-black",
-                      
-                    )}>
-                      {isWin ? '+' : '-'}{pnlPercentage}%
-                    </span>
+                    <div className="flex justify-between items-center text-xs text-zinc-200 font-medium">
+                      <span>Mark Price</span>
+                      <span className="tabular-nums font-semibold text-white">
+                        ${details.markPrice}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="h-px w-full bg-white/10 border-dashed border-zinc-600/20" />
+
+                  <div className="space-y-1">
+                    <div className="flex flex-col items-center gap-2">
+                      <div className="text-4xl md:text-5xl font-bold tracking-tighter tabular-nums text-[#CFA968]">
+                        {isWin ? "+" : "-"}${pnl}
+                      </div>
+                      <span
+                        className={cn(
+                          "text-sm font-semibold tabular-nums bg-[#CFA968] p-1 px-3 rounded text-black"
+                        )}
+                      >
+                        {isWin ? "+" : "-"}
+                        {pnlPercentage}%
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center justify-center gap-3 mb-6 md:mb-10 w-full ">
-                <img className="h-6 w-6 md:h-8 md:w-8 opacity-90" src="/logo.png" alt="logo"/>
-                <p className="text-xl md:text-2xl text-white font-medium theseason">RICHACLE</p>
-              </div>
+          <div className="flex items-center justify-center gap-3 mb-6 md:mb-10 w-full ">
+            <img className="h-6 w-6 md:h-8 md:w-8 opacity-90" src="/logo.png" alt="logo" />
+            <p className="text-xl md:text-2xl text-white font-medium theseason">RICHACLE</p>
+          </div>
+        </motion.div>
       </motion.div>
-    </motion.div>
-  );
-};
+    );
+  };
 
   async function handleSaveProfile() {
     try {
@@ -466,8 +464,7 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
   if (loading) {
     return (
       <main className="h-screen bg-black flex justify-center items-center text-white text-center ">
-                  <p className="theseason md:text-3xl text-xl">RICHACLE</p>
-
+        <p className="theseason md:text-3xl text-xl">RICHACLE</p>
       </main>
     );
   }
@@ -588,18 +585,7 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
                   />
                 </div>
 
-                {/* Bio */}
-                <div>
-                  <label className="text-[10px] text-zinc-500 font-semibold ml-0.5 block mb-1.5">
-                    Bio
-                  </label>
-                  <Textarea
-                    value={editForm.bio}
-                    onChange={(e) => setEditForm({ ...editForm, bio: e.target.value })}
-                    rows={3}
-                    className="bg-transparent border-0 rounded p-2 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-zinc-400 transition-colors duration-200 resize-none"
-                  />
-                </div>
+                
               </motion.div>
             </motion.div>
           </motion.div>
@@ -617,26 +603,52 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
         initial="initial"
         animate="animate"
         exit="exit"
-        className="min-h-screen bg-black flex items-start justify-center p-5"
+        className="relative min-h-screen overflow-hidden bg-black flex items-start justify-center p-5"
       >
+        {/* Deeper top curve, darker pink, shorter glow, straight bottom */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 bg-black"
+          style={{
+            background: `
+              radial-gradient(ellipse 50% 38% at 50% 0%, rgba(0,0,0,0.97) 0%, rgba(0,0,0,0.75) 40%, rgba(0,0,0,0.3) 75%, transparent 100%),
+              radial-gradient(ellipse 120% 28% at 50% 36%, rgba(120, 6, 64, 0.85) 0%, rgba(80, 4, 44, 0.5) 45%, transparent 100%),
+              radial-gradient(ellipse 80% 18% at 50% 38%, rgba(155, 14, 86, 0.4) 0%, transparent 100%),
+              linear-gradient(
+                to bottom,
+                #34041C 0%,
+                #3E0522 10%,
+                #51062E 34%,
+                #3E0522 48%,
+                #220213 60%,
+                #0C0106 72%,
+                #000000 80%,
+                #000000 100%
+              )
+            `,
+          }}
+        />
 
         <motion.div
           variants={cardVariants}
           initial="initial"
           animate="animate"
-          className="w-full max-w-xl overflow-hidden rounded-sm relative"
+          className="w-full max-w-xl overflow-hidden rounded-sm relative z-10"
         >
-          {/* Top bar: back / username / ellipsis */}
+          {/* Top bar: profile image / username / back button */}
           <motion.div variants={fadeUp} className="flex items-center justify-between px-1 pb-5">
-            <motion.button
-              whileHover={{ x: -2 }}
-              whileTap={{ scale: 0.92 }}
-              transition={{ type: "spring", stiffness: 400, damping: 25 }}
-              onClick={() => router.back()}
-              className="text-white cursor-pointer transition-colors duration-150"
-            >
-              <ChevronLeft size={22} />
-            </motion.button>
+            <motion.div variants={avatarVariants} className="w-8 shrink-0">
+              <div
+                style={{
+                  width: "32px",
+                  height: "32px",
+                  borderRadius: "50%",
+                  backgroundImage: `url(${user.avatar})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              />
+            </motion.div>
 
             <span className="flex items-center gap-1.5 font-semibold text-[15px] text-white">
               {user.username}
@@ -649,78 +661,51 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
               )}
             </span>
 
-            <div></div>
+            <div className="w-8 flex justify-end">
+              <motion.button
+                whileHover={{ x: 2 }}
+                whileTap={{ scale: 0.92 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                onClick={() => router.back()}
+                className="text-white cursor-pointer transition-colors duration-150"
+              >
+                <ChevronLeft size={22} />
+              </motion.button>
+            </div>
           </motion.div>
 
-          {/* Avatar + Stats row */}
+          {/* Net worth + PnL, centered */}
           <motion.div
             variants={staggerContainer}
             initial="initial"
             animate="animate"
-            className="flex items-center px-1 gap-3"
+            className="flex flex-col items-center justify-center px-1 text-center"
           >
-            <motion.div variants={avatarVariants} className="shrink-0">
-              <div
-                className="p-[3px] "
-                
-              >
-                <div
-                  style={{
-                    width: "80px",
-                    height: "80px",
-                    borderRadius: "50%",
-                    backgroundImage: `url(${user.avatar})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                   
-                  }}
-                />
-              </div>
-            </motion.div>
+            <motion.span variants={fadeUp} className="font-bold text-white text-4xl">
+              {user.netWorth}
+            </motion.span>
 
-            <motion.div variants={fadeUp} className="flex flex-col w-full items-center justify-center">
-
-
-              <div className="flex flex-col items-center w-full">
-                      <motion.h1 variants={fadeUp} className="font-semibold text-[15px] text-white w-full  ">
-              {user.name}
-            </motion.h1>
-                <span
-                  className="font-semibold text-white text-3xl"
-                  
-                >
-                  {user.netWorth}
-                </span>
-              </div>
-              
-              <div className="flex items-center text-zinc-500 mt-1">
-  <span className={`text-sm font-semibold`}>
-    {user.netWorthChange.split(" ")[0]}
-  </span>
-  <span className={`text-xs font-semibold px-2 py-0.5 rounded `}>
-    {user.netWorthChange.split(" ")[1]}
-  </span>
-</div>
+            <motion.div
+              variants={fadeUp}
+              className="flex items-center justify-center text-zinc-500 mt-1"
+            >
+              <span className="text-sm font-semibold">
+                {user.netWorthChange.split(" ")[0]}
+              </span>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded">
+                {user.netWorthChange.split(" ")[1]}
+              </span>
             </motion.div>
           </motion.div>
 
-          {/* Name + Bio */}
+          {/* Bio */}
           <motion.div
             variants={staggerContainer}
             initial="initial"
             animate="animate"
             className="px-1 pt-4 text-left "
           >
-    
-
-            {user.bio && (
-              <motion.p
-                variants={fadeUp}
-                className="text-zinc-400 text-[14px] mt-1 leading-snug whitespace-pre-line"
-              >
-                {user.bio}
-              </motion.p>
-            )}
+            
 
             {/* Owner Actions */}
             <motion.div variants={fadeUp} className="flex items-center gap-2 mt-4">
@@ -750,76 +735,87 @@ const cn = (...classes: (string | boolean | undefined | null)[]) =>
           </motion.div>
 
           {/* Trade History */}
-<motion.div
-  variants={staggerContainer}
-  initial="initial"
-  animate="animate"
-  className="px-1 pt-8 "
->
+          <motion.div
+            variants={staggerContainer}
+            initial="initial"
+            animate="animate"
+            className="px-1 pt-8 "
+          >
+            {trades.length === 0 ? (
+              <motion.p variants={fadeUp} className="text-zinc-600 text-sm py-6 text-center">
+                No trades yet
+              </motion.p>
+            ) : (
+              <motion.div variants={fadeUp} className="divide-y divide-white/[0.06]">
+                {trades.map((trade, i) => {
+                  const isNeg = trade.pnl < 0;
+                  return (
+                    <div
+                      key={i}
+                      onClick={() => setSelectedTrade(trade)}
+                      className="flex items-center justify-between py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors rounded-lg px-1"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex flex-col">
+                          <span className="text-white text-[13px] font-semibold">
+                            {trade.symbol}
+                          </span>
+                          <span className="text-zinc-500 text-[11px]">
+                            {trade.side} {trade.qty} • ${trade.entryPrice.toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
 
-  {trades.length === 0 ? (
-    <motion.p variants={fadeUp} className="text-zinc-600 text-sm py-6 text-center">
-      No trades yet
-    </motion.p>
-  ) : (
-    <motion.div variants={fadeUp} className="divide-y divide-white/[0.06]">
-      {trades.map((trade, i) => {
-        const isNeg = trade.pnl < 0;
-        return (
-          <div key={i}  onClick={() => setSelectedTrade(trade)} className="flex items-center justify-between py-3.5 cursor-pointer hover:bg-white/[0.03] transition-colors rounded-lg px-1">
-            <div className="flex items-center gap-3">
-              
-              <div className="flex flex-col">
-                <span className="text-white text-[13px] font-semibold">{trade.symbol}</span>
-                <span className="text-zinc-500 text-[11px]">
-                {trade.side}  {trade.qty} • 
-                    ${trade.entryPrice.toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-end">
-              <span className={`text-[13px] font-semibold ${isNeg ? "text-red-500" : "text-green-500"}`}>
-                {isNeg ? "-" : "+"}${Math.abs(trade.pnl).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              <span className="text-zinc-500 text-[11px]">
-               ${trade.exitPrice.toLocaleString()}
-                </span>
-            </div>
-          </div>
-        );
-      })}
-    </motion.div>
-  )}
-</motion.div>
+                      <div className="flex flex-col items-end">
+                        <span
+                          className={`text-[13px] font-semibold ${
+                            isNeg ? "text-red-500" : "text-green-500"
+                          }`}
+                        >
+                          {isNeg ? "-" : "+"}$
+                          {Math.abs(trade.pnl).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                        <span className="text-zinc-500 text-[11px]">
+                          ${trade.exitPrice.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </motion.div>
+            )}
+          </motion.div>
         </motion.div>
       </motion.main>
 
       <AnimatePresence>
-  {selectedTrade && (
-    <TradeResultOverlay
-      type={selectedTrade.pnl >= 0 ? "WIN" : "LOSS"}
-      pnl={Math.abs(selectedTrade.pnl).toFixed(2)}
-      pnlPercentage={Math.abs(selectedTrade.roi).toFixed(2)}
-      symbol={selectedTrade.symbol}
-      details={{
-        prompt: "Trade Closed",
-        amount: "",
-        odds: "",
-        side: selectedTrade.side,
-        qty: selectedTrade.qty,
-        entryPrice: selectedTrade.entryPrice.toFixed(2),
-        markPrice: selectedTrade.exitPrice.toFixed(2),
-      }}
-      profile={{
-        avatarUrl: user.avatar,
-        username: user.username,
-        name: user.name,
-      }}
-      onClose={() => setSelectedTrade(null)}
-    />
-  )}
-</AnimatePresence>
+        {selectedTrade && (
+          <TradeResultOverlay
+            type={selectedTrade.pnl >= 0 ? "WIN" : "LOSS"}
+            pnl={Math.abs(selectedTrade.pnl).toFixed(2)}
+            pnlPercentage={Math.abs(selectedTrade.roi).toFixed(2)}
+            symbol={selectedTrade.symbol}
+            details={{
+              prompt: "Trade Closed",
+              amount: "",
+              odds: "",
+              side: selectedTrade.side,
+              qty: selectedTrade.qty,
+              entryPrice: selectedTrade.entryPrice.toFixed(2),
+              markPrice: selectedTrade.exitPrice.toFixed(2),
+            }}
+            profile={{
+              avatarUrl: user.avatar,
+              username: user.username,
+              name: user.name,
+            }}
+            onClose={() => setSelectedTrade(null)}
+          />
+        )}
+      </AnimatePresence>
     </AnimatePresence>
   );
 }
