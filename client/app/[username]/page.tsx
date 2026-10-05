@@ -636,7 +636,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           className="w-full max-w-xl overflow-hidden rounded-sm relative z-10"
         >
           {/* Top bar: profile image / username / back button */}
-          <motion.div variants={fadeUp} className="flex items-center justify-between px-1 pb-5">
+          <motion.div variants={fadeUp} className="flex items-center justify-between px-1 pb-5 mt-5">
             <motion.div variants={avatarVariants} className="w-8 shrink-0">
               <div
                 style={{
@@ -679,7 +679,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             variants={staggerContainer}
             initial="initial"
             animate="animate"
-            className="flex flex-col items-center justify-center px-1 text-center"
+            className="flex flex-col items-center justify-center px-1 text-center mt-18"
           >
             <motion.span variants={fadeUp} className="font-bold text-white text-4xl">
               {user.netWorth}
@@ -687,7 +687,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
             <motion.div
               variants={fadeUp}
-              className="flex items-center justify-center text-zinc-500 mt-1"
+              className="flex items-center justify-center text-zinc-400 mt-1"
             >
               <span className="text-sm font-semibold">
                 {user.netWorthChange.split(" ")[0]}
@@ -742,7 +742,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             className="px-1 pt-8 "
           >
             {trades.length === 0 ? (
-              <motion.p variants={fadeUp} className="text-zinc-600 text-sm py-6 text-center">
+              <motion.p variants={fadeUp} className="text-zinc-400 text-sm py-6 text-center">
                 No trades yet
               </motion.p>
             ) : (
