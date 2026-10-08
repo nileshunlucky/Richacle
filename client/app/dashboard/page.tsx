@@ -1234,7 +1234,7 @@ if (wants_to_trade && trade_data) {
       role: "ai",
       content: (
         <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
-          <h1 className="font-semibold">Win Rate {displayTradeData.confidence}%</h1>
+          <h1 className="font-semibold">Chance {displayTradeData.confidence}%</h1>
           <h1 className="font-light theseason">RICHACLE</h1>
         </div>
       ),

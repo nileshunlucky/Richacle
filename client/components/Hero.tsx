@@ -409,7 +409,7 @@ function FakeTradeChat() {
         transition={{ delay: 0.5 }}
         className="flex justify-between items-center text-white"
       >
-        <span className="font-semibold">Win Rate 82%</span>
+        <span className="font-semibold">Chance 82%</span>
         <span className="font-light theseason text-sm">RICHACLE</span>
       </motion.div>
 

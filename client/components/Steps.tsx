@@ -117,7 +117,7 @@ const QUERY = "What's the Crypto Market Condition?"
 const STEPS = [
   { label: "Thinking", labeled: "Thinked",  detail: "Choose a Bitcoin" },
   { label: "Researching",labeled: "Researched", detail: "Bitcoin market condition?" },
-  { label: "Predicting",labeled: "Predicted",  detail: "Highest win rate found" },
+  { label: "Predicting",labeled: "Predicted",  detail: "Highest Chance found" },
 ]
 
 // Timing (ms)
