@@ -834,6 +834,22 @@ function VibeTradingUIContent() {
   const [tradeStatusText, setTradeStatusText] = useState<string | null>(null);
   const [showModeMenu, setShowModeMenu] = useState(false);
   const [activeTradeWidgetIndex, setActiveTradeWidgetIndex] = useState<number | null>(null);
+  const [isPhone, setIsPhone] = useState(false);
+
+useEffect(() => {
+  const phone = Math.min(window.screen.width, window.screen.height) < 768;
+  setIsPhone(phone);
+  if (!phone) return;
+
+  document.body.style.background = "#000";
+  let meta = document.querySelector('meta[name="viewport"]');
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute("name", "viewport");
+    document.head.appendChild(meta);
+  }
+  meta.setAttribute("content", "width=1280");
+}, []);
 
   // DEMO: fake user, always verified, paper mode only
   const email = "demo@richacle.com";
@@ -1138,10 +1154,16 @@ for (let i = 1; i <= steps; i++) {
   // ...keep your existing `return ( ... )` JSX below, unchanged
 
 
-  return (
-    <>
-       <Navbar tradingMode={tradingMode} paperBalance={paperBalance} onModeChange={setTradingMode} onResetPaper={handleResetPaperBalance}  isVerified={isVerified}/>
-    <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
+return (
+  <div
+    className={isPhone ? "fixed inset-0 bg-black flex items-center justify-center overflow-hidden" : ""}
+  >
+  <div
+    className="flex flex-col"
+    style={isPhone ? { width: "100vw", height: "56.25vw" } : { height: "100vh" }}
+  >
+    <Navbar tradingMode={tradingMode} paperBalance={paperBalance} onModeChange={setTradingMode} onResetPaper={handleResetPaperBalance} isVerified={isVerified} />
+  <div className="flex flex-1 min-h-0 bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
     {showPricing && (
   <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
     {/* Close Button */}
@@ -1533,8 +1555,9 @@ for (let i = 1; i <= steps; i++) {
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       `}} />
-    </div>
-    </>
+      </div>
+  </div>
+  </div>
   );
 }
 
@@ -1542,7 +1565,7 @@ export default function VibeTradingUI() {
   return (
     <Suspense fallback={null}>
       <VibeTradingUIContent />
-         <Menu/>
+      <Menu />
     </Suspense>
   );
 }
