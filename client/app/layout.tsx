@@ -80,13 +80,13 @@ export default function RootLayout({
           strategy="afterInteractive" 
           defer 
         />
+        <Script id="register-sw" strategy="afterInteractive">
   {`
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
   `}
 </Script>
-<Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
         <Toaster position="bottom-left" richColors />
         {children}
