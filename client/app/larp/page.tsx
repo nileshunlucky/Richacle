@@ -1279,7 +1279,7 @@ return (
     onClick={() => setShowEdit(false)}
   >
     <div
-      className="w-full max-w-md bg-[#0d0d0d] border border-white/10 rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto"
+      className="w-full max-w-md bg-[#0d0d0d]  rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center justify-between">
@@ -1296,7 +1296,7 @@ return (
           rows={5}
           value={draft.research}
           onChange={(e) => setDraft({ ...draft, research: e.target.value })}
-          className="w-full bg-[#191b1b] border border-white/10 rounded-lg p-2.5 text-xs text-white outline-none focus:border-white/20 resize-none"
+          className="w-full bg-[#191b1b]  rounded-lg p-2.5 text-xs text-white outline-none resize-none"
         />
         {draftErrors.research && <p className="text-[10px] text-red-500 px-1">{draftErrors.research}</p>}
       </div>
@@ -1317,7 +1317,7 @@ return (
               value={draft[key]}
               onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
               className={cn(
-                "w-full bg-[#191b1b] border rounded-lg p-2.5 text-xs text-white outline-none focus:border-white/20",
+                "w-full bg-[#191b1b]  rounded-lg p-2.5 text-xs text-white outline-none",
                 draftErrors[key] ? "border-red-500/60" : "border-white/10"
               )}
             />
@@ -1503,7 +1503,7 @@ return (
     onClick={openEdit}
     disabled={editLocked}
     title={editLocked ? "Finish or close the current trade first" : "Edit trade settings"}
-    className="cursor-pointer text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+    className="cursor-pointer fixed bottom-5 right-5 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
   >
     <Pencil size={18} />
   </button>
