@@ -9,49 +9,6 @@ import { supabase } from "@/lib/supabaseClient";
 export default function Home() {
     const [email, setEmail] = useState("");
 
-    const handleSubscribe = async () => {
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      alert("Please log in first");
-      return;
-    }
-
-    const res = await fetch("https://richacle.onrender.com/api/subscription/create-razorpay", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ email }),
-});
-    const data = await res.json();
-
-    if (!res.ok || !data.success) {
-      alert(data.detail || "Could not start payment");
-      return;
-    }
-
-    const options = {
-      key: data.keyId,
-      subscription_id: data.subscriptionId,
-      name: "Richacle",
-      description: "Starter Plan - ₹649/month",
-      handler: () => {
-        alert("Payment received! Your plan will activate in a few seconds.");
-        // refetch user/credits here (e.g. poll your /me endpoint)
-      },
-      prefill: { name: data.userName, email: data.userEmail },
-      theme: { color: "#3399cc" },
-      modal: { ondismiss: () => console.log("Checkout closed") },
-    };
-
-    const rzp = new (window as any).Razorpay(options);
-    rzp.on("payment.failed", (r: any) => alert(r.error.description));
-    rzp.open();
-  } catch (error) {
-    console.error("Payment error:", error);
-    alert("Something went wrong. Please try again.");
-  }
-};
-
   useEffect(() => { const getUser = async () => { const { data: { session } } = await supabase.auth.getSession(); setEmail(session?.user?.email || ""); }; getUser(); }, []);
 
   const plans = [
@@ -123,12 +80,6 @@ const cardVariants = {
   return (
     <>
      <div className="flex items-center justify-center bg-red-700 text-white w-full p-1 gap-1 text-xs"><p className="font-semibold">Limited Offer</p> 2x Credits for 1/100 paid users. <p className="underline cursor-pointer"> Claim Now!</p></div>
-
-     <div>
-      <h1>Starter Plan - ₹649/month</h1>
-      <button onClick={handleSubscribe}>Subscribe with Razorpay</button>
-    </div>
-
     <div className="bg-black text-white md:pt-28 ">
       {/* Hero Section */}
       <div className="pt-20 pb-16 px-6 relative min-h-screen">
