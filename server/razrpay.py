@@ -12,7 +12,7 @@ razorpay_client = razorpay.Client(
 )
 
 @router.post("/api/subscription/create-razorpay")
-async def create_razorpay_subscription(current_user = Depends(get_current_user)): # Replace with your auth dependency
+async def razrpay(current_user = Depends(get_current_user)): # Replace with your auth dependency
     try:
         # Create subscription using your Plan ID
         subscription = razorpay_client.subscription.create({
