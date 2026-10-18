@@ -23,7 +23,8 @@ import {
   ChartNoAxesColumn,
   Calendar,
   Search ,
-  Lock
+  Lock,
+  Pencil
 } from "lucide-react";
 import { toast } from "sonner";
 import Pricing from "@/components/Pricing";
@@ -82,6 +83,7 @@ interface TradeWidgetProps {
     side?: string;
     symbol?: string;
     leverage?: number | string;
+    amount?: number | string;  
     take_profit?: number | string;
     stop_loss?: number | string;
     research_summary?: string;
@@ -116,6 +118,11 @@ const lastCandleRef = useRef<{ time: number; open: number; high: number; low: nu
   const currentChartTimeRef = useRef<number>(Math.floor(Date.now() / 1000));
   const tradeOpenTimeRef = useRef<number | null>(null);
   const hadTradeLinesRef = useRef(false);
+  const fakeRef = useRef<{
+  baseTime: number;
+  ticks: number;
+  candles: { time: number; open: number; high: number; low: number; close: number }[];
+} | null>(null);
 
   const container = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -372,23 +379,63 @@ seriesRef.current.update({
   };
 }, [isChartReady, symbol, interval]);
 
-// DEMO: draw the forced price on the chart
+// DEMO: draw the forced price as several realistic candles
 useEffect(() => {
   forcedPriceRef.current = forcedPrice ?? null;
-  if (forcedPrice == null || !seriesRef.current || !lastCandleRef.current) return;
 
-  const secs = ({ "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 } as Record<string, number>)[interval] || 900;
+  // forcing ended -> reset so the next demo starts fresh
+  if (forcedPrice == null) {
+    fakeRef.current = null;
+    return;
+  }
+  if (!seriesRef.current || !lastCandleRef.current) return;
 
-  const c = lastCandleRef.current;
-  const updated = { ...c, high: Math.max(c.high, forcedPrice), close: forcedPrice };
-  lastCandleRef.current = updated;
+  const secs =
+    ({ "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 } as Record<string, number>)[interval] || 900;
+  const TICKS_PER_CANDLE = 10; // 40 ticks => ~10 candles. Raise for fewer/bigger candles.
 
-  // keep only real candles older than the live one
+  // first forced tick: remember which live candle we start from
+  if (!fakeRef.current) {
+    fakeRef.current = { baseTime: lastCandleRef.current.time, ticks: 0, candles: [] };
+  }
+  const fake = fakeRef.current;
+
+  const idx = Math.floor(fake.ticks / TICKS_PER_CANDLE);
+  fake.ticks++;
+
+  let candle = fake.candles[idx];
+  if (!candle) {
+    if (idx === 0) {
+      // continue the real live candle
+      candle = { ...lastCandleRef.current };
+    } else {
+      // new candle opens where the previous one closed
+      const open = fake.candles[idx - 1].close;
+      const pad = Math.abs(forcedPrice - open) * 0.4 + 0.01;
+      candle = {
+        time: fake.baseTime + secs * idx,
+        open,
+        high: Math.max(open, forcedPrice) + Math.random() * pad * 0.5, // small wicks
+        low: Math.min(open, forcedPrice) - Math.random() * pad * 0.5,
+        close: forcedPrice,
+      };
+    }
+    fake.candles[idx] = candle;
+  }
+
+  // update the candle currently forming
+  candle.high = Math.max(candle.high, forcedPrice);
+  candle.low = Math.min(candle.low, forcedPrice);
+  candle.close = forcedPrice;
+
+  // real history older than where we started
   const all = seriesRef.current.data() as any[];
-  const real = all.filter((x: any) => x.time < updated.time);
+  const real = all.filter((x: any) => x.time < fake.baseTime);
 
+  // flat placeholder candles after the last fake one
+  const lastTime = fake.baseTime + secs * idx;
   const future = Array.from({ length: futureCandlesBox }, (_, i) => ({
-    time: (updated.time + secs * (i + 1)) as LightweightCharts.UTCTimestamp,
+    time: (lastTime + secs * (i + 1)) as LightweightCharts.UTCTimestamp,
     open: forcedPrice, high: forcedPrice, low: forcedPrice, close: forcedPrice,
   }));
 
@@ -396,7 +443,7 @@ useEffect(() => {
   try {
     seriesRef.current.setData([
       ...real,
-      { ...updated, time: updated.time as LightweightCharts.UTCTimestamp },
+      ...fake.candles.map((c) => ({ ...c, time: c.time as LightweightCharts.UTCTimestamp })),
       ...future,
     ]);
   } catch {}
@@ -503,7 +550,7 @@ const calcQty = () => {
  */
 const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onPriceChange, price , initialData}: TradeWidgetProps) {
   const [side, setSide] = useState(initialData?.side || "buy"); 
-  const [amount, setAmount] = useState("10000");
+  const [amount, setAmount] = useState(initialData?.amount?.toString() || "10000");
   const [symbol, setSymbol] = useState(initialData?.symbol || "BTC/USDT");
   const [leverage, setLeverage] = useState(initialData?.leverage?.toString() || "10");
   const [tp, setTp] = useState(initialData?.take_profit?.toString() || "");
@@ -805,6 +852,33 @@ useEffect(() => {
 const DEMO_PROMPT = "/scalp-trade on Bitcoin";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+const DEFAULT_CONFIG = {
+  research:
+    "Bitcoin is holding above its 15m EMA-50 with rising buy volume and a bullish RSI divergence. Funding is neutral and order-book depth shows strong bids just below price. Short-term momentum favors a quick push higher, so I'm setting up a scalp long with a tight stop under the latest swing low.",
+  tpPct: "0.6",
+  slPct: "0.3",
+  chance: "78",
+  amount: "10000",
+  leverage: "10",
+};
+type DemoConfig = typeof DEFAULT_CONFIG;
+
+const validateConfig = (c: DemoConfig) => {
+  const errors: Partial<Record<keyof DemoConfig, string>> = {};
+  const num = (v: string) => (v.trim() === "" ? NaN : Number(v));
+
+  if (!c.research.trim()) errors.research = "Message can't be empty";
+  if (!(num(c.tpPct) > 0)) errors.tpPct = "Must be greater than 0";
+  if (!(num(c.slPct) > 0)) errors.slPct = "Must be greater than 0";
+  const chance = num(c.chance);
+  if (!(chance >= 0 && chance <= 100)) errors.chance = "0 – 100";
+  if (!(num(c.amount) > 0)) errors.amount = "Must be greater than 0";
+  const lev = num(c.leverage);
+  if (!(Number.isInteger(lev) && lev >= 1 && lev <= 125)) errors.leverage = "Whole number 1 – 125";
+
+  return errors;
+};
+
 function VibeTradingUIContent() {
   const searchParams = useSearchParams();
     const [forcedPrice, setForcedPrice] = useState<number | null>(null);
@@ -835,6 +909,28 @@ function VibeTradingUIContent() {
   const [showModeMenu, setShowModeMenu] = useState(false);
   const [activeTradeWidgetIndex, setActiveTradeWidgetIndex] = useState<number | null>(null);
   const [isPhone, setIsPhone] = useState(false);
+
+  const [config, setConfig] = useState<DemoConfig>(DEFAULT_CONFIG);
+const [draft, setDraft] = useState<DemoConfig>(DEFAULT_CONFIG);
+const [showEdit, setShowEdit] = useState(false);
+const configRef = useRef(config);
+configRef.current = config;
+
+const draftErrors = validateConfig(draft);
+const canSave = Object.keys(draftErrors).length === 0;
+const editLocked = loading || isSearching || isTrading || isClosing || isWidgetActive || isExecuted;
+
+const openEdit = () => {
+  if (editLocked) return;
+  setDraft(config);          // always start from the saved values
+  setShowEdit(true);
+};
+const handleSaveEdit = () => {
+  if (!canSave) return;      // guard: invalid input never gets saved
+  setConfig(draft);
+  setShowEdit(false);
+  toast("Settings saved");
+};
 
 useEffect(() => {
   const phone = Math.min(window.screen.width, window.screen.height) < 768;
@@ -1037,17 +1133,18 @@ useEffect(() => {
     setIsSearching(false);
     setTradeStatusText(null);
 
-    // build predefined trade around the live BTC price
-    const price = parseFloat(currentPriceRef.current || "") || 67000;
-    const tradeData = {
-      symbol: "BTC/USDT",
-      side: "BUY",
-      leverage: 10,
-      entry_price: price,
-      take_profit: +(price * 1.006).toFixed(2),
-      stop_loss: +(price * 0.997).toFixed(2),
-      confidence: 78,
-    };
+    const cfg = configRef.current;
+const price = parseFloat(currentPriceRef.current || "") || 67000;
+const tradeData = {
+  symbol: "BTC/USDT",
+  side: "BUY",
+  leverage: Number(cfg.leverage),
+  amount: Number(cfg.amount),
+  entry_price: price,
+  take_profit: +(price * (1 + Number(cfg.tpPct) / 100)).toFixed(2),
+  stop_loss: +(price * (1 - Number(cfg.slPct) / 100)).toFixed(2),
+  confidence: Number(cfg.chance),
+};
 
     // predefined research message
     setMessages((prev) => [
@@ -1057,10 +1154,7 @@ useEffect(() => {
         content: (
           <div className="space-y-2 flex flex-col">
             <div className="p-3.5 text-zinc-200 text-[13px] leading-relaxed">
-              Bitcoin is holding above its 15m EMA-50 with rising buy volume and a bullish RSI
-              divergence. Funding is neutral and order-book depth shows strong bids just below price.
-              Short-term momentum favors a quick push higher, so I'm setting up a scalp long with a
-              tight stop under the latest swing low.
+              {cfg.research}
             </div>
           </div>
         ),
@@ -1077,7 +1171,7 @@ useEffect(() => {
       tp: tradeData.take_profit,
       sl: tradeData.stop_loss,
       side: tradeData.side,
-      amount: 10000,
+      amount: tradeData.amount,
       leverage: tradeData.leverage,
       startTime: Math.floor(Date.now() / 1000),
     });
@@ -1089,7 +1183,7 @@ useEffect(() => {
           role: "ai",
           content: (
             <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
-              <h1 className="font-semibold">Win Rate {tradeData.confidence}%</h1>
+              <h1 className="font-semibold">Chance {tradeData.confidence}%</h1>
               <h1 className="font-light theseason">RICHACLE</h1>
             </div>
           ),
@@ -1120,7 +1214,7 @@ useEffect(() => {
       symbol: tradeData.symbol,
       side: tradeData.side,
       leverage: String(tradeData.leverage),
-      amount: "10000",
+      amount: String(tradeData.amount),
       tp: String(l?.tp ?? tradeData.take_profit),
       sl: String(l?.sl ?? tradeData.stop_loss),
       entry: l?.entry ?? tradeData.entry_price,
@@ -1137,7 +1231,8 @@ const steps = 40;
 for (let i = 1; i <= steps; i++) {
   const progress = i / steps;
   // small wobble that fades out so it looks like a real move and never overshoots early
-  const wobble = Math.sin(i * 1.7) * Math.abs(target - start) * 0.05 * (1 - progress);
+  // bigger wobble that fades out: creates a few red candles and pullbacks
+const wobble = Math.sin(i * 0.9) * Math.abs(target - start) * 0.12 * (1 - progress);
   const p = i === steps ? target : start + (target - start) * progress + wobble;
 
   setForcedPrice(p);
@@ -1175,6 +1270,86 @@ return (
     </button>
     
     <Pricing />
+  </div>
+)}
+
+{showEdit && (
+  <div
+    className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-text"
+    onClick={() => setShowEdit(false)}
+  >
+    <div
+      className="w-full max-w-md bg-[#0d0d0d] border border-white/10 rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center justify-between">
+        <h2 className="text-white font-semibold">Edit trade settings</h2>
+        <button onClick={() => setShowEdit(false)} className="text-white/40 hover:text-white cursor-pointer">
+          <X size={18} />
+        </button>
+      </div>
+
+      {/* Research message */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Research message</label>
+        <textarea
+          rows={5}
+          value={draft.research}
+          onChange={(e) => setDraft({ ...draft, research: e.target.value })}
+          className="w-full bg-[#191b1b] border border-white/10 rounded-lg p-2.5 text-xs text-white outline-none focus:border-white/20 resize-none"
+        />
+        {draftErrors.research && <p className="text-[10px] text-red-500 px-1">{draftErrors.research}</p>}
+      </div>
+
+      {/* Numeric fields */}
+      <div className="grid grid-cols-2 gap-3">
+        {([
+          ["chance", "Chance (%)"],
+          ["leverage", "Leverage (x)"],
+          ["amount", "Amount ($)"],
+          ["tpPct", "Take profit (% above entry)"],
+          ["slPct", "Stop loss (% below entry)"],
+        ] as [keyof DemoConfig, string][]).map(([key, label]) => (
+          <div key={key} className="space-y-1.5">
+            <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">{label}</label>
+            <input
+              type="number"
+              value={draft[key]}
+              onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
+              className={cn(
+                "w-full bg-[#191b1b] border rounded-lg p-2.5 text-xs text-white outline-none focus:border-white/20",
+                draftErrors[key] ? "border-red-500/60" : "border-white/10"
+              )}
+            />
+            {draftErrors[key] && <p className="text-[10px] text-red-500 px-1">{draftErrors[key]}</p>}
+          </div>
+        ))}
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-2 pt-1">
+        <button
+          onClick={() => setDraft(DEFAULT_CONFIG)}
+          className="px-3 py-2 text-xs rounded-lg text-white/50 hover:text-white cursor-pointer"
+        >
+          Reset defaults
+        </button>
+        <div className="flex-1" />
+        <button
+          onClick={() => setShowEdit(false)}
+          className="px-4 py-2 text-xs rounded-lg bg-white/5 text-white/70 hover:bg-white/10 cursor-pointer"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSaveEdit}
+          disabled={!canSave}
+          className="px-4 py-2 text-xs rounded-lg bg-green-700/30 text-green-200 hover:bg-green-700/40 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          Save
+        </button>
+      </div>
+    </div>
   </div>
 )}
 
@@ -1324,6 +1499,14 @@ return (
   !showAgent ? "hidden md:flex" : "fixed inset-0 z-40 md:relative md:inset-auto"
 )}>
 <div className="bg-black flex justify-end items-center p-2 px-4 gap-2">
+ <button
+    onClick={openEdit}
+    disabled={editLocked}
+    title={editLocked ? "Finish or close the current trade first" : "Edit trade settings"}
+    className="cursor-pointer text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+  >
+    <Pencil size={18} />
+  </button>
 
 <h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right"><Plus size={20}/></h1>
 
