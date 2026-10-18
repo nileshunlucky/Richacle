@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 
 import razorpay
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 
 from db import users_collection
 
@@ -20,10 +20,10 @@ razorpay_client = razorpay.Client(
 RAZORPAY_WEBHOOK_SECRET = os.getenv("RAZORPAY_WEBHOOK_SECRET")
 
 # Map Razorpay plan IDs to your plans/credits (same tiers as Lemon Squeezy)
+STARTER_PLAN_ID = os.getenv("RAZORPAY_STARTER_PLAN_ID")
 PLANS = {
-    "plan_TpFoVEdskQkTmL": {"plan": "Starter", "credits": 1000},
+    STARTER_PLAN_ID: {"plan": "Starter", "credits": 1000},
 }
-
 
 def _get(user, key):
     """Works whether current_user is a dict or an object."""
@@ -35,27 +35,20 @@ class CreateSubReq(BaseModel):
 
 @router.post("/api/subscription/create-razorpay")
 async def razrpay(req: CreateSubReq):
-
     plan_id = os.getenv("RAZORPAY_STARTER_PLAN_ID")
+    if not plan_id:
+        raise HTTPException(status_code=500, detail="Plan ID not configured")
+
     if not users_collection.find_one({"email": req.email}):
-    raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail="User not found")
 
     try:
         subscription = razorpay_client.subscription.create({
             "plan_id": plan_id,
             "customer_notify": 1,
             "total_count": 12,
-            "notes": {"email": req.email},  # used by webhook to find the user
+            "notes": {"email": req.email},  # webhook uses this to find the user
         })
-
-        # Save the subscription ID on the user (status stays pending until webhook)
-        users_collection.update_one(
-            {"email": email},
-            {"$set": {
-                "razorpay_subscription_id": subscription["id"],
-                "subscription_status": "created",
-            }},
-        )
 
         return {
             "success": True,
