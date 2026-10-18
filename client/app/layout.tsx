@@ -87,6 +87,7 @@ export default function RootLayout({
     }
   `}
 </Script>
+<Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
 
         <Toaster position="bottom-left" richColors />
         {children}

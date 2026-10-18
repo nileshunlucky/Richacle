@@ -7,6 +7,7 @@ from ai_assistent import router as ai_assistent_router
 from backtest import router as backtest_router
 from binance import router as binance_router
 from algo import router as algo_router
+from razrpay import router as razrpay_router
 from datetime import datetime
 import random
 import re
@@ -28,6 +29,7 @@ app.include_router(ai_assistent_router)
 app.include_router(backtest_router)
 app.include_router(algo_router)
 app.include_router(binance_router)
+app.include_router(razrpay_router)
 
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():

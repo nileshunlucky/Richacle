@@ -9,6 +9,48 @@ import { supabase } from "@/lib/supabaseClient";
 export default function Home() {
     const [email, setEmail] = useState("");
 
+    const handleSubscribe = async () => {
+    try {
+      // 1. Call FastAPI backend to create subscription
+      const res = await fetch('https://richacle.onrender.com/api/subscription/create-razorpay', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } // Your auth token
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data);
+        return;
+      }
+
+      // 2. Configure Razorpay Options
+      const options = {
+        key: data.keyId,
+        subscription_id: data.subscriptionId,
+        name: "Your App Name",
+        description: "Starter Plan - ₹649/month",
+        handler: function (response: any) {
+          alert("Payment successful! Updating account...");
+          // Optionally trigger router refresh or WebSocket listener here
+        },
+        prefill: {
+          name: data.userName,
+          email: data.userEmail
+        },
+        theme: {
+          color: "#3399cc"
+        }
+      };
+
+      // 3. Open Razorpay Modal Window
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+
+    } catch (error) {
+      console.error("Payment error:", error);
+    }
+  };
+
   useEffect(() => { const getUser = async () => { const { data: { session } } = await supabase.auth.getSession(); setEmail(session?.user?.email || ""); }; getUser(); }, []);
 
   const plans = [
@@ -80,6 +122,12 @@ const cardVariants = {
   return (
     <>
      <div className="flex items-center justify-center bg-red-700 text-white w-full p-1 gap-1 text-xs"><p className="font-semibold">Limited Offer</p> 2x Credits for 1/100 paid users. <p className="underline cursor-pointer"> Claim Now!</p></div>
+
+     <div>
+      <h1>Starter Plan - ₹649/month</h1>
+      <button onClick={handleSubscribe}>Subscribe with Razorpay</button>
+    </div>
+
     <div className="bg-black text-white md:pt-28 ">
       {/* Hero Section */}
       <div className="pt-20 pb-16 px-6 relative min-h-screen">
