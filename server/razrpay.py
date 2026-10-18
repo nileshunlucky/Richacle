@@ -3,12 +3,13 @@ import json
 import hmac
 import hashlib
 from datetime import datetime, timezone
+from pydantic import BaseModel
+
 
 import razorpay
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from db import users_collection
-from auth import get_current_user  # adjust to your actual module
 
 router = APIRouter()
 
@@ -28,21 +29,23 @@ def _get(user, key):
     """Works whether current_user is a dict or an object."""
     return user.get(key) if isinstance(user, dict) else getattr(user, key, None)
 
+class CreateSubReq(BaseModel):
+    email: str
+    name: str | None = None
 
 @router.post("/api/subscription/create-razorpay")
-async def razrpay(current_user=Depends(get_current_user)):
-    email = _get(current_user, "email")
-    if not email:
-        raise HTTPException(status_code=400, detail="User email not found")
+async def razrpay(req: CreateSubReq):
 
-    plan_id = "plan_TpFoVEdskQkTmL"
+    plan_id = os.getenv("RAZORPAY_STARTER_PLAN_ID")
+    if not users_collection.find_one({"email": req.email}):
+    raise HTTPException(status_code=404, detail="User not found")
 
     try:
         subscription = razorpay_client.subscription.create({
             "plan_id": plan_id,
             "customer_notify": 1,
             "total_count": 12,
-            "notes": {"email": email},  # used by webhook to find the user
+            "notes": {"email": req.email},  # used by webhook to find the user
         })
 
         # Save the subscription ID on the user (status stays pending until webhook)
@@ -58,8 +61,8 @@ async def razrpay(current_user=Depends(get_current_user)):
             "success": True,
             "subscriptionId": subscription["id"],
             "keyId": os.getenv("RAZORPAY_KEY_ID"),
-            "userEmail": email,
-            "userName": _get(current_user, "name"),
+            "userEmail": req.email,
+            "userName": req.name,
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

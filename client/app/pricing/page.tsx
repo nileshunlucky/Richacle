@@ -17,13 +17,11 @@ export default function Home() {
       return;
     }
 
-    const res = await fetch(
-      "https://richacle.onrender.com/api/subscription/create-razorpay",
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      }
-    );
+    const res = await fetch("https://richacle.onrender.com/api/subscription/create-razorpay", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email }),
+});
     const data = await res.json();
 
     if (!res.ok || !data.success) {
