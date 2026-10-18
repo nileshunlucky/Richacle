@@ -10,46 +10,49 @@ export default function Home() {
     const [email, setEmail] = useState("");
 
     const handleSubscribe = async () => {
-    try {
-      // 1. Call FastAPI backend to create subscription
-      const res = await fetch('https://richacle.onrender.com/api/subscription/create-razorpay', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` } // Your auth token
-      });
-      const data = await res.json();
-
-      if (!data.success) {
-        alert(data);
-        return;
-      }
-
-      // 2. Configure Razorpay Options
-      const options = {
-        key: data.keyId,
-        subscription_id: data.subscriptionId,
-        name: "Your App Name",
-        description: "Starter Plan - ₹649/month",
-        handler: function (response: any) {
-          alert("Payment successful! Updating account...");
-          // Optionally trigger router refresh or WebSocket listener here
-        },
-        prefill: {
-          name: data.userName,
-          email: data.userEmail
-        },
-        theme: {
-          color: "#3399cc"
-        }
-      };
-
-      // 3. Open Razorpay Modal Window
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
-
-    } catch (error) {
-      console.error("Payment error:", error);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert("Please log in first");
+      return;
     }
-  };
+
+    const res = await fetch(
+      "https://richacle.onrender.com/api/subscription/create-razorpay",
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }
+    );
+    const data = await res.json();
+
+    if (!res.ok || !data.success) {
+      alert(data.detail || "Could not start payment");
+      return;
+    }
+
+    const options = {
+      key: data.keyId,
+      subscription_id: data.subscriptionId,
+      name: "Richacle",
+      description: "Starter Plan - ₹649/month",
+      handler: () => {
+        alert("Payment received! Your plan will activate in a few seconds.");
+        // refetch user/credits here (e.g. poll your /me endpoint)
+      },
+      prefill: { name: data.userName, email: data.userEmail },
+      theme: { color: "#3399cc" },
+      modal: { ondismiss: () => console.log("Checkout closed") },
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+    rzp.on("payment.failed", (r: any) => alert(r.error.description));
+    rzp.open();
+  } catch (error) {
+    console.error("Payment error:", error);
+    alert("Something went wrong. Please try again.");
+  }
+};
 
   useEffect(() => { const getUser = async () => { const { data: { session } } = await supabase.auth.getSession(); setEmail(session?.user?.email || ""); }; getUser(); }, []);
 
