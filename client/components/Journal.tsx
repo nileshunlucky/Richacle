@@ -134,10 +134,10 @@ export default function Journal({ email, onClose }: JournalProps) {
         animate={{ scale: 1, y: 0, opacity: 1 }}
         exit={{ scale: 0.96, y: 20, opacity: 0 }}
         transition={{ type: "spring", damping: 28, stiffness: 180 }}
-        className="bg-[#0d0d0d] border border-white/[0.07] rounded-2xl w-full max-w-5xl max-h-[96vh] md:max-h-[92vh] overflow-y-auto flex flex-col"
+        className="bg-[#0d0d0d]  rounded-2xl w-full max-w-5xl max-h-[96vh] md:max-h-[92vh] overflow-y-auto flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 md:p-5 border-b border-white/[0.06] sticky top-0 bg-[#0d0d0d] z-20">
+        <div className="flex items-center justify-between p-4 md:p-5  sticky top-0 bg-[#0d0d0d] z-20">
           <div className="flex items-center gap-2 md:gap-3">
             <Calendar size={18} className="text-white/40" />
             <h2 className="text-white font-semibold text-sm md:text-base">PnL Calendar</h2>
@@ -186,7 +186,7 @@ export default function Journal({ email, onClose }: JournalProps) {
                   color: "text-green-400",
                 },
               ].map((s, i) => (
-                <div key={i} className="bg-[#141414] border border-white/[0.05] rounded-xl p-3 md:p-4">
+                <div key={i} className="bg-[#141414] rounded-xl p-3 md:p-4">
                   <div className="text-[9px] md:text-[10px] uppercase tracking-wider text-white/30 mb-1 md:mb-2">{s.label}</div>
                   <div className={cn("text-lg md:text-xl font-bold tabular-nums ", s.color)}>
                     {s.value}
@@ -253,8 +253,8 @@ export default function Journal({ email, onClose }: JournalProps) {
                                 "rounded-lg h-[64px] sm:h-[72px] md:h-[100px] p-1 md:p-1.5 flex flex-col justify-between relative overflow-hidden transition-colors",
                                 isWin && "bg-green-700/20 border border-green-500/20",
                                 isLoss && "bg-red-700/20 border border-red-500/20",
-                                !hasData && "bg-[#111] border border-white/[0.04]",
-                                isToday && !hasData && "border-white/20",
+                                !hasData && "bg-[#111] ",
+                                isToday && !hasData && "border",
                               )}
                             >
                               <span className={cn(
@@ -296,10 +296,10 @@ export default function Journal({ email, onClose }: JournalProps) {
                       <div
                         key={w.week}
                         className={cn(
-                          "h-[64px] sm:h-[72px] md:h-[100px] rounded-lg p-1.5 md:p-2 flex flex-col justify-between border",
-                          w.pnl > 0 && "bg-green-700/20 border-green-500/15",
-                          w.pnl < 0 && "bg-red-700/20 border-red-500/15",
-                          w.pnl === 0 && "bg-[#111] border-white/[0.04]"
+                          "h-[64px] sm:h-[72px] md:h-[100px] rounded-lg p-1.5 md:p-2 flex flex-col justify-between ",
+                          w.pnl > 0 && "bg-green-700/20 ",
+                          w.pnl < 0 && "bg-red-700/20 ",
+                          w.pnl === 0 && "bg-[#111] "
                         )}
                       >
                         <span className={cn(

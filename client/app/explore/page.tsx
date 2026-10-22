@@ -136,17 +136,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Table Header Row */}
-        <div className="flex items-center justify-between gap-3 px-6 py-2 text-[13px] font-semibold text-zinc-500">
-          <div className="flex items-center gap-4">
-            <span>Rank</span>
-            <span>Trader</span>
-          </div>
-          <span className="text-right">Net Worth</span>
-        </div>
+      
 
         {/* Display System States */}
-        <div className="flex-1 px-4 pt-2 overflow-y-auto">
+        <div className="flex-1 px-2 pt-2 overflow-y-auto">
           {loading ? (
             <div className="flex justify-center items-center py-24 text-zinc-500 gap-2 text-sm">
               <Loader2 className="animate-spin" size={18} />
@@ -172,7 +165,7 @@ export default function Home() {
                         transition={{ duration: 0.2, ease: "easeInOut" }}
                         className="flex justify-between items-center gap-3 py-2 px-2 rounded-xl cursor-pointer hover:bg-zinc-900/40 active:scale-[0.99] transition-all"
                       >
-                        <div className="flex items-center gap-5 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
                           <span className="text-[15px] font-bold text-zinc-400 w-5 text-center">
                             {globalRank}
                           </span>

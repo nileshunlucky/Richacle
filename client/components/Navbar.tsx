@@ -233,7 +233,7 @@ const toggleMobileTip = () => {
         <div className={`flex justify-between md:px-12 px-3 py-3 h-12 items-center ${mobileOpen ? "bg-black" : "bg-transparent"}`}>
           {/* Logo */}
           
-            <span className="theseason md:text-2xl text-xl uppercase">richacle</span>
+            <span className="theseason md:text-2xl text-xl ">Richacle</span>
           
 
           <div className="relative">

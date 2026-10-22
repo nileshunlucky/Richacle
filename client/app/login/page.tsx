@@ -65,7 +65,7 @@ export default function LoginPage() {
       <header className="w-full px-8 py-6 flex items-center justify-between gap-3">
        <Link href="/" >
 
-        <h1 className="text-2xl text-black theseason">RICHACLE</h1>
+        <h1 className="text-2xl text-black theseason">Richacle</h1>
         
         </Link>
         <div className="text-sm text-gray-700">

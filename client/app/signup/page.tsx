@@ -53,7 +53,7 @@ export default function SignupPage() {
         
           
           <h1 className="text-2xl font-normal text-gray-900 mb-8">
-            Create a <Link href="/" > <span className="text-2xl text-black theseason">RICHACLE </span> 
+            Create a <Link href="/" > <span className="text-2xl text-black theseason">Richacle </span> 
         </Link>
                account to get started with our platform!
           </h1>
@@ -120,7 +120,7 @@ export default function SignupPage() {
         <header className="w-full px-8 py-6 flex items-center justify-end gap-3">
         {/* Brand Name */}
         <Link href="/" >
-        <h1 className="text-2xl text-black theseason flex md:hidden">RICHACLE</h1>
+        <h1 className="text-2xl text-black theseason flex md:hidden">Richacle</h1>
         </Link>
           <div className="text-sm text-gray-700">
             Have an account?{" "}
@@ -140,7 +140,7 @@ export default function SignupPage() {
             {/* Terms Checkbox */}
             <div className="mb-6 flex items-start gap-3">
               <label htmlFor="terms" className="text-center text-gray-600 leading-relaxed">
-                By proceeding, you agree to <span className="theseason">RICHACLE</span> {" "}
+                By proceeding, you agree to <span className="theseason">Richacle</span> {" "}
                 <a href="/terms" className="text-blue-600 hover:underline">
                     Terms of Service
                 </a>{" "}

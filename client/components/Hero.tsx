@@ -821,8 +821,8 @@ export default function Hero() {
     
       {/* ---------- Hero copy ---------- */}
       <section className="mx-auto max-w-5xl px-6 pt-28 pb-16 text-center sm:pt-36 flex items-center flex-col gap-10" >
-        <h1 className="md:text-7xl text-3xl font-semibold 
-        bg-gradient-to-b from-white to-zinc-500 bg-clip-text text-transparent theseason ">
+        <h1 className="md:text-7xl text-3xl  
+         theseason  ">
           Every prediction begins
           <br />
 with clarity research

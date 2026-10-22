@@ -35,7 +35,7 @@ export default function Navbar() {
       <div className="flex items-center justify-between w-full">
         
         <Link href="/" className="flex items-center gap-1">
-          <h1 className="text-2xl theseason">RICHACLE</h1>
+          <h1 className="text-2xl theseason">Richacle</h1>
         </Link>
 
         <ul className="hidden md:flex items-center gap-8 text-sm">

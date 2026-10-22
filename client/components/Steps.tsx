@@ -38,7 +38,7 @@ function ModelSelectorCard() {
     <div className="w-full max-w-md">
       {/* Heading */}
       <h1 className="text-white text-xl font-semibold tracking-tight">
-        Use the best model for every trade
+       Dior Ethics Use the best model for every trade
       </h1>
       <p className="text-neutral-400  mt-2 ">
         Choose between every cutting edge model from OpenAI, Anthropic,

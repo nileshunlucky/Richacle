@@ -200,7 +200,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         const balData = await balRes.json();
 
         let displayNetWorth = "$0.00";
-        let displayNetWorthChange = "$0.00 (0.00%)";
+        let displayNetWorthChange = "$0.00 0.00%";
         let isNegative = false;
 
         // Net worth should just reflect current balance, regardless of trade history
@@ -464,7 +464,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   if (loading) {
     return (
       <main className="h-screen bg-black flex justify-center items-center text-white text-center ">
-        <p className="theseason md:text-3xl text-xl">RICHACLE</p>
+        <p className="theseason md:text-3xl text-2xl">Richacle</p>
       </main>
     );
   }
