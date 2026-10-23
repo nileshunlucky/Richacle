@@ -139,7 +139,6 @@ export default function Journal({ email, onClose }: JournalProps) {
         {/* Header */}
         <div className="flex items-center justify-between p-4 md:p-5  sticky top-0 bg-[#0d0d0d] z-20">
           <div className="flex items-center gap-2 md:gap-3">
-            <Calendar size={18} className="text-white/40" />
             <h2 className="text-white font-semibold text-sm md:text-base">PnL Calendar</h2>
           </div>
           <button onClick={onClose} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors cursor-pointer">
@@ -160,7 +159,11 @@ export default function Journal({ email, onClose }: JournalProps) {
                 {
                   label: "Net P&L",
                   value: formatPnlFull(monthStats.netPnl),
-                  color: monthStats.netPnl >= 0 ? "text-green-400" : "text-red-400",
+                 color: monthStats.netPnl > 0
+  ? "text-green-400"
+  : monthStats.netPnl < 0
+    ? "text-red-400"
+    : "text-white",
                 },
                 {
                   label: "PnL %",
@@ -175,7 +178,7 @@ export default function Journal({ email, onClose }: JournalProps) {
                   sub: `${monthStats.totalTrades} trades`,
                 },
                 {
-                  label: "Best Trade",
+                  label: "Top Trade",
                   value: (() => {
                     const prefix = `${viewYear}-${String(viewMonth + 1).padStart(2, "0")}`;
                     const days = calendarData.filter(d => d.date.startsWith(prefix) && d.pnl > 0);
@@ -183,7 +186,7 @@ export default function Journal({ email, onClose }: JournalProps) {
                     const best = Math.max(...days.map(d => d.pnl));
                     return `+$${best.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                   })(),
-                  color: "text-green-400",
+                  color: "text-white",
                 },
               ].map((s, i) => (
                 <div key={i} className="bg-[#141414] rounded-xl p-3 md:p-4">

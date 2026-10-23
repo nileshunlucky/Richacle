@@ -68,12 +68,30 @@ interface UserProfile {
   username: string;
   verified: boolean;
   bio: string;
-  netWorth: string;
+  netWorth: number;
   netWorthChange: string;
   isChangeNegative: boolean;
   rank: string;
+  larp: number;
   avatar: string;
+  email: string;
 }
+
+const RARE_EMAILS = new Set<string>([
+  "nileshinde001@gmail.com",
+  "tjr@richacle.com",
+  "brez@richacle.com",
+  "orangie@richacle.com",
+  "maurits@richacle.com",
+  "tate@richacle.com",
+  "labubu@richacle.com",
+  "jinwoo@richacle.com",
+  "redbull@richacle.com",
+  "solanapump@richacle.com",
+]);
+
+const isRareEmail = (email: string) =>
+  RARE_EMAILS.has((email || "").trim().toLowerCase());
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 
@@ -87,7 +105,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const router = useRouter();
 
   const [isOwner, setIsOwner] = useState(false);
-  const [targetEmail, setTargetEmail] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -98,14 +115,11 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   const [copied, setCopied] = useState(false);
 
   const [selectedTrade, setSelectedTrade] = useState<any>(null);
-
   const [trades, setTrades] = useState<any[]>([]);
 
   // ── Share handler ──────────────────────────────────────────────────────────
   const handleShare = async () => {
     const shareData = {
-      title: `${user?.name || "User"}'s Profile | Richacle`,
-      text: `Check out ${user?.name || "My"} profile on Richacle!`,
       url: window.location.href,
     };
 
@@ -126,22 +140,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     }
   };
 
-  function formatShortCurrency(value: number): string {
-    const isNegative = value < 0;
-    const absValue = Math.abs(value);
-
-    let formatted = "";
-    if (absValue >= 1.0e9) {
-      formatted = `${(absValue / 1.0e9).toFixed(2).replace(/\.00$/, "")}b`;
-    } else if (absValue >= 1.0e6) {
-      formatted = `${(absValue / 1.0e6).toFixed(2).replace(/\.00$/, "")}m`;
-    } else if (absValue >= 1.0e3) {
-      formatted = `${(absValue / 1.0e3).toFixed(2).replace(/\.00$/, "")}k`;
-    } else {
-      formatted = absValue.toFixed(2);
-    }
-
-    return `${isNegative ? "-" : ""}$${formatted}`;
+  function formatNetWorth(value: number): string {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      maximumFractionDigits: 1,
+      notation: "compact",
+    }).format(value);
   }
 
   // ── Data fetching ──────────────────────────────────────────────────────────
@@ -164,7 +169,26 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           return;
         }
 
-        setTargetEmail(profileEmail);
+        // ── Fetch larp value with fallback to users-full (matches leaderboard) ──
+        let larpValue = Number(apiData.larp ?? 0);
+        if (!larpValue) {
+          try {
+            const allUsersRes = await fetch("https://richacle.onrender.com/users-full");
+            if (allUsersRes.ok) {
+              const allUsers = await allUsersRes.json();
+              const matched = allUsers.find(
+                (u: any) =>
+                  (u.username && u.username.toLowerCase() === username.toLowerCase()) ||
+                  u.email === profileEmail
+              );
+              if (matched && matched.larp !== undefined) {
+                larpValue = Number(matched.larp);
+              }
+            }
+          } catch (e) {
+            console.error("Error fetching users-full for larp:", e);
+          }
+        }
 
         const {
           data: { session },
@@ -199,16 +223,12 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         });
         const balData = await balRes.json();
 
-        let displayNetWorth = "$0.00";
+        let equity = 0;
         let displayNetWorthChange = "$0.00 0.00%";
         let isNegative = false;
 
-        // Net worth should just reflect current balance, regardless of trade history
         if (balData?.equity !== undefined && balData?.equity !== null) {
-          displayNetWorth = `$${Number(balData.equity).toLocaleString(undefined, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          })}`;
+          equity = Number(balData.equity);
         }
 
         if (tradeResponse.ok) {
@@ -221,7 +241,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             isNegative = latestPnL < 0;
 
             const sign = latestPnL >= 0 ? "+" : "-";
-            const equity = balData?.equity || 0;
             const pct = equity !== 0 ? (Math.abs(latestPnL) / equity) * 100 : 0;
 
             displayNetWorthChange = `${sign}$${Math.abs(latestPnL).toLocaleString(undefined, {
@@ -240,11 +259,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
           username: apiData.username || username,
           verified: apiData.active || false,
           bio: apiData.bio || "",
-          netWorth: displayNetWorth,
+          netWorth: equity,
           netWorthChange: displayNetWorthChange,
           isChangeNegative: isNegative,
           rank: "1",
           avatar: fetchedAvatar,
+          larp: larpValue,
+          email: profileEmail,
         });
 
         setEditForm({
@@ -336,7 +357,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                   className="w-12 h-12 rounded-full object-cover"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white  font-semibold">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold">
                   {(profile.name || profile.username || "U").charAt(0).toUpperCase()}
                 </div>
               )}
@@ -360,7 +381,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
 
                 <div className="flex gap-3 items-center text-sm font-semibold text-white">
                   <span>{details.side}</span>
-                  <span className="tabular-nums  text-white">{details.qty}</span>
+                  <span className="tabular-nums text-white">{details.qty}</span>
                 </div>
               </div>
 
@@ -406,7 +427,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
               </div>
             </div>
           </div>
-          <div className="flex items-center justify-center gap-3 mb-6 md:mb-10 w-full ">
+          <div className="flex items-center justify-center gap-3 mb-6 md:mb-10 w-full">
             <img className="h-6 w-6 md:h-8 md:w-8 opacity-90" src="/logo.png" alt="logo" />
             <p className="text-xl md:text-2xl text-white font-medium theseason">RICHACLE</p>
           </div>
@@ -419,8 +440,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
     try {
       setIsSaving(true);
       const formData = new FormData();
-      if (targetEmail) {
-        formData.append("email", targetEmail);
+      if (user?.email) {
+        formData.append("email", user.email);
       }
       if (editForm.name) formData.append("name", editForm.name);
       if (editForm.username) formData.append("username", editForm.username);
@@ -463,8 +484,8 @@ export default function ProfilePage({ params }: ProfilePageProps) {
   // ── Loading state ──────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <main className="h-screen bg-black flex justify-center items-center text-white text-center ">
-        <p className="theseason md:text-3xl text-2xl">Richacle</p>
+      <main className="h-screen bg-black flex justify-center items-center text-white text-center">
+        <p className="theseason md:text-3xl text-3xl">RICHACLE</p>
       </main>
     );
   }
@@ -584,8 +605,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
                     className="bg-transparent border-0 rounded p-2 text-white placeholder:text-zinc-600 focus-visible:ring-0 focus-visible:border-zinc-400 transition-colors duration-200 h-8 lowercase"
                   />
                 </div>
-
-                
               </motion.div>
             </motion.div>
           </motion.div>
@@ -605,7 +624,6 @@ export default function ProfilePage({ params }: ProfilePageProps) {
         exit="exit"
         className="relative min-h-screen overflow-hidden bg-black flex items-start justify-center p-5"
       >
-        {/* Deeper top curve, darker pink, shorter glow, straight bottom */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 z-0 bg-black"
@@ -682,7 +700,9 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             className="flex flex-col items-center justify-center px-1 text-center mt-18"
           >
             <motion.span variants={fadeUp} className="font-bold text-white text-4xl">
-              {user.netWorth}
+              {isRareEmail(user.email)
+                ? formatNetWorth(user.larp)
+                : formatNetWorth(user.netWorth)}
             </motion.span>
 
             <motion.div
@@ -698,16 +718,13 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             </motion.div>
           </motion.div>
 
-          {/* Bio */}
+          {/* Bio & Owner Actions */}
           <motion.div
             variants={staggerContainer}
             initial="initial"
             animate="animate"
-            className="px-1 pt-4 text-left "
+            className="px-1 pt-4 text-left"
           >
-            
-
-            {/* Owner Actions */}
             <motion.div variants={fadeUp} className="flex items-center gap-2 mt-4">
               {isOwner && (
                 <Button
@@ -739,7 +756,7 @@ export default function ProfilePage({ params }: ProfilePageProps) {
             variants={staggerContainer}
             initial="initial"
             animate="animate"
-            className="px-1 pt-8 "
+            className="px-1 pt-8"
           >
             {trades.length === 0 ? (
               <motion.p variants={fadeUp} className="text-zinc-400 text-sm py-6 text-center">

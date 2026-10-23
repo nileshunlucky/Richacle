@@ -7,14 +7,32 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Link from "next/link"
 import Menu from "@/components/Menu"
 
-// Define the structural type of a real user from your API
+// Rare emails: these traders show ".larp" instead of net worth
+const RARE_EMAILS = new Set<string>([
+  "nileshinde001@gmail.com",
+  "tjr@richacle.com",
+  "brez@richacle.com",
+  "orangie@richacle.com",
+  "maurits@richacle.com",
+  "tate@richacle.com",
+  "labubu@richacle.com",
+  "jinwoo@richacle.com",
+  "redbull@richacle.com",
+  "solanapump@richacle.com",
+])
+
+const isRareEmail = (email: string) =>
+  RARE_EMAILS.has((email || "").trim().toLowerCase())
+
 interface TraderUser {
   id: string
   username: string
   name: string
-  networth: number // parsed balance/equity mapping
+  email: string
+  larp: number
+  networth: number
   avatar: string
-  verified: Boolean
+  verified: boolean
 }
 
 export default function Home() {
@@ -30,13 +48,12 @@ export default function Home() {
         setLoading(true)
         setError(false)
 
-        // NOTE: Replace this endpoint with your real global "all users" or "leaderboard" endpoint
         // Step 1: Fetch the core list of users
         const usersRes = await fetch("https://richacle.onrender.com/users-full")
         if (!usersRes.ok) throw new Error("Failed to fetch traders list")
-        const dynamicTraders = await usersRes.ok ? await usersRes.json() : []
+        const dynamicTraders = await usersRes.json()
 
-        // Step 2: Fetch balances concurrently for all users using Promise.all
+        // Step 2: Fetch balances concurrently for all users
         const detailedUsers: TraderUser[] = await Promise.all(
           dynamicTraders.map(async (trader: any, index: number) => {
             const traderEmail = trader.email
@@ -45,7 +62,6 @@ export default function Home() {
 
             if (traderEmail) {
               try {
-                // Prepare form data for the POST balance API
                 const formData = new FormData()
                 formData.append("email", traderEmail)
 
@@ -62,8 +78,7 @@ export default function Home() {
                 }
               } catch (balErr) {
                 console.error(`Could not fetch balance for ${traderEmail}:`, balErr)
-                // Fallback to 0 or baseline asset if individual API fails
-                liveEquity = Number(trader.equity || 0) 
+                liveEquity = Number(trader.equity || 0)
               }
             }
 
@@ -72,9 +87,12 @@ export default function Home() {
               username: trader.username || "anonymous",
               name: trader.name || "Unknown Trader",
               email: traderEmail || "",
-              networth: liveEquity, 
-              avatar: trader.avatar || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQAgvAlI9O_F3MJZ9WdUONOZZSzUPopo9wQXw&s",
-              verified : trader.active || false,
+              networth: liveEquity,
+              larp: trader.larp || 0,
+              avatar:
+                trader.avatar ||
+                "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQAgvAlI9O_F3MJZ9WdUONOZZSzUPopo9wQXw&s",
+              verified: Boolean(trader.active),
             }
           })
         )
@@ -91,16 +109,29 @@ export default function Home() {
     fetchLeaderboardData()
   }, [])
 
-  // Sort strictly by networth descending for true ranking layout structure
-  const sortedAndFilteredUsers = [...users]
-    .sort((a, b) => b.networth - a.networth)
-    .filter(
-      (user) =>
-        user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+  // Active traders first, then by networth descending within each group
+  
+const rankedUsers = [...users].sort((a, b) => {
+  // Verified traders always appear first
+  if (a.verified !== b.verified) {
+    return a.verified ? -1 : 1;
+  }
 
-  // Premium formatting tool for net worth metrics ($1.2B, $628.9K)
+  // Rank rare-email traders by larp, others by net worth
+  const aValue = isRareEmail(a.email) ? a.larp : a.networth;
+  const bValue = isRareEmail(b.email) ? b.larp : b.networth;
+
+  return bValue - aValue;
+});
+
+
+  const sortedAndFilteredUsers = rankedUsers.filter(
+    (user) =>
+      user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.name.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  // Formatting for net worth ($1.2B, $628.9K)
   const formatNetWorth = (value: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -113,7 +144,6 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-black text-white font-sans flex justify-center">
       <div className="w-full max-w-md bg-black flex flex-col pt-3">
-        
         {/* Search Bar */}
         <div className="flex items-center gap-3 p-4">
           <div className="relative flex-1 bg-zinc-900 rounded-full flex items-center p-3 border border-transparent focus-within:border-neutral-800 transition-all duration-200">
@@ -126,8 +156,8 @@ export default function Home() {
               className="w-full bg-transparent px-3 text-[15px] text-white placeholder-[#737373] outline-none"
             />
             {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")} 
+              <button
+                onClick={() => setSearchQuery("")}
                 className="cursor-pointer text-[#a8a8a8] hover:text-white transition-colors rounded-full p-0.5"
               >
                 <X size={16} />
@@ -135,8 +165,6 @@ export default function Home() {
             )}
           </div>
         </div>
-
-      
 
         {/* Display System States */}
         <div className="flex-1 px-2 pt-2 overflow-y-auto">
@@ -151,55 +179,57 @@ export default function Home() {
           ) : (
             <ul className="space-y-1">
               <AnimatePresence mode="popLayout">
-                {sortedAndFilteredUsers.map((user) => {
-                  // Keep a persistent global rank baseline even when matching custom filters
-                  const globalRank = users.sort((a, b) => b.networth - a.networth).findIndex(u => u.id === user.id) + 1
+                {sortedAndFilteredUsers.map((user) => (
+                  <Link key={user.id} href={`/${user.username}`}>
+                    <motion.li
+                      layout
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, scale: 0.98 }}
+                      transition={{ duration: 0.2, ease: "easeInOut" }}
+                      className="flex justify-between items-center gap-3 py-2 px-2 rounded-xl cursor-pointer hover:bg-zinc-900/40 active:scale-[0.99] transition-all"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage
+                            src={user.avatar}
+                            alt={user.username}
+                            className="object-cover"
+                          />
+                          <AvatarFallback className="bg-zinc-800 text-xs font-semibold text-zinc-400">
+                            {user.username.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
 
-                  return (
-                    <Link key={user.id} href={`/${user.username}`}>
-                      <motion.li
-                        layout
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        transition={{ duration: 0.2, ease: "easeInOut" }}
-                        className="flex justify-between items-center gap-3 py-2 px-2 rounded-xl cursor-pointer hover:bg-zinc-900/40 active:scale-[0.99] transition-all"
-                      >
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="text-[15px] font-bold text-zinc-400 w-5 text-center">
-                            {globalRank}
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[15px] font-semibold leading-tight text-white flex items-center gap-2">
+                            {user.username}
+                            {user.verified && (
+                              <img
+                                className="h-4"
+                                src="https://cdn-icons-png.magnific.com/256/18984/18984328.png?semt=ais_white_label"
+                                alt="logo"
+                              />
+                            )}
                           </span>
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={user.avatar} alt={user.username} className="object-cover" />
-                            <AvatarFallback className="bg-zinc-800 text-xs font-semibold text-zinc-400">
-                              {user.username.slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-
-                          <div className="flex flex-col min-w-0">
-                            <span className="text-[15px] font-semibold leading-tight text-white flex itmes-center gap-2">
-                              {user.username}
-                              {user.verified && (
-              <img className="h-4" src="https://cdn-icons-png.magnific.com/256/18984/18984328.png?semt=ais_white_label" alt="logo" />
-              )}
-                            </span>
-                            <span className="text-[14px] text-zinc-400 leading-tight mt-0.5 ">
-                              {user.name}
-                            </span>
-                          </div>
+                          <span className="text-[14px] text-zinc-400 leading-tight mt-0.5">
+                            {user.name}
+                          </span>
                         </div>
+                      </div>
 
-                        <span className="text-[15px] text-white font-semibold whitespace-nowrap">
-                          {formatNetWorth(user.networth)}
-                        </span>
-                      </motion.li>
-                    </Link>
-                  )
-                })}
+                      <span className="text-[15px] text-white font-semibold whitespace-nowrap">
+                        {isRareEmail(user.email)
+                          ? formatNetWorth(user.larp)
+                          : formatNetWorth(user.networth)}
+                      </span>
+                    </motion.li>
+                  </Link>
+                ))}
               </AnimatePresence>
 
               {sortedAndFilteredUsers.length === 0 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   className="text-center py-12 text-[#737373] text-[14px]"
@@ -210,9 +240,8 @@ export default function Home() {
             </ul>
           )}
         </div>
-
       </div>
-      <Menu/>
+      <Menu />
     </div>
   )
 }

@@ -40,10 +40,6 @@ const avatarVariants = {
 };
 
 interface NavbarProps {
-  tradingMode?: "paper" | "binance";
-  paperBalance?: number;
-  onModeChange?: (mode: "paper" | "binance") => void;
-   onResetPaper?: () => void;
    isVerified?: boolean;
 }
 
@@ -95,48 +91,53 @@ const [strategiesPerf, setStrategiesPerf] = useState(0)
   fetchBinance(); 
 }, [email]);
 
-   const handleBinance = async () => {
-    if (!email){
-      toast.error("Not authenticated");
-      return;
-    }
+const handleOpenCoinbase = () => {
+  if (!isVerified) {
+    toast("Upgrade your plan to connect coinbase.");
+    setShowPricing(true);
+    return;
+  }
+  setIsModalOpen(true);
+};
 
-    if (!apiKey || !apiSecret){
-      toast.error("Missing Something");
-      return;
-    }
+const handleBinance = async () => {
+  if (!isVerified) {
+    toast("Upgrade your plan to connect coinbase.");
+    setShowPricing(true);
+    return;
+  }
+  if (!email) { toast.error("Not authenticated"); return; }
+  if (!apiKey || !apiSecret) { toast.error("Missing API key or secret"); return; }
 
-    try {
-      setLoading(true);
-      const form = new FormData();
-      form.append("email", email);
-      form.append("apiKey", apiKey);
-      form.append("apiSecret", apiSecret);
-      
-      const res = await fetch("https://richacle.onrender.com/api/binance", {
-        method: "POST",
-        body: form,
-      });
+  try {
+    setLoading(true);
+    const form = new FormData();
+    form.append("email", email);
+    form.append("apiKey", apiKey);
+    form.append("apiSecret", apiSecret);
 
-      if (res.status === 403) {
-      toast("Please upgrade your plan to connect Binance.")
+    const res = await fetch("https://richacle.onrender.com/api/binance", { // unchanged
+      method: "POST",
+      body: form,
+    });
+
+    if (res.status === 403) {
+      toast("Please upgrade your plan to connect Coinbase.");
       setShowPricing(true);
       return;
     }
-
-      if(res.ok){
-        toast("Binance Connected")
-        setIsModalOpen(false)
-      } else if (res.status === 401) {
-   
-    toast.error("Invalid Binance API Key or Secret");
-  }
-    } catch (e) {
-      toast.error("Something went wrong");
-    } finally {
-      setLoading(false);
+    if (res.ok) {
+      toast("Coinbase Connected");
+      setIsModalOpen(false);
+    } else if (res.status === 401) {
+      toast.error("Invalid Coinbase API Key or Secret");
     }
-  };
+  } catch {
+    toast.error("Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
   if (!email) return;
@@ -233,7 +234,7 @@ const toggleMobileTip = () => {
         <div className={`flex justify-between md:px-12 px-3 py-3 h-12 items-center ${mobileOpen ? "bg-black" : "bg-transparent"}`}>
           {/* Logo */}
           
-            <span className="theseason md:text-2xl text-xl ">Richacle</span>
+            <span className="theseason md:text-2xl text-xl ">RICHACLE</span>
           
 
           <div className="relative">
@@ -242,51 +243,23 @@ const toggleMobileTip = () => {
       $ {new Intl.NumberFormat("en-US", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-      }).format(tradingMode === "paper" ? paperBalance : totalPnl)}
+      }).format(totalPnl)}
     </h1>
 
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-  <button className="flex cursor-pointer items-center bg-white gap-1 text-black p-1 px-2 rounded-r transition-colors">
-    {tradingMode === "paper" ? (
-      <WalletMinimal className="h-5 w-5" />
-    ) : (
-      <svg xmlns="http://w3.org" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
-        <path d="M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z" />
-      </svg>
-    )}
-    <p className="md:flex hidden font-semibold">
-      {tradingMode === "paper" ? "Paper Trading" : "Binance Future"}
-    </p>
-  </button>
-</DropdownMenuTrigger>
-    {tradingMode === "paper" && (
-    <button className=" p-1 cursor-pointer rounded" onClick={onResetPaper}>
-       <RotateCcw className="h-5 w-5"/>
+    <button
+      onClick={handleOpenCoinbase}
+      className="flex cursor-pointer items-center bg-white gap-1 text-black p-1 px-2 rounded-r transition-colors"
+    >
+      <p className="md:flex hidden">
+        coinbase 
+      </p>
+      <p className="flex md:hidden">
+        <svg  xmlns="http://w3.org"  viewBox="230 230 600 600" fill="currentColor" className="h-5 w-5 text-black">
+  <path d="M516.3 361.83c60.28 0 108.1 37.18 126.26 92.47H764C742 336.09 644.47 256 517.27 256 372.82 256 260 365.65 260 512.49S370 768 517.27 768c124.35 0 223.82-80.09 245.84-199.28H642.55c-17.22 55.3-65 93.45-125.32 93.45-83.23 0-141.56-63.89-141.56-149.68.04-86.77 57.43-150.66 140.63-150.66z" />
+</svg> 
+      </p>
+    
     </button>
-  )}
-      <DropdownMenuContent align="end" className="text-white border-0">
-        <DropdownMenuItem className="cursor-pointer" onClick={() => onModeChange?.("paper")}>
-          Paper Trading
-        </DropdownMenuItem>
-        
-         <DropdownMenuItem
-  className="cursor-pointer"
-  onClick={() => {
-    if (!isVerified) {
-      toast("Upgrade your plan to unlock Coinbase Futures.");
-      setShowPricing(true);
-      return;
-    }
-    toast.error("Something went wrong, please try later!");
-  }}
->
-  Coinbase
-  {!isVerified && <Lock size={11} className="ml-2 inline text-zinc-400" />}
-</DropdownMenuItem>
-      </DropdownMenuContent>
-      
-    </DropdownMenu>
   </div>
 </div>
 
@@ -335,16 +308,12 @@ const toggleMobileTip = () => {
         {/* Header with Switch */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
-          <svg 
-  xmlns="http://w3.org" 
-  viewBox="0 0 24 24" 
-  fill="currentColor" 
-  className="h-5 w-5 text-white"
->
-  <path d="M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z" />
+         
+<svg  xmlns="http://w3.org"  viewBox="230 230 600 600" fill="currentColor" className="h-5 w-5 text-white">
+  <path d="M516.3 361.83c60.28 0 108.1 37.18 126.26 92.47H764C742 336.09 644.47 256 517.27 256 372.82 256 260 365.65 260 512.49S370 768 517.27 768c124.35 0 223.82-80.09 245.84-199.28H642.55c-17.22 55.3-65 93.45-125.32 93.45-83.23 0-141.56-63.89-141.56-149.68.04-86.77 57.43-150.66 140.63-150.66z" />
 </svg>
 
-              <h2 className="text-xl font-semibold">Binance Future</h2>
+              <h2 className="text-xl font-semibold">coinbase</h2>
           </div>
         </div>
 
@@ -381,7 +350,7 @@ const toggleMobileTip = () => {
                     </button>
                   </TooltipTrigger>
                   <TooltipContent>
-                    <p>Copy this IP to Binance's IP restriction setting.</p>
+                    <p>Copy this IP to coinbase's IP restriction setting.</p>
                   </TooltipContent>
                 </Tooltip>
               </label>

@@ -70,11 +70,13 @@ interface AdvancedChartProps {
   onPriceUpdate: (price: string) => void;
   symbol?: string;
   onIntervalChange?: (interval: string) => void;
+  onClose?: () => void;
+  canClose?: boolean;
 }
 
 interface TradeWidgetProps {
   onReset: () => void;
-  onAccept: (params: any) => void; // Replace 'any' with your specific trade object if possible
+  onAccept: (params: any) => Promise<boolean | void> | void;
   disabled: boolean;
   onPriceChange: (lines: TradeLines) => void;
   price: string | null;
@@ -105,7 +107,7 @@ interface Message {
   content: string | React.ReactNode;
 }
 
-const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", onIntervalChange }: AdvancedChartProps) {
+const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", onIntervalChange, onClose, canClose  }: AdvancedChartProps) {
   // 1. Properly typed refs using the imported library types
   const chartInstance = useRef<LightweightCharts.IChartApi | null>(null);
   const seriesRef = useRef<LightweightCharts.ISeriesApi<"Candlestick"> | null>(null);
@@ -439,6 +441,15 @@ const calcQty = () => {
     : "0.00 USD"}
 </span>
 
+{canClose && (
+          <button
+            onClick={onClose}
+            className="pointer-events-auto cursor-pointer px-1.5 text-white/60 hover:text-white"
+          >
+            ✕
+          </button>
+        )}
+
       </div>
     )}
     {badgeY.sl !== null && (
@@ -731,18 +742,10 @@ useEffect(() => {
       {!disabled && (
         <div className="flex">
           <button 
-            onClick={() => {
-              setCapturedEntry(entry);
-    onAccept({
-      symbol,
-      side,
-      leverage,
-      amount,
-      tp,
-      sl,
-      entry
-    });
-  }}
+            onClick={async () => {
+  const ok = await onAccept({ symbol, side, leverage, amount, tp, sl, entry });
+  if (ok !== false) setCapturedEntry(entry);
+}}
             className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-green-700 bg-green-700/20 hover:bg-green-700/30 transition-colors text-green-200 text-xs rounded-l cursor-pointer"
           >
             <Check size={14} /> accept
@@ -798,25 +801,6 @@ const [tradeStatusText, setTradeStatusText] = useState<string | null>(null);
 const [showModeMenu, setShowModeMenu] = useState(false);
 const [activeTradeWidgetIndex, setActiveTradeWidgetIndex] = useState<number | null>(null);
 const [isVerified, setIsVerified] = useState(false);
-const [tradingMode, setTradingMode] = useState<"paper" | "binance">("paper");
-const [paperBalance, setPaperBalance] = useState(10000);
-
-// load saved mode/balance once
-useEffect(() => {
-  const savedMode = localStorage.getItem("richacle_mode");
-  const savedBalance = localStorage.getItem("richacle_paper_balance");
-  if (savedMode === "binance" || savedMode === "paper") setTradingMode(savedMode);
-  if (savedBalance) setPaperBalance(parseFloat(savedBalance));
-}, []);
-
-useEffect(() => {
-  localStorage.setItem("richacle_mode", tradingMode);
-}, [tradingMode]);
-
-useEffect(() => {
-  localStorage.setItem("richacle_paper_balance", paperBalance.toString());
-}, [paperBalance]);
-
 
 const insertMode = (mode: string) => {
   setPrompt(prev => prev ? `${prev} /${mode} ` : `/${mode} `);
@@ -833,9 +817,6 @@ const models = [
   { id: "deepseek-v3.2", name: "Deepseek V3.2" },
 ]
 
-const handleResetPaperBalance = () => {
-  setPaperBalance(10000);
-};
 
 const calcTerminalPnl = (priceOverride?: number) => {
   if (!activeLines) return { pnl: 0, roi: 0 };
@@ -886,7 +867,7 @@ useEffect(() => {
     handleCloseOrder(activeSymbol, exactExitPrice);
 
     if (tpHit) {
-      toast(`TAKE PROFIT HIT ${sl}`);
+      toast(`TAKE PROFIT HIT ${tp}`);
     } else {
       toast.error(`STOP LOSS HIT ${sl}`);
     }
@@ -931,29 +912,15 @@ useEffect(() => {
 
   // Inside VibeTradingUI component
 const handleAccept = async (tradeParams: TradeParams) => {
+   if (!isVerified) {
+    toast("Upgrade your plan to trade on coinbase.");
+    setShowPricing(true);
+    return false;
+  }
   setActiveTradeParams(tradeParams);
   setIsTrading(true);
 
-   if (tradingMode === "paper") {
-    setConfirmedEntryPrice(tradeParams.entry);
-    setIsExecuted(true);
-    setIsPositionClosed(false);
-    setMessages(prev => [
-  ...prev,
-  {
-    role: "ai",
-    content: (
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-2 flex flex-col gap-2">
-        <div className="flex items-center">
-          Order placed {tradeParams.symbol}
-        </div>
-      </motion.div>
-    )
-  }
-]);
-    setIsTrading(false);
-    return;
-  }
+  
 
   try {
     const formData = new FormData();
@@ -1036,35 +1003,6 @@ const handleCloseOrder = async (symbol: string , exitPriceOverride?: number) => 
         )
       }
     ]);
-    return;
-  }
-
-  if (tradingMode === "paper") {
-    setIsClosing(true);
-    const exitPrice = exitPriceOverride ?? parseFloat(currentPrice || "0");
-    const { pnl } = calcTerminalPnl(exitPrice);
-    setPaperBalance(prev => Math.max(0, prev + pnl));
-
-    setMessages(prev => [
-      ...prev,
-      {
-        role: "ai",
-        content: (
-          <div className="text-left p-4">
-            Position for {symbol} closed. PnL: {pnl >= 0 ? "+" : ""}{pnl.toFixed(2)} USD
-          </div>
-        )
-      }
-    ]);
-
-    setIsWidgetActive(false);
-    setActiveLines(null);
-    setIsExecuted(false);
-    setConfirmedEntryPrice(null);
-    hasClosedRef.current = false;
-    setIsPositionClosed(false);
-    setIsRejected(false);
-    setIsClosing(false);
     return;
   }
 
@@ -1291,7 +1229,7 @@ const handleClearMemory = async () => {
 
   return (
     <>
-       <Navbar tradingMode={tradingMode} paperBalance={paperBalance} onModeChange={setTradingMode} onResetPaper={handleResetPaperBalance}  isVerified={isVerified}/>
+       <Navbar   isVerified={isVerified}/>
     <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
     {showPricing && (
   <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
@@ -1309,137 +1247,9 @@ const handleClearMemory = async () => {
 
       {/* LEFT SIDE: 70% */}
 <div className="flex-[7] flex flex-col min-w-0 relative">
-  <AdvancedChart symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice} onIntervalChange={setActiveTimeframe}/>
+  <AdvancedChart symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice} onIntervalChange={setActiveTimeframe} onClose={() => handleCloseOrder(activeSymbol)}
+  canClose={isExecuted && !isClosing}/>
 
-  {/* Terminal — Positions panel */}
-  <div className="shrink-0 bg-black px-4 py-3 mb-7 md:mb-0">
-    <div className="rounded-2xl bg-black  overflow-hidden">
-
-      {/* Tabs */}
-      <div className="flex items-center gap-6 px-5 pt-4 pb-3 ">
-        <span className="text-[13px] font-semibold text-white">
-          Positions ({isExecuted && activeLines ? 1 : 0})
-        </span>
-        <span className="text-[13px] font-medium text-white/25">
-          Open Orders (0)
-        </span>
-        <span className="text-[13px] font-medium text-white/25">
-          Fills
-        </span>
-      </div>
-
-      {isExecuted && activeLines ? (
-        (() => {
-          const { pnl, roi } = calcTerminalPnl();
-          const isProfit = pnl >= 0;
-          const isBuy = activeLines.side.toUpperCase() === "BUY";
-          const price = parseFloat(currentPrice || "0");
-          const value = (activeLines.amount || 0) * (activeLines.leverage || 1);
-          const qty = activeLines.entry ? (value / activeLines.entry) : 0;
-
-          // Rough liquidation price estimate (isolated margin approximation)
-          const lev = activeLines.leverage || 1;
-          const liqPrice = isBuy
-            ? activeLines.entry * (1 - 0.9 / lev)
-            : activeLines.entry * (1 + 0.9 / lev);
-
-          return (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse ">
-                <thead>
-                  <tr className="text-[11px] uppercase  text-white">
-                    <th className="font-medium px-5 py-3">Symbol</th>
-                    <th className="font-medium px-3 py-3">Size</th>
-                    <th className="font-medium px-3 py-3">Value</th>
-                    <th className="font-medium px-3 py-3">Ent. Price</th>
-                    <th className="font-medium px-3 py-3">Liq. Price</th>
-                    <th className="font-medium px-3 py-3">Oracle</th>
-                    <th className="font-medium px-5 py-3 text-right">PNL</th>
-                    <th className="font-medium px-3 py-3">Close position</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="relative text-[13px] ">
-                    <td className="relative px-5 py-4">
-                      <span className={cn(
-                        "absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-8 rounded-r",
-                        isProfit ? "bg-[#00E676]" : "bg-[#FF1744]"
-                      )} />
-                      <div className="flex flex-col">
-                        <span className="text-white font-semibold">{activeSymbol}</span>
-                        <span className={cn(
-                          "text-[11px] font-semibold",
-                          isBuy ? "text-blue-400" : "text-[#FF1744]"
-                        )}>
-                          {activeLines.leverage}x
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-col">
-                        <span className={cn("font-semibold", isBuy ? "text-blue-400" : "text-[#FF1744]")}>
-                          {qty.toFixed(2)}
-                        </span>
-                        <span className="text-white/30 text-[11px]">{activeSymbol.split("/")[0]}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-white/80">{value.toFixed(2)}</span>
-                        <span className="text-white/30 text-[11px]">USD</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-white/80">{activeLines.entry.toFixed(3)}</span>
-                        <span className="text-white/30 text-[11px]">USD</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-blue-400/90">{liqPrice.toFixed(3)}</span>
-                        <span className="text-white/30 text-[11px]">USD</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <span className="text-white/80">{price ? price.toFixed(3) : "—"}</span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex flex-col items-end">
-                        <span className={cn("font-semibold", isProfit ? "text-[#00E676]" : "text-[#FF1744]")}>
-                          {isProfit ? "+" : ""}{roi.toFixed(2)}%
-                        </span>
-                        <span className={cn("text-[11px]", isProfit ? "text-[#00E676]/70" : "text-[#FF1744]/70")}>
-                          {isProfit ? "+" : ""}{pnl.toFixed(2)} USDC
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                       
-                <button
-                  onClick={() => handleCloseOrder(activeSymbol)}
-                  disabled={isClosing}
-                  className="px-4 py-2 rounded-lg text-[11px] font-semibold uppercase text-white/60 hover:text-white transition-colors cursor-pointer disabled:opacity-30"
-                >
-                 X
-                </button>
-              
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-             
-            </div>
-          );
-        })()
-      ) : (
-        <div className="flex items-center justify-center h-24 text-white/25 text-[13px]">
-          No open positions
-        </div>
-      )}
-    </div>
-  </div>
 </div>
 
 
