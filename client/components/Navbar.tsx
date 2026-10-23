@@ -43,7 +43,7 @@ interface NavbarProps {
    isVerified?: boolean;
 }
 
-export default function Navbar({ tradingMode = "paper", paperBalance = 10000, onModeChange, onResetPaper, isVerified = false }: NavbarProps) {
+export default function Navbar({ isVerified = false }: NavbarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [email, setEmail] = useState("");
