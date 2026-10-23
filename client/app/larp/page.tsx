@@ -1313,7 +1313,7 @@ return (
     className="flex flex-col"
     style={isPhone ? { width: "100vw", height: "56.25vw" } : { height: "100vh" }}
   >
-    <Navbar tradingMode={tradingMode} paperBalance={paperBalance} onModeChange={setTradingMode} onResetPaper={handleResetPaperBalance} isVerified={isVerified} />
+    <Navbar isVerified={isVerified} />
   <div className="flex flex-1 min-h-0 bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
     {showPricing && (
   <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
