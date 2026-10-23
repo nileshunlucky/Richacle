@@ -1493,7 +1493,7 @@ const handleClearMemory = async () => {
                   )}>
 {msg.content.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
                       /^\/(thinking|deep-research)$/i.test(part) ? (
-                        <span key={i} className="text-blue-300">{part}</span>
+                        <span key={i} className="bg-blue-950/60 text-blue-300 rounded px-1">{part}</span>
                       ) : (
                         <span key={i}>{part}</span>
                       )
@@ -1573,7 +1573,7 @@ const handleClearMemory = async () => {
   >
     {prompt.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
   /^\/(thinking|deep-research)$/i.test(part) ? (
-    <span key={i} className=" text-blue-300">{part}</span>
+    <span key={i} className="bg-blue-950/60 text-blue-300 rounded">{part}</span>
   ) : (
     <span key={i} className="text-white">{part}</span>
   )

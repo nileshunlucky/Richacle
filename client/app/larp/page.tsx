@@ -71,6 +71,8 @@ interface AdvancedChartProps {
   symbol?: string;
   onIntervalChange?: (interval: string) => void;
   forcedPrice?: number | null; // DEMO
+  onClose?: () => void;
+  canClose?: boolean;
 }
 
 interface TradeWidgetProps {
@@ -107,7 +109,7 @@ interface Message {
   content: string | React.ReactNode;
 }
 
-const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", onIntervalChange, forcedPrice }: AdvancedChartProps) {
+const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", onIntervalChange, forcedPrice, onClose, canClose }: AdvancedChartProps) {
   // 1. Properly typed refs using the imported library types
   const chartInstance = useRef<LightweightCharts.IChartApi | null>(null);
   const seriesRef = useRef<LightweightCharts.ISeriesApi<"Candlestick"> | null>(null);
@@ -392,7 +394,7 @@ useEffect(() => {
 
   const secs =
     ({ "1m": 60, "5m": 300, "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 } as Record<string, number>)[interval] || 900;
-  const TICKS_PER_CANDLE = 10; // 40 ticks => ~10 candles. Raise for fewer/bigger candles.
+ const TICKS_PER_CANDLE = DEMO_TICKS_PER_CANDLE // 40 ticks => ~10 candles. Raise for fewer/bigger candles.
 
   // first forced tick: remember which live candle we start from
   if (!fakeRef.current) {
@@ -427,6 +429,14 @@ useEffect(() => {
   candle.high = Math.max(candle.high, forcedPrice);
   candle.low = Math.min(candle.low, forcedPrice);
   candle.close = forcedPrice;
+
+    // on the candle's last tick, add visible wicks beyond the body
+  if ((fake.ticks - 1) % TICKS_PER_CANDLE === TICKS_PER_CANDLE - 1) {
+    const body = Math.abs(candle.close - candle.open);
+    const pad = body * 0.3 + forcedPrice * 0.0002; // wick size
+    candle.high = Math.max(candle.open, candle.close) + Math.random() * pad;
+    candle.low = Math.min(candle.open, candle.close) - Math.random() * pad;
+  }
 
   // real history older than where we started
   const all = seriesRef.current.data() as any[];
@@ -528,6 +538,15 @@ const calcQty = () => {
     ? `${calcPnl(livePrice) >= 0 ? "+" : ""}${calcPnl(livePrice).toFixed(2)} USD`
     : "0.00 USD"}
 </span>
+
+        {canClose && (
+          <button
+            onClick={onClose}
+            className="pointer-events-auto cursor-pointer px-1.5 text-white/60 hover:text-white"
+          >
+            ✕
+          </button>
+        )}
 
       </div>
     )}
@@ -849,7 +868,8 @@ useEffect(() => {
   );
 });
 
-const DEMO_PROMPT = "/scalp-trade on Bitcoin";
+const DEMO_PROMPT = "/thinking on Bitcoin";
+const DEMO_TICKS_PER_CANDLE = 10;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 const DEFAULT_CONFIG = {
@@ -914,6 +934,7 @@ function VibeTradingUIContent() {
 const [draft, setDraft] = useState<DemoConfig>(DEFAULT_CONFIG);
 const [showEdit, setShowEdit] = useState(false);
 const configRef = useRef(config);
+const demoCancelRef = useRef(false);
 configRef.current = config;
 
 const draftErrors = validateConfig(draft);
@@ -1075,6 +1096,7 @@ useEffect(() => {
   const handleCloseOrder = async (symbol: string, exitPriceOverride?: number) => {
     if (isClosing) return;
     setIsClosing(true);
+    demoCancelRef.current = true;
     await sleep(800);
 
     const exitPrice = exitPriceOverride ?? parseFloat(currentPrice || "0");
@@ -1119,6 +1141,7 @@ useEffect(() => {
   // DEMO: fully scripted flow, no network calls
   const handleSend = async () => {
     if (!prompt.trim() || loading) return;
+    demoCancelRef.current = false;
     const currentPrompt = prompt;
     setLoading(true);
     setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
@@ -1220,24 +1243,57 @@ const tradeData = {
       entry: l?.entry ?? tradeData.entry_price,
     });
     // DEMO: force the trade to win
-await sleep(4000); // let the viewer see the open position first
+await sleep(4000);
+if (demoCancelRef.current) return; // let the viewer see the open position first
 const l2 = activeLinesRef.current;
 if (!l2) return;
 
 const start = parseFloat(currentPriceRef.current || "") || l2.entry;
 const target = l2.tp;
-const steps = 40;
+const T = DEMO_TICKS_PER_CANDLE;
 
-for (let i = 1; i <= steps; i++) {
-  const progress = i / steps;
-  // small wobble that fades out so it looks like a real move and never overshoots early
-  // bigger wobble that fades out: creates a few red candles and pullbacks
-const wobble = Math.sin(i * 0.9) * Math.abs(target - start) * 0.12 * (1 - progress);
-  const p = i === steps ? target : start + (target - start) * progress + wobble;
+// ---- plan the candles ----
+const N_CANDLES = 9;                                  // total candles in the move
+const redCount = 2 + Math.floor(Math.random() * 4);   // 2..5 red candles
+const RED_RATIO = 0.6;                                // red drop size relative to a green rise
 
-  setForcedPrice(p);
-  setCurrentPrice(p.toFixed(2));
-  await sleep(150);
+// red candles can't be the first or last (last must be green so we land on TP)
+const pool = Array.from({ length: N_CANDLES - 2 }, (_, i) => i + 1);
+for (let i = pool.length - 1; i > 0; i--) {           // shuffle
+  const j = Math.floor(Math.random() * (i + 1));
+  [pool[i], pool[j]] = [pool[j], pool[i]];
+}
+const redSet = new Set(pool.slice(0, redCount));
+const greenCount = N_CANDLES - redCount;
+
+// size of one green step so that (greens up - reds down) = total distance to TP
+const g = (target - start) / (greenCount - RED_RATIO * redCount);
+
+// keep dips well above the stop loss, and never touch TP before the last candle
+const floorPrice = l2.sl + (start - l2.sl) * 0.5;
+const ceilPrice = target - g * 0.2;
+
+const levels: number[] = [start];                     // close price of each candle
+for (let k = 0; k < N_CANDLES; k++) {
+  if (k === N_CANDLES - 1) { levels.push(target); break; }
+  const step = redSet.has(k) ? -g * RED_RATIO : g;
+  levels.push(Math.min(ceilPrice, Math.max(floorPrice, levels[k] + step)));
+}
+
+// ---- play it tick by tick ----
+for (let k = 0; k < N_CANDLES; k++) {
+  const from = levels[k];
+  const to = levels[k + 1];
+  for (let t = 1; t <= T; t++) {
+    if (demoCancelRef.current) return;
+    const isLast = t === T;
+    const noise = isLast ? 0 : (Math.random() - 0.5) * Math.abs(to - from) * 0.15;
+    const p = isLast ? to : from + ((to - from) * t) / T + noise;
+
+    setForcedPrice(p);
+    setCurrentPrice(p.toFixed(2));
+    await sleep(150);
+  }
 }
   };
 
@@ -1355,137 +1411,10 @@ return (
 
       {/* LEFT SIDE: 70% */}
 <div className="flex-[7] flex flex-col min-w-0 relative">
-<AdvancedChart symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice} onIntervalChange={setActiveTimeframe} forcedPrice={forcedPrice} />
+<AdvancedChart symbol={activeSymbol} tradeLines={activeLines} onPriceUpdate={setCurrentPrice} onIntervalChange={setActiveTimeframe} forcedPrice={forcedPrice}  onClose={() => handleCloseOrder(activeSymbol)}
+  canClose={isExecuted && !isClosing}/>
 
-  {/* Terminal — Positions panel */}
-  <div className="shrink-0 bg-black px-4 py-3 mb-7 md:mb-0">
-    <div className="rounded-2xl bg-black  overflow-hidden">
-
-      {/* Tabs */}
-      <div className="flex items-center gap-6 px-5 pt-4 pb-3 ">
-        <span className="text-[13px] font-semibold text-white">
-          Positions ({isExecuted && activeLines ? 1 : 0})
-        </span>
-        <span className="text-[13px] font-medium text-white/25">
-          Open Orders (0)
-        </span>
-        <span className="text-[13px] font-medium text-white/25">
-          Fills
-        </span>
-      </div>
-
-      {isExecuted && activeLines ? (
-        (() => {
-          const { pnl, roi } = calcTerminalPnl();
-          const isProfit = pnl >= 0;
-          const isBuy = activeLines.side.toUpperCase() === "BUY";
-          const price = parseFloat(currentPrice || "0");
-          const value = (activeLines.amount || 0) * (activeLines.leverage || 1);
-          const qty = activeLines.entry ? (value / activeLines.entry) : 0;
-
-          // Rough liquidation price estimate (isolated margin approximation)
-          const lev = activeLines.leverage || 1;
-          const liqPrice = isBuy
-            ? activeLines.entry * (1 - 0.9 / lev)
-            : activeLines.entry * (1 + 0.9 / lev);
-
-          return (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse ">
-                <thead>
-                  <tr className="text-[11px] uppercase  text-white">
-                    <th className="font-medium px-5 py-3">Symbol</th>
-                    <th className="font-medium px-3 py-3">Size</th>
-                    <th className="font-medium px-3 py-3">Value</th>
-                    <th className="font-medium px-3 py-3">Ent. Price</th>
-                    <th className="font-medium px-3 py-3">Liq. Price</th>
-                    <th className="font-medium px-3 py-3">Oracle</th>
-                    <th className="font-medium px-5 py-3 text-right">PNL</th>
-                    <th className="font-medium px-3 py-3">Close position</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="relative text-[13px] ">
-                    <td className="relative px-5 py-4">
-                      <span className={cn(
-                        "absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-8 rounded-r",
-                        isProfit ? "bg-[#00E676]" : "bg-[#FF1744]"
-                      )} />
-                      <div className="flex flex-col">
-                        <span className="text-white font-semibold">{activeSymbol}</span>
-                        <span className={cn(
-                          "text-[11px] font-semibold",
-                          isBuy ? "text-blue-400" : "text-[#FF1744]"
-                        )}>
-                          {activeLines.leverage}x
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-col">
-                        <span className={cn("font-semibold", isBuy ? "text-blue-400" : "text-[#FF1744]")}>
-                          {qty.toFixed(2)}
-                        </span>
-                        <span className="text-white/30 text-[11px]">{activeSymbol.split("/")[0]}</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-white/80">{value.toFixed(2)}</span>
-                        <span className="text-white/30 text-[11px]">USD</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-white/80">{activeLines.entry.toFixed(3)}</span>
-                        <span className="text-white/30 text-[11px]">USD</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <div className="flex flex-col">
-                        <span className="text-blue-400/90">{liqPrice.toFixed(3)}</span>
-                        <span className="text-white/30 text-[11px]">USD</span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                      <span className="text-white/80">{price ? price.toFixed(3) : "—"}</span>
-                    </td>
-                    <td className="px-5 py-4 text-right">
-                      <div className="flex flex-col items-end">
-                        <span className={cn("font-semibold", isProfit ? "text-[#00E676]" : "text-[#FF1744]")}>
-                          {isProfit ? "+" : ""}{roi.toFixed(2)}%
-                        </span>
-                        <span className={cn("text-[11px]", isProfit ? "text-[#00E676]/70" : "text-[#FF1744]/70")}>
-                          {isProfit ? "+" : ""}{pnl.toFixed(2)} USDC
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-3 py-4">
-                       
-                <button
-                  onClick={() => handleCloseOrder(activeSymbol)}
-                  disabled={isClosing}
-                  className="px-4 py-2 rounded-lg text-[11px] font-semibold uppercase text-white/60 hover:text-white transition-colors cursor-pointer disabled:opacity-30"
-                >
-                 X
-                </button>
-              
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-
-             
-            </div>
-          );
-        })()
-      ) : (
-        <div className="flex items-center justify-center h-24 text-white/25 text-[13px]">
-          No open positions
-        </div>
-      )}
-    </div>
-  </div>
+ 
 </div>
 
 
@@ -1503,7 +1432,7 @@ return (
     onClick={openEdit}
     disabled={editLocked}
     title={editLocked ? "Finish or close the current trade first" : "Edit trade settings"}
-    className="cursor-pointer fixed bottom-5 right-5 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+    className="cursor-pointer fixed bottom-12 right-12 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed z-50"
   >
     <Pencil size={18} />
   </button>
@@ -1545,8 +1474,8 @@ return (
                     "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg",
                     msg.role === "user" ? "bg-zinc-900 text-white" : "bg-transparent text-[#d1d1d1] pl-4"
                   )}>
-{msg.content.split(/(\/scalp-trade|\/swing-trade|\/day-trade)/gi).map((part, i) =>
-                      /^\/(scalp-trade|swing-trade|day-trade)$/i.test(part) ? (
+{msg.content.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
+                      /^\/(thinking|deep-research)$/i.test(part) ? (
                         <span key={i} className="bg-blue-950/60 text-blue-300 rounded px-1">{part}</span>
                       ) : (
                         <span key={i}>{part}</span>
@@ -1625,8 +1554,8 @@ return (
     className="absolute inset-0 w-full text-[14px] px-0 py-0 whitespace-pre-wrap break-words pointer-events-none"
     style={{ fontFamily: "inherit", lineHeight: "inherit" }}
   >
-    {prompt.split(/(\/scalp-trade|\/swing-trade|\/day-trade)/gi).map((part, i) =>
-  /^\/(scalp-trade|swing-trade|day-trade)$/i.test(part) ? (
+    {prompt.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
+  /^\/(thinking|deep-research)$/i.test(part) ? (
     <span key={i} className="bg-blue-950/60 text-blue-300 rounded">{part}</span>
   ) : (
     <span key={i} className="text-white">{part}</span>
@@ -1658,13 +1587,13 @@ return (
   />
   {showModeMenu && (
     <div className="absolute bottom-12 left-0 bg-[#141414] rounded-lg p-1 overflow-hidden z-50 min-w-[150px] shadow-xl">
-      {["scalp-trade", "swing-trade", "day-trade"].map((mode) => (
+      {["thinking", "deep-research"].map((mode) => (
         <button
           key={mode}
           onClick={() => insertMode(mode)}
           className="block w-full text-left px-3  rounded-lg py-2 text-xs hover:bg-zinc-800 transition-colors cursor-pointer"
         >
-          /{mode}
+          {mode}
         </button>
       ))}
     </div>
