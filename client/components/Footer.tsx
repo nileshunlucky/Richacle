@@ -52,7 +52,7 @@ const columns: FooterColumn[] = [
 ];
 
 const linkClass =
-  "text-sm text-zinc-500 transition-colors hover:text-zinc-900";
+  "text-sm text-zinc-400 transition-colors hover:text-zinc-100";
 
 const ease = [0.4, 0, 0.2, 1] as const;
 
@@ -87,12 +87,12 @@ function FaqItem({
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="flex w-full items-center justify-between gap-3 text-left text-sm font-medium text-zinc-900"
+        className="flex w-full items-center justify-between gap-3 text-left text-sm font-medium text-zinc-100"
       >
         {q}
         <ChevronDown
           size={14}
-          className={`shrink-0 text-zinc-500 transition-transform duration-300 ${
+          className={`shrink-0 text-zinc-400 transition-transform duration-300 ${
             open ? "rotate-180" : ""
           }`}
         />
@@ -101,7 +101,7 @@ function FaqItem({
       <AnimatePresence initial={false}>
         {open && (
           <Collapse>
-            <p className="pt-2 text-xs leading-relaxed text-zinc-500">{a}</p>
+            <p className="pt-2 text-xs leading-relaxed text-zinc-400">{a}</p>
           </Collapse>
         )}
       </AnimatePresence>
@@ -154,16 +154,14 @@ export default function Footer() {
 
   return (
     <footer className="relative z-50 w-full bg-black p-2 md:p-3">
-      {/* Premium rose panel */}
-      <div className="relative isolate overflow-hidden rounded-2xl bg-white px-6 pb-8 pt-10 md:rounded-3xl md:px-10 md:pt-12">
-        {/* Soft rose glow, right side only */}
-        <div className="pointer-events-none absolute -bottom-40 -right-24 -z-10 h-[26rem] w-[26rem] rounded-full bg-rose-200/60 blur-[110px]" />
+      <div className="relative isolate overflow-hidden rounded-2xl bg-black px-6 pb-8 pt-10 md:rounded-3xl md:px-10 md:pt-12">
+      
 
         {/* Columns: 1 col on mobile, 4 on desktop */}
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-6">
           {columns.map((col) => (
             <div key={col.title}>
-              <h3 className="theseason mb-5 text-lg text-zinc-700">
+              <h3 className="theseason mb-5 text-lg text-zinc-100">
                 {col.title}
               </h3>
               <ul className="space-y-3">
@@ -187,26 +185,23 @@ export default function Footer() {
           ))}
         </div>
 
-        {/* Divider */}
-        <div className="mt-10 h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent md:mt-16" />
-
         {/* Bottom bar: Country left, wordmark centered, copyright right */}
         <div className="mt-8 grid grid-cols-1 items-center gap-8 md:grid-cols-3 md:gap-4">
           {/* Country / Region */}
           <div className="flex flex-col md:flex-row md:items-center md:gap-2 md:justify-self-start">
-            <span className="text-sm text-zinc-500">Country / Region</span>
-            <span className="mt-1 text-sm text-zinc-900 md:mt-0">
+            <span className="text-sm text-zinc-100">Country / Region</span>
+            <span className="mt-1 text-sm text-zinc-400 md:mt-0">
               United States (English)
             </span>
           </div>
 
           {/* Wordmark (centered) */}
-          <span className="theseason text-center text-4xl tracking-wide text-zinc-900">
+          <span className="theseason text-center text-4xl tracking-wide text-zinc-100">
             RICHACLE
           </span>
 
           {/* Copyright */}
-          <p className="text-center text-xs text-zinc-500 md:justify-self-end md:text-sm">
+          <p className="text-center text-xs text-zinc-400 md:justify-self-end md:text-sm">
             © {year} Richacle. All rights reserved.
           </p>
         </div>
