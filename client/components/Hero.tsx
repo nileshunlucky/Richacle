@@ -48,7 +48,7 @@ export default function Hero() {
             href="/dashboard"
             className="inline-flex flex-1 items-center justify-center rounded-full bg-black/30 px-5 py-2.5 text-[13px] font-medium text-white backdrop-blur-sm transition hover:bg-white/10 sm:flex-none sm:px-6 sm:text-sm"
           >
-            Research
+            free Research
           </Link>
         </div>
 

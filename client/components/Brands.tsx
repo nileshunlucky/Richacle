@@ -66,9 +66,9 @@ export default function Brands() {
   const loop = [...brands, ...brands]
 
   return (
-    <div className="bg-black p-5">
-      <p className="text-center md:text-xl text-sm text-zinc-100 md:mb-8 ">
-        Some of the brands who trust Richacle
+    <div className="bg-black p-3">
+      <p className="text-center md:text-xl text-sm text-zinc-100 ">
+        Some of your favorite brands
       </p>
 
       <div className="relative overflow-hidden group">

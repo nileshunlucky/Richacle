@@ -40,7 +40,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`fixed inset-x-0 top-0 z-50 w-full px-6 md:py-4 py-2 md:px-8 transition-all duration-300 ease-in-out ${
+      className={`fixed inset-x-0 top-0 z-50 w-full px-6 md:py-7 py-4 md:px-8 transition-all duration-300 ease-in-out ${
         scrolled
           ? "bg-white text-black"
           : "bg-transparent text-white"
@@ -52,7 +52,7 @@ export default function Navbar() {
 
         {/* Centered Logo */}
         <Link href="/" className="justify-self-center text-center">
-          <h1 className="theseason text-2xl md:text-4xl">
+          <h1 className="theseason text-3xl md:text-4xl">
             RICHACLE
           </h1>
         </Link>

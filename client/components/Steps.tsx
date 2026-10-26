@@ -361,8 +361,8 @@ export default function TradingSolution() {
       <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-rose-400/30 blur-[110px]" />
 
       {/* Headline */}
-      <div className="relative mx-auto max-w-3xl text-center">
-        <h2 className="text-4xl font-bold leading-tight tracking-tight md:text-6xl">
+      <div className="relative mx-auto max-w-2xl text-center">
+        <h2 className="text-3xl font-bold leading-tight tracking-tight md:text-5xl">
           Your <span className="theseason bg-gradient-to-r from-rose-900 to-rose-600 bg-clip-text text-transparent">Prediction</span>
           <br />
           Don&apos;t Get the Returns You Deserve.
