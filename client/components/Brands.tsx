@@ -62,23 +62,51 @@ const brands: (keyof typeof icons)[] = [
 ]
 
 export default function Brands() {
+  // Duplicate the list so the loop is seamless
+  const loop = [...brands, ...brands]
+
   return (
     <div className="bg-black p-5">
-      <p className="text-center text-zinc-100 mb-8">
-       Trusted every day by brands who move the markets
+      <p className="text-center md:text-xl text-sm text-zinc-100 md:mb-8 ">
+        Some of the brands who trust Richacle
       </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-8 gap-4  mx-auto md:px-10">
-        {brands.map((name) => (
-          <div
-            key={name}
-            className="flex items-center justify-center h-24 bg-zinc-950 rounded-xl  transition-colors"
-          >
-            <div className="w-7 h-7 text-white mr-3 shrink-0">{icons[name]}</div>
-            <span className="text-white text-lg font-medium">{name}</span>
-          </div>
-        ))}
+      <div className="relative overflow-hidden group">
+        {/* Left fade */}
+        <div className="pointer-events-none absolute left-0 top-0 z-10 h-full w-24 md:w-48 bg-gradient-to-r from-black via-black/80 to-transparent" />
+        {/* Right fade */}
+        <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-24 md:w-48 bg-gradient-to-l from-black via-black/80 to-transparent" />
+
+        <div className="brands-track flex w-max">
+          {loop.map((name, i) => (
+            <div
+              key={`${name}-${i}`}
+              className="flex items-center justify-center h-24 w-48 shrink-0 mr-4"
+            >
+              <div className="w-7 h-7 text-white mr-3 shrink-0">{icons[name]}</div>
+              <span className="text-white text-lg font-medium">{name}</span>
+            </div>
+          ))}
+        </div>
       </div>
+
+      <style jsx>{`
+        .brands-track {
+          animation: brands-scroll 30s linear infinite;
+          will-change: transform;
+        }
+        .group:hover .brands-track {
+          animation-play-state: paused;
+        }
+        /* Moves right -> left */
+        @keyframes brands-scroll {
+          from { transform: translateX(0); }
+          to   { transform: translateX(-50%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .brands-track { animation: none; }
+        }
+      `}</style>
     </div>
   )
 }

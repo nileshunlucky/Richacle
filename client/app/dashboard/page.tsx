@@ -810,7 +810,7 @@ const insertMode = (mode: string) => {
 
 const models = [
   { id: "auto", name: "Auto", tag: "Suggested" },
-  { id: "claude-fable-5", name: "Claude Fable 5" },
+  { id: "Claude-Haiku-5.5", name: "Claude Haiku 5.5" },
   { id: "GPT-5.6-Sol", name: "GPT-5.6 Sol" },
   { id: "gemini-3.1", name: "Gemini 3.1 Pro" },
   { id: "grok-4.5", name: "Grok 4.5" },

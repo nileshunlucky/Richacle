@@ -1,476 +1,436 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
-import {
-  ChevronDown,
-  ChevronRight,
-  ArrowUp,
-  Infinity as InfinityIcon,
-  Check,
-  ArrowUpRight,
-  Plus,
-  Search,
-  FileSearch2,
-  Sparkles,
-  Info,
-} from "lucide-react"
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
+import React, { useEffect, useRef, useState } from "react"
+import { ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, Info, Plus } from "lucide-react"
 
-/* -------------------------------------------------------------------------- */
-/*  ORIGINAL — untouched                                                      */
-/* -------------------------------------------------------------------------- */
+/* ----------------------------- Data ----------------------------- */
 
-function ModelSelectorCard() {
-  const [modelOpen, setModelOpen] = useState(true)
-  const [selectedModel, setSelectedModel] = useState("Claude Fable 5")
-
-  const models = [
-    { name: "Auto", tag: "Suggested" },
-    { name: "Claude Fable 5" },
-    { name: "GPT-5.6 Sol" },
-    { name: "Gemini 3.1 Pro" },
-    { name: "Grok 4.5" },
-    { name: "Deepseek V3.2" },
-  ]
-
-  return (
-    <div className="w-full max-w-md">
-      {/* Heading */}
-      <h1 className="text-white text-xl font-semibold tracking-tight">
-       Dior Ethics Use the best model for every trade
-      </h1>
-      <p className="text-neutral-400  mt-2 ">
-        Choose between every cutting edge model from OpenAI, Anthropic,
-        Gemini, SpaceXAI, and High-Flyer.
-      </p>
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent text-sm font-medium mt-3  transition-colors"
-      >
-        Explore models
-        <ChevronRight className="text-white" />
-      </Link>
-
-      {/* Card */}
-      <div className="mt-6 rounded-2xl  md:p-3 relative">
-        <div className="rounded-xl bg-neutral-900/60 px-4 pt-4 pb-3">
-          <p className="text-neutral-400 text-sm">Ask Richacle to research or predict trade</p>
-
-          <div className="flex items-center justify-between mt-6">
-            <div className="flex items-center gap-3">
-              <button className="flex items-center cursor-pointer gap-1.5 text-neutral-300 text-sm bg-neutral-800/70 rounded-full p-3 hover:bg-neutral-800 transition-colors">
-                <Plus className="w-3.5 h-3.5" />
-              </button>
-
-              <button
-                onClick={() => setModelOpen((o) => !o)}
-                className="flex items-center gap-1.5 cursor-pointer text-neutral-300 text-sm px-1 py-1.5 hover:text-white transition-colors"
-              >
-                {selectedModel}
-                <ChevronDown className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
-            <button className="w-8 h-8 cursor-pointer rounded-full bg-white flex items-center justify-center hover:bg-neutral-200 transition-colors">
-              <ArrowUp className="w-4 h-4 text-black" />
-            </button>
-          </div>
-        </div>
-
-        {/* Dropdown */}
-        {modelOpen && (
-          <div className="absolute left-24 top-[92px] w-56 rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl py-1.5 z-10">
-            {models.map((model) => (
-              <button
-                key={model.name}
-                onClick={() => {
-                  setSelectedModel(model.name)
-                  setModelOpen(false)
-                }}
-                className="w-full flex items-center justify-between px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-800 transition-colors cursor-pointer"
-              >
-                <span className="flex items-center gap-2">
-                  {model.name}
-                  {model.tag && (
-                    <span className="text-neutral-500 text-xs ">{model.tag}</span>
-                  )}
-                </span>
-                {selectedModel === model.name && (
-                  <Check className="w-3.5 h-3.5 text-neutral-300 " />
-                )}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*  NEW — codebase understanding / search animation card                     */
-/* -------------------------------------------------------------------------- */
-
-const QUERY = "What's the Crypto Market Condition?"
-
-const STEPS = [
-  { label: "Thinking", labeled: "Thinked",  detail: "Choose a Bitcoin" },
-  { label: "Researching",labeled: "Researched", detail: "Bitcoin market condition?" },
-  { label: "Predicting",labeled: "Predicted",  detail: "Highest Chance found" },
+const MODELS = [
+  { name: "Auto", tag: "Suggested" },
+  { name: "Claude Haiku 5.5" },
+  { name: "GPT-5.6 Sol" },
+  { name: "Gemini 3.1 Pro" },
+  { name: "Grok 4.5" },
+  { name: "Deepseek V3.2" },
 ]
 
-// Timing (ms)
+const QUERY = "What's the Market Condition?"
+
+const STEPS = [
+  { active: "Thinking", done: "Thought", detail: "Choose a coin" },
+  { active: "Researching", done: "Researched", detail: "coin market condition?" },
+  { active: "Predicting", done: "Predicted", detail: "Highest chance found" },
+]
+
+const TRADE = {
+  entry: 64500,
+  toWin: 136430,
+  roi: 36.43,
+  amount: 100000,
+  symbol: "BTCUSDT",
+  leverage: 10,
+  takeProfit: 66850,
+  stopLoss: 63500,
+}
+
+const LEVERAGE_TICKS = [1, 25, 50, 75, 100, 125]
+
+const TOOLS = [
+  { name: "TradingView", dot: "bg-black", pos: "left-4 bottom-14 -rotate-[10deg]" },
+  { name: "Coinbase", dot: "bg-blue-600", pos: "right-4 bottom-20 rotate-[10deg]" },
+  { name: "Telegram", dot: "bg-cyan-500", pos: "left-14 bottom-4 -rotate-[5deg]" },
+  { name: "Binance", dot: "bg-amber-400", pos: "right-5 bottom-5 rotate-[4deg]" },
+]
+
+// Animation timing (ms)
 const TYPE_SPEED = 28
 const STEP_GAP = 2000
-const HOLD_AFTER_DONE = 1400
+const HOLD = 1400
 const RESET_PAUSE = 500
 
-function SearchAnimationCard() {
-  // phase: "typing" | "steps" | "done" | "reset"
-  const [phase, setPhase] = useState("typing")
-  const [typedLen, setTypedLen] = useState(0)
-  const [activeStep, setActiveStep] = useState(-1) // index of step currently "active"
-  const [doneSteps, setDoneSteps] = useState<number[]>([])
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
-
-  const clearTimers = () => {
-    timers.current.forEach((t) => clearTimeout(t))
-    timers.current = []
-  }
-const after = (ms: number, fn: () => void) => {
-  const id = setTimeout(fn, ms)
-  timers.current.push(id)
-  return id
+const fadeBottom = {
+  maskImage: "linear-gradient(to bottom, black 65%, transparent)",
+  WebkitMaskImage: "linear-gradient(to bottom, black 65%, transparent)",
 }
+
+const usd = (n: number) => n.toLocaleString("en-US")
+
+/* ------------------------- Research animation ------------------------- */
+
+function useResearchLoop() {
+  const [typed, setTyped] = useState(0)
+  const [active, setActive] = useState(-1)
+  const [done, setDone] = useState<number[]>([])
+  const [fade, setFade] = useState(false)
 
   useEffect(() => {
-    clearTimers()
+    const timers: ReturnType<typeof setTimeout>[] = []
+    const at = (ms: number, fn: () => void) => timers.push(setTimeout(fn, ms))
 
-    if (phase === "typing") {
-      setTypedLen(0)
-      setActiveStep(-1)
-      setDoneSteps([])
-      let i = 0
-      const tick = () => {
-        i += 1
-        setTypedLen(i)
-        if (i < QUERY.length) {
-          after(TYPE_SPEED, tick)
-        } else {
-          after(450, () => setPhase("steps"))
-        }
-      }
-      after(TYPE_SPEED, tick)
-    }
+    const run = () => {
+      setTyped(0)
+      setActive(-1)
+      setDone([])
+      setFade(false)
 
-    if (phase === "steps") {
-      STEPS.forEach((_, idx) => {
-        after(idx * STEP_GAP, () => setActiveStep(idx))
-        after(idx * STEP_GAP + STEP_GAP - 150, () =>
-          setDoneSteps((prev) => [...prev, idx])
-        )
+      for (let i = 0; i < QUERY.length; i++) at((i + 1) * TYPE_SPEED, () => setTyped(i + 1))
+
+      const stepsStart = QUERY.length * TYPE_SPEED + 450
+      STEPS.forEach((_, i) => {
+        at(stepsStart + i * STEP_GAP, () => setActive(i))
+        at(stepsStart + (i + 1) * STEP_GAP - 150, () => setDone((d) => [...d, i]))
       })
-      after(STEPS.length * STEP_GAP, () => setPhase("done"))
+
+      const end = stepsStart + STEPS.length * STEP_GAP + HOLD
+      at(end, () => setFade(true))
+      at(end + RESET_PAUSE, run)
     }
 
-    if (phase === "done") {
-      after(HOLD_AFTER_DONE, () => setPhase("reset"))
-    }
+    run()
+    return () => timers.forEach(clearTimeout)
+  }, [])
 
-    if (phase === "reset") {
-      after(RESET_PAUSE, () => setPhase("typing"))
-    }
+  return { typed, active, done, fade }
+}
 
-    return clearTimers
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [phase])
+/* --------------------------- Shared pieces --------------------------- */
 
-  const fadeOut = phase === "reset"
-
+function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="w-full max-w-md">
-      {/* Heading */}
-      <h1 className="text-white text-xl font-semibold tracking-tight">
-        Complete market understanding
-      </h1>
-      <p className="text-neutral-400 mt-2">
-        Richacle learns how market works, no matter the news, social or trump.
-      </p>
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent text-sm font-medium mt-3  transition-colors"
-      >
-        Learn about market insights
-        <ChevronRight className="text-white" />
-      </Link>
-
-      {/* Card */}
-      <div className="mt-6 rounded-2xl md:p-3 relative">
-        <Card className="rounded-xl bg-neutral-900/60 border-0 px-4 pt-4 pb-4 min-h-[190px]">
-          <CardContent className="p-0 flex flex-col gap-4">
-            {/* query bubble */}
-            <div
-              className={`rounded-lg bg-neutral-800/80 px-3.5 py-2.5 text-sm text-neutral-200 w-fit max-w-full transition-opacity duration-300 ${
-                fadeOut ? "opacity-0" : "opacity-100"
-              }`}
-            >
-              {QUERY.slice(0, typedLen)}
-              {phase === "typing" && (
-                <span className="inline-block w-[2px] h-[14px] bg-neutral-400 ml-0.5 align-middle animate-pulse" />
-              )}
-            </div>
-
-            {/* steps */}
-            <div
-              className={`flex flex-col gap-2 pl-0.5 transition-opacity duration-300 ${
-                fadeOut ? "opacity-0" : "opacity-100"
-              }`}
-            >
-              {STEPS.map((step, idx) => {
-                const isVisible = activeStep >= idx
-                const isDone = doneSteps.includes(idx)
-                const isActive = activeStep === idx && !isDone
-               
-
-                return (
-                  <div
-                    key={step.label}
-                    className={`flex items-center gap-2 text-sm transition-all duration-500 ease-out ${
-                      isVisible
-                        ? "opacity-100 translate-y-0"
-                        : "opacity-0 translate-y-1"
-                    }`}
-                  >
-                    <span
-                      className={`font-medium ${
-                        isDone
-                          ? "text-neutral-400"
-                          : isActive
-                          ? "text-white animate-pulse"
-                          : "text-neutral-500"
-                      }`}
-                    >
-                    {isDone ? <>{step.labeled}</> : <>{step.label}</>}
-                    </span>
-                    {isDone && <span className="text-neutral-500 text-xs">
-                      {step.detail}
-                    </span>}
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="relative flex h-[470px] w-[86vw] shrink-0 snap-center flex-col overflow-hidden rounded-[2rem] md:w-auto border border-white/80 bg-gradient-to-b from-white to-white/70 shadow-[0_20px_50px_-20px_rgba(244,63,94,0.25)] backdrop-blur">
+      {children}
     </div>
   )
 }
 
-/* -------------------------------------------------------------------------- */
-/*  NEW — predicted trade preview card                                       */
-/* -------------------------------------------------------------------------- */
+function CardText({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="px-7">
+      <h3 className="text-xl font-medium text-zinc-900">{title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-400">{children}</p>
+    </div>
+  )
+}
 
-function PredictedTradeCard() {
-  const entry = 64500
-  const toWin = 136430
-  const roi = 36.43
-  const symbol = "BTCUSDT"
-  const leverage = 10
-  const tp = 66850
-  const sl = 63500
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <div className="px-0.5 text-[9px] uppercase tracking-wider text-zinc-400">{label}</div>
+      <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-2 px-2.5 text-zinc-900">{children}</div>
+    </div>
+  )
+}
 
-  const [amount, setAmount] = useState<number | string>(100000)
+/* ------------------------------ Card 1 ------------------------------ */
+/* Model selector */
 
-   const formatUSD = (value: string | number) => {
-    if (!value && value !== 0) return ""
-    const num = Number(value)
-    if (Number.isNaN(num)) return ""
-    return num.toLocaleString("en-US")
-  }
+function ModelSelectorUI() {
+  const [selected, setSelected] = useState("Claude Haiku 5.5")
 
   return (
-    <div className="w-full max-w-md">
-      {/* Heading */}
-      <h1 className="text-white text-xl font-semibold tracking-tight">
-         Oracle technical analysis
-      </h1>
-      <p className="text-neutral-400 mt-2">
-        Oracle agent set ready to place order entry,
-        take profit, stop loss, leverage and risk management.
-      </p>
-      <Link
-        href="/dashboard"
-        className="inline-flex items-center gap-1 bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 bg-clip-text text-transparent text-sm font-medium mt-3  transition-colors"
-      >
-        See prediction accuracy
-        <ChevronRight className="w-4 h-4 text-white" />
-      </Link>
-
-      {/* Card */}
-      <div className="mt-6 rounded-2xl bg-[#0d0d0d] border border-white/[0.06] p-3 space-y-2.5 text-xs">
-        {/* Sell / Buy strip */}
-        <div className="grid grid-cols-2 rounded-lg overflow-hidden font-bold">
-          <div className="p-2 text-left bg-[#2a2b2b] text-[#d1d1d1] opacity-50 cursor-pointer">
-            <span className="text-[8px] uppercase opacity-70 block mb-0.5">Sell</span>
-            <div className="text-sm tracking-tighter">{entry.toLocaleString("en-US")}</div>
-          </div>
-          <div className="p-2 text-right bg-blue-500/20 text-blue-400 cursor-pointer">
-            <span className="text-[8px] uppercase opacity-70 block mb-0.5">Buy</span>
-            <div className="text-sm tracking-tighter">{entry.toLocaleString("en-US")}</div>
-          </div>
-        </div>
-
-        {/* Amount */}
-        <div className="space-y-1">
-          <div className="text-[9px] uppercase text-white/30 px-0.5">Amount</div>
-            <div className="flex items-center py-2 border-b border-white/10 transition-all">
-            <input
-            readOnly
-              type="text"
-              inputMode="decimal"
-              value={amount ? `$${formatUSD(amount)}` : ""}
-              onChange={(e) => {
-                const rawValue = e.target.value.replace(/[^0-9.]/g, "")
-                setAmount(rawValue)
-              }}
-              className="bg-transparent outline-none text-white text-right text-2xl w-full p-0 focus:ring-0 disabled:opacity-60"
-              placeholder="$0"
-            />
-          </div>
-        </div>
-
-        {/* To Win */}
-        <div className="flex justify-between items-end">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-white">To Win</span>
-            <span className="text-zinc-500">
-              +{roi}%
-              <Info size={11} className="inline ml-1 text-zinc-600" />
+    <div className="relative px-6">
+      <div className="rounded-2xl border border-zinc-200 bg-white px-4 pb-3 pt-4 shadow-sm">
+        <p className="text-sm text-zinc-400">Ask Richacle to research</p>
+        <div className="mt-5 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-100 text-zinc-600">
+              <Plus className="h-3.5 w-3.5" />
+            </span>
+            <span className="flex items-center gap-1.5 text-sm text-zinc-700">
+              {selected}
+              <ChevronDown className="h-3.5 w-3.5" />
             </span>
           </div>
-          <span className=" text-2xl text-green-500">
-            ${toWin.toLocaleString("en-US")}
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-900 text-white">
+            <ArrowUp className="h-4 w-4" />
           </span>
         </div>
+      </div>
 
-        {/* Symbol / Leverage */}
-        <div className="grid grid-cols-2 gap-2">
-          <div className="space-y-1">
-            <label className="text-[9px] uppercase tracking-wider text-white/30 px-0.5  ">
-              Symbol
-            </label>
-            <div className="flex items-center p-2 px-2.5 rounded-lg bg-[#161616] border border-white/10">
-              <span className="text-white font-medium">{symbol}</span>
-            </div>
-          </div>
+      <div className="ml-16 mt-2 w-56 rounded-xl border border-zinc-200 bg-white py-1.5 shadow-xl">
+        {MODELS.map((m) => (
+          <button
+            key={m.name}
+            onClick={() => setSelected(m.name)}
+            className="flex w-full cursor-pointer items-center justify-between px-3 py-2 text-sm text-zinc-800 transition-colors hover:bg-zinc-100"
+          >
+            <span className="flex items-center gap-2">
+              {m.name}
+              {m.tag && <span className="text-xs text-zinc-400">{m.tag}</span>}
+            </span>
+            {selected === m.name && <Check className="h-3.5 w-3.5 text-zinc-600" />}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
 
-          <div className="space-y-1.5">
-            <label className="text-[9px] uppercase tracking-wider text-white/30 px-0.5 ">
-              Leverage
-            </label>
-            <div className="flex items-center gap-1.5">
-              <button className="w-6 h-6 rounded bg-white/10 text-white flex items-center justify-center hover:bg-white/20">
-                −
-              </button>
-              <div className="flex-1 text-center text-white font-bold text-base tracking-tight">
-                {leverage}
-                <span className="text-white text-xs font-normal">x</span>
-              </div>
-              <button className="w-6 h-6 rounded bg-white/10 text-white flex items-center justify-center hover:bg-white/20">
-                +
-              </button>
-            </div>
+/* ------------------------------ Card 2 ------------------------------ */
+/* Research animation */
 
-            <div className="relative px-1 py-2">
-              {/* Track */}
-              <div className="relative h-[3px] rounded-full bg-white/15 mx-1">
-                <div
-                  className="absolute left-0 top-0 h-full rounded-full bg-white transition-all"
-                  style={{ width: `${((leverage - 1) / 124) * 100}%` }}
-                />
-                {/* Thumb dot */}
-                <div
-                  className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-black shadow transition-all"
-                  style={{ left: `${((leverage - 1) / 124) * 100}%` }}
-                />
-                {/* Tick dots */}
-                {[1, 25, 50, 75, 100, 125].map((v) => (
-                  <div
-                    key={v}
-                    className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full border border-white/30"
-                    style={{
-                      left: `${((v - 1) / 124) * 100}%`,
-                      background: "#ffffff",
-                    }}
-                  />
-                ))}
-              </div>
+function ResearchUI() {
+  const { typed, active, done, fade } = useResearchLoop()
+  const typing = typed < QUERY.length
 
-              {/* Invisible range input */}
-              <input
-               readOnly
-                type="range"
-                min={1}
-                max={125}
-                step={1}
-                value={leverage}
-                className="absolute inset-0 w-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-              />
-            </div>
-
-            {/* Tick labels */}
-            <div className="flex justify-between text-[9px] text-white/25 px-1">
-              {[1, 25, 50, 75, 100, 125].map((v) => (
-                <span key={v}>{v}x</span>
-              ))}
-            </div>
-          </div>
+  return (
+    <div className="px-6 pt-8">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className={`w-fit max-w-full rounded-lg bg-zinc-100 px-3.5 py-2.5 text-sm text-zinc-800 transition-opacity duration-300 ${fade ? "opacity-0" : ""}`}>
+          {QUERY.slice(0, typed)}
+          {typing && <span className="ml-0.5 inline-block h-[14px] w-[2px] animate-pulse bg-zinc-400 align-middle" />}
         </div>
 
-        {/* Take Profit / Stop Loss */}
-        <div className="grid grid-cols-1 gap-2">
-          <div className="space-y-1">
-            <div className="text-[9px] uppercase text-white/30 px-0.5">Take profit</div>
-            <div className="p-2 px-2.5 rounded-lg bg-[#161616] border border-white/10">
-              <span className="text-white">{tp.toLocaleString("en-US")}</span>
-            </div>
-          </div>
-          <div className="space-y-1">
-            <div className="text-[9px] uppercase text-white/30 px-0.5">Stop loss</div>
-            <div className="p-2 px-2.5 rounded-lg bg-[#161616] border border-white/10">
-              <span className="text-white">{sl.toLocaleString("en-US")}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Accept / Reject */}
-        <div className="flex  pt-0.5">
-          <button className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-green-700 bg-green-700/20 hover:bg-green-700/30 transition-colors text-green-200 text-xs rounded-bl cursor-pointer">
-            <Check className="w-3 h-3" />
-            Accept
-          </button>
-          <button className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-red-700 bg-red-700/20 hover:bg-red-700/30 transition-colors text-red-200 text-xs rounded-br cursor-pointer">
-            ✕ Reject
-          </button>
+        <div className={`mt-4 flex min-h-[84px] flex-col gap-2 transition-opacity duration-300 ${fade ? "opacity-0" : ""}`}>
+          {STEPS.map((step, i) => {
+            const isDone = done.includes(i)
+            const isActive = active === i && !isDone
+            return (
+              <div
+                key={step.active}
+                className={`flex items-center gap-2 text-sm transition-all duration-500 ease-out ${active >= i ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"}`}
+              >
+                <span className={`font-medium ${isDone ? "text-zinc-400" : isActive ? "animate-pulse text-zinc-900" : "text-zinc-400"}`}>
+                  {isDone ? step.done : step.active}
+                </span>
+                {isDone && <span className="text-xs text-zinc-400">{step.detail}</span>}
+              </div>
+            )
+          })}
         </div>
       </div>
     </div>
   )
 }
 
-/* -------------------------------------------------------------------------- */
-/*  Combined layout — updated to include the third card                     */
-/* -------------------------------------------------------------------------- */
+/* ------------------------------ Card 3 ------------------------------ */
+/* Predicted trade ticket */
 
-export default function Steps() {
+function TradeTicketUI() {
+  const { entry, toWin, roi, amount, symbol, leverage, takeProfit, stopLoss } = TRADE
+  const pct = ((leverage - 1) / 124) * 100
+
   return (
-    <div className="bg-black w-full p-10 my-10">
-      <div className="w-full md:max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-x-12 gap-y-12">
-        <ModelSelectorCard />
-        <SearchAnimationCard />
-        <PredictedTradeCard />
+    <div className="mx-6 space-y-2.5 rounded-2xl border border-zinc-200 bg-white p-3 text-xs shadow-sm">
+      {/* Sell / Buy */}
+      <div className="grid grid-cols-2 overflow-hidden rounded-lg font-bold">
+        <div className="bg-zinc-100 p-2 text-left text-zinc-500">
+          <span className="mb-0.5 block text-[8px] uppercase opacity-70">Sell</span>
+          <div className="text-sm tracking-tighter">{usd(entry)}</div>
+        </div>
+        <div className="bg-blue-50 p-2 text-right text-blue-600">
+          <span className="mb-0.5 block text-[8px] uppercase opacity-70">Buy</span>
+          <div className="text-sm tracking-tighter">{usd(entry)}</div>
+        </div>
       </div>
+
+      {/* Amount */}
+      <div>
+        <div className="px-0.5 text-[9px] uppercase text-zinc-400">Amount</div>
+        <div className="border-b border-zinc-200 py-2 text-right text-2xl text-zinc-900">${usd(amount)}</div>
+      </div>
+
+      {/* To win */}
+      <div className="flex items-end justify-between">
+        <div className="flex flex-col gap-0.5">
+          <span className="text-zinc-900">To Win</span>
+          <span className="text-zinc-400">
+            +{roi}%
+            <Info size={11} className="ml-1 inline text-zinc-300" />
+          </span>
+        </div>
+        <span className="text-2xl text-green-600">${usd(toWin)}</span>
+      </div>
+
+      {/* Symbol / Leverage */}
+      <div className="grid grid-cols-2 gap-2">
+        <Field label="Symbol">
+          <span className="font-medium">{symbol}</span>
+        </Field>
+
+        <div className="space-y-1.5">
+          <div className="px-0.5 text-[9px] uppercase tracking-wider text-zinc-400">Leverage</div>
+          <div className="flex items-center gap-1.5">
+            <span className="flex h-6 w-6 items-center justify-center rounded bg-zinc-100 text-zinc-700">−</span>
+            <div className="flex-1 text-center text-base font-bold tracking-tight text-zinc-900">
+              {leverage}
+              <span className="text-xs font-normal">x</span>
+            </div>
+            <span className="flex h-6 w-6 items-center justify-center rounded bg-zinc-100 text-zinc-700">+</span>
+          </div>
+
+          <div className="relative mx-1 my-2 h-[3px] rounded-full bg-zinc-200">
+            <div className="absolute left-0 top-0 h-full rounded-full bg-zinc-900" style={{ width: `${pct}%` }} />
+            {LEVERAGE_TICKS.map((v) => (
+              <span
+                key={v}
+                className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full border border-zinc-300 bg-white"
+                style={{ left: `${((v - 1) / 124) * 100}%` }}
+              />
+            ))}
+            <span
+              className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-zinc-900 shadow"
+              style={{ left: `${pct}%` }}
+            />
+          </div>
+
+          <div className="flex justify-between px-1 text-[9px] text-zinc-400">
+            {LEVERAGE_TICKS.map((v) => (
+              <span key={v}>{v}x</span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* TP / SL */}
+      <Field label="Take profit">{usd(takeProfit)}</Field>
+      <Field label="Stop loss">{usd(stopLoss)}</Field>
     </div>
+  )
+}
+
+/* ------------------------- Mobile carousel ------------------------- */
+
+function useCarousel() {
+  const trackRef = useRef<HTMLDivElement>(null)
+  const [index, setIndex] = useState(0)
+
+  // active slide = the one whose centre is closest to the track centre
+  const onScroll = () => {
+    const el = trackRef.current
+    if (!el) return
+    const centre = el.scrollLeft + el.clientWidth / 2
+    let best = 0
+    let min = Infinity
+    Array.from(el.children).forEach((child, i) => {
+      const c = child as HTMLElement
+      const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - centre)
+      if (d < min) {
+        min = d
+        best = i
+      }
+    })
+    setIndex(best)
+  }
+
+  const goTo = (i: number) => {
+    const el = trackRef.current
+    const slide = el?.children[i] as HTMLElement | undefined
+    if (!el || !slide) return
+    el.scrollTo({ left: slide.offsetLeft - (el.clientWidth - slide.offsetWidth) / 2, behavior: "smooth" })
+  }
+
+  return { trackRef, index, onScroll, goTo }
+}
+
+function CarouselControls({ count, index, goTo }: { count: number; index: number; goTo: (i: number) => void }) {
+  const arrow = "flex h-8 w-8 items-center justify-center rounded-full bg-zinc-200/70 text-zinc-800 transition-opacity disabled:opacity-40"
+
+  return (
+    <div className="mt-6 flex items-center justify-center gap-3 md:hidden">
+      <button aria-label="Previous" disabled={index === 0} onClick={() => goTo(index - 1)} className={arrow}>
+        <ArrowLeft className="h-4 w-4" />
+      </button>
+
+      <div className="flex items-center gap-2 rounded-full bg-white/70 px-4 py-3">
+        {Array.from({ length: count }, (_, i) => (
+          <button
+            key={i}
+            aria-label={`Go to card ${i + 1}`}
+            onClick={() => goTo(i)}
+            className={`h-2.5 rounded-full transition-all duration-300 ${i === index ? "w-9 bg-zinc-900" : "w-2.5 bg-zinc-300"}`}
+          />
+        ))}
+      </div>
+
+      <button aria-label="Next" disabled={index === count - 1} onClick={() => goTo(index + 1)} className={arrow}>
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </div>
+  )
+}
+
+/* ----------------------------- Section ----------------------------- */
+
+export default function TradingSolution() {
+  const { trackRef, index, onScroll, goTo } = useCarousel()
+
+  return (
+    <section className="relative overflow-hidden bg-[#f1f6f5] px-5 py-20 text-zinc-900">
+      {/* pink glow behind the headline */}
+      <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-rose-400/30 blur-[110px]" />
+
+      {/* Headline */}
+      <div className="relative mx-auto max-w-3xl text-center">
+        <h2 className="text-4xl font-bold leading-tight tracking-tight md:text-6xl">
+          Your <span className="theseason bg-gradient-to-r from-rose-900 to-rose-600 bg-clip-text text-transparent">Prediction</span>
+          <br />
+          Don&apos;t Get the Returns You Deserve.
+        </h2>
+        <p className="mt-6 text-sm text-zinc-500 md:text-lg">
+          Fix your researching flops instantly
+          <br />
+          <span className="text-zinc-800">
+            Stop guessing. Get real time data clarity research on what&apos;s killing your ROI.
+          </span>
+        </p>
+      </div>
+
+      {/* Cards */}
+      <div
+        ref={trackRef}
+        onScroll={onScroll}
+        className="relative -mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-[7vw] py-6 [scrollbar-width:none] md:mx-auto md:mt-14 md:grid md:max-w-6xl md:grid-cols-3 md:gap-5 md:overflow-visible md:px-0 md:py-0 [&::-webkit-scrollbar]:hidden"
+      >
+        {/* 1 — Models */}
+        <Card>
+          <div className="pt-7">
+            <CardText title="Best Model for Every Market.">
+              Choose between Claude, GPT, Gemini, Grok &amp; Deepseek in one place.{" "}
+              <span className="text-zinc-700">Pick the model that fits the trade.. no more tab switching.</span>
+            </CardText>
+          </div>
+          <div className="mt-auto h-[270px] overflow-hidden" style={fadeBottom}>
+            <ModelSelectorUI />
+          </div>
+        </Card>
+
+        {/* 2 — Research */}
+        <Card>
+          <ResearchUI />
+          <div className="mt-auto pb-7">
+            <CardText title="See What's Moving the Market.">
+              Richacle reads news, socials &amp; price action in real time{" "}
+              <span className="text-zinc-700">&amp; shows you exactly why a coin is moving.. not guesses.</span>
+            </CardText>
+          </div>
+        </Card>
+
+        {/* 3 — Setup */}
+        <Card>
+          <div className="pt-7">
+            <CardText title="One-Click Trade Setup.">
+              Oracle sets your entry, take profit, stop loss &amp; leverage.{" "}
+              <span className="text-zinc-700">Review it &amp; accept with 1 simple click.</span>
+            </CardText>
+          </div>
+          <div className="mt-6 h-[270px] overflow-hidden" style={fadeBottom}>
+            <TradeTicketUI />
+          </div>
+
+          {TOOLS.map((t) => (
+            <span
+              key={t.name}
+              className={`absolute ${t.pos} flex items-center gap-2 rounded-full border border-white bg-white/90 px-3.5 py-1.5 text-sm font-medium text-zinc-800 shadow-lg`}
+            >
+              <span className={`h-3 w-3 rounded-full ${t.dot}`} />
+              {t.name}
+            </span>
+          ))}
+        </Card>
+      </div>
+
+      <CarouselControls count={3} index={index} goTo={goTo} />
+    </section>
   )
 }

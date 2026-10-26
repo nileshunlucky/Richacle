@@ -1,95 +1,81 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
 export default function Navbar() {
-  const [open, setOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const getUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       setUser(session?.user || null);
     };
 
     getUser();
 
-    // Listen for future auth changes → login/logout updates UI instantly
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
 
-    return () => listener.subscription.unsubscribe();
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 0);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener("scroll", handleScroll);
+    };
   }, []);
 
   return (
-   <> 
-    <div className="flex items-center justify-center bg-red-700 text-white w-full p-1 gap-1 text-xs"><p className="font-semibold">Limited Offer</p> 2x Credits for 1/100 paid users. <Link href="/pricing"><p className="underline cursor-pointer"> Claim Now!</p></Link></div>
-    <nav className="z-50 flex w-full flex-col items-center justify-between px-8 py-6 md:max-w-7xl md:mx-auto">
+    <nav
+      className={`fixed inset-x-0 top-0 z-50 w-full px-6 md:py-4 py-2 md:px-8 transition-all duration-300 ease-in-out ${
+        scrolled
+          ? "bg-white text-black"
+          : "bg-transparent text-white"
+      }`}
+    >
+      <div className="grid w-full grid-cols-3 items-center">
+        {/* Left Spacer */}
+        <div />
 
-
-      <div className="flex items-center justify-between w-full">
-        
-        <Link href="/" className="flex items-center gap-1">
-          <h1 className="text-2xl theseason">Richacle</h1>
+        {/* Centered Logo */}
+        <Link href="/" className="justify-self-center text-center">
+          <h1 className="theseason text-2xl md:text-4xl">
+            RICHACLE
+          </h1>
         </Link>
 
-        <ul className="hidden md:flex items-center gap-8 text-sm">
+        {/* Authentication */}
+        <div className="flex justify-self-end text-sm">
           {!user ? (
-            <>
-              <Link href="/signup"><li className="cursor-pointer hover:opacity-70 transition">Sign Up</li></Link>
-              <Link href="/login"><li className="cursor-pointer hover:opacity-70 transition">Log In</li></Link>
-            </>
+            <Link
+              href="/login"
+              className="transition-opacity hover:opacity-60"
+            >
+              Log In
+            </Link>
           ) : (
-            <>
-              <Link href="/dashboard"><li className="cursor-pointer hover:opacity-70 transition">Dashboard</li></Link>
-            </>
+            <Link
+              href="/dashboard"
+              className="transition-opacity hover:opacity-60"
+            >
+              Dashboard
+            </Link>
           )}
-        </ul>
-
-        <button
-          aria-label={open ? "Close menu" : "Open menu"}
-          aria-expanded={open}
-          onClick={() => setOpen((s) => !s)}
-          className="md:hidden p-2 rounded-md inline-flex items-center justify-center hover:bg-zinc-100"
-        >
-          {open ? <X width={22} height={22} /> : <Menu width={22} height={22} />}
-        </button>
+        </div>
       </div>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 300, damping: 30 }}
-            className="md:hidden w-full z-50  bg-black shadow-md mx-4 rounded-md"
-          >
-            <div className="px-2 py-4">
-              <ul className="flex flex-col gap-4 text-base">
-
-                {!user ? (
-                  <>
-                    <Link href="/signup"><li className="cursor-pointer hover:opacity-70 transition">Sign Up</li></Link>
-                    <Link href="/login"><li className="cursor-pointer hover:opacity-70 transition">Log In</li></Link>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/dashboard"><li className="cursor-pointer hover:opacity-70 transition">Dashboard</li></Link>
-                  </>
-                )}
-
-              </ul>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </nav>
-    </>
   );
 }

@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Richacle",
-  description: "Richacle is a real-time AI Research, Search, answer engine Software Company for Trading & Investing.", // FIX
+  description: "Richacle is a real-time AI Research, Search, answer engine Software Company", // FIX
   icons: {
     icon: "/logo.png",
   },

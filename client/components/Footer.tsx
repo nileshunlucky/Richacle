@@ -1,106 +1,214 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
+
+type FooterLink = { label: string; href: string; external?: boolean };
+type FooterColumn = { title: string; links: FooterLink[]; showFaq?: boolean };
+
+const faqs = [
+  {
+    q: "What is Richacle?",
+    a: "Richacle is an AI research platform that helps you analyze markets and make faster, better-informed decisions.",
+  },
+  {
+    q: "Is Richacle financial advice?",
+    a: "No. Richacle provides data and analysis for research only. Always do your own research before trading.",
+  },
+  {
+    q: "How do I get started?",
+    a: "Create an account, Open the dashboard and start researching. You can start exploring in a few minutes.",
+  },
+];
+
+const columns: FooterColumn[] = [
+  {
+    title: "User Service",
+    links: [{ label: "Contact", href: "/contact" }],
+    showFaq: true,
+  },
+  {
+    title: "Brand Ambassador",
+    links: [
+      {
+        label: "Affiliate",
+        href: "https://richacle.lemonsqueezy.com/affiliates",
+        external: true,
+      },
+    ],
+  },
+  {
+    title: "Legal Terms",
+    links: [
+      { label: "Policy", href: "/policy" },
+      { label: "Terms", href: "/terms" },
+    ],
+  },
+  {
+    title: "Social Media",
+    links: [{ label: "X", href: "https://X.com/richacleai", external: true }],
+  },
+];
+
+const linkClass =
+  "text-sm text-zinc-500 transition-colors hover:text-zinc-900";
+
+const ease = [0.4, 0, 0.2, 1] as const;
+
+function Collapse({ children }: { children: React.ReactNode }) {
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: "auto", opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      transition={{ duration: 0.3, ease }}
+      className="overflow-hidden"
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+function FaqItem({
+  q,
+  a,
+  open,
+  onToggle,
+}: {
+  q: string;
+  a: string;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 text-left text-sm font-medium text-zinc-900"
+      >
+        {q}
+        <ChevronDown
+          size={14}
+          className={`shrink-0 text-zinc-500 transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <Collapse>
+            <p className="pt-2 text-xs leading-relaxed text-zinc-500">{a}</p>
+          </Collapse>
+        )}
+      </AnimatePresence>
+    </li>
+  );
+}
+
+function FaqDropdown() {
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState<number | null>(null);
+
+  return (
+    <li>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className={`${linkClass} flex w-full items-center justify-between gap-2 md:w-auto md:justify-start`}
+      >
+        FAQ
+        <ChevronDown
+          size={16}
+          className={`transition-transform duration-300 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      <AnimatePresence initial={false}>
+        {open && (
+          <Collapse>
+            <ul className="mt-4 space-y-4 border-l border-zinc-200 pl-4">
+              {faqs.map((item, i) => (
+                <FaqItem
+                  key={item.q}
+                  q={item.q}
+                  a={item.a}
+                  open={active === i}
+                  onToggle={() => setActive(active === i ? null : i)}
+                />
+              ))}
+            </ul>
+          </Collapse>
+        )}
+      </AnimatePresence>
+    </li>
+  );
+}
 
 export default function Footer() {
   const year = new Date().getFullYear();
 
   return (
-    <footer className="w-full py-6 z-50 relative px-10">
-      {/* Primary Full-Width Purple Wash */}
-<div 
-  className="absolute bottom-0 left-0 w-full h-[350px] pointer-events-none z-0"
-  style={{
-    background: 'linear-gradient(0deg, rgba(147, 51, 234, 0.4) 0%, rgba(107, 33, 168, 0.15) 50%, transparent 100%)',
-  }}
-/>
+    <footer className="relative z-50 w-full bg-black p-2 md:p-3">
+      {/* Premium rose panel */}
+      <div className="relative isolate overflow-hidden rounded-2xl bg-white px-6 pb-8 pt-10 md:rounded-3xl md:px-10 md:pt-12">
+        {/* Soft rose glow, right side only */}
+        <div className="pointer-events-none absolute -bottom-40 -right-24 -z-10 h-[26rem] w-[26rem] rounded-full bg-rose-200/60 blur-[110px]" />
 
-{/* High-Intensity Bottom Edge - This adds the "Bright" pop */}
-<div 
-  className="absolute bottom-0 left-0 w-full h-[2px] bg-purple-500 shadow-[0px_0px_100px_40px_rgba(168,85,247,0.6)] pointer-events-none z-0"
-/>
+        {/* Columns: 1 col on mobile, 4 on desktop */}
+        <div className="grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-6">
+          {columns.map((col) => (
+            <div key={col.title}>
+              <h3 className="theseason mb-5 text-lg text-zinc-700">
+                {col.title}
+              </h3>
+              <ul className="space-y-3">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      {...(link.external && {
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                      })}
+                      className={linkClass}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+                {col.showFaq && <FaqDropdown />}
+              </ul>
+            </div>
+          ))}
+        </div>
 
-{/* Soft Ambient Spread - Extra blur to prevent harsh lines */}
-<div 
-  className="absolute bottom-[-100px] left-0 w-full bg-purple-600/20 blur-[120px] pointer-events-none z-0"
-/>
-    <div className="text-center pt-24 pb-12 my-10">
-        <h2 className="text-white md:text-6xl text-4xl md:text-6xl font-semibold mb-8">
-          Try <span className="theseason font-light">Richacle</span>  now.
-        </h2>
-        <Link href="/dashboard"><button className="inline-flex items-center gap-2 bg-zinc-100 hover:bg-white text-zinc-900 text-sm font-medium px-6 py-3 rounded-full transition-colors cursor-pointer">
-          Get started
-        </button></Link>
-      </div>
-      <div className="  p-5 spacemono text-white rounded-lg">
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+        {/* Divider */}
+        <div className="mt-10 h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent md:mt-16" />
+
+        {/* Bottom bar: Country left, wordmark centered, copyright right */}
+        <div className="mt-8 grid grid-cols-1 items-center gap-8 md:grid-cols-3 md:gap-4">
+          {/* Country / Region */}
+          <div className="flex flex-col md:flex-row md:items-center md:gap-2 md:justify-self-start">
+            <span className="text-sm text-zinc-500">Country / Region</span>
+            <span className="mt-1 text-sm text-zinc-900 md:mt-0">
+              United States (English)
+            </span>
+          </div>
+
+          {/* Wordmark (centered) */}
+          <span className="theseason text-center text-4xl tracking-wide text-zinc-900">
+            RICHACLE
+          </span>
 
           {/* Copyright */}
-          <p className="text-sm  text-center">
-            © {year} <span className="theseason">RICHACLE</span> Inc. All rights reserved.
+          <p className="text-center text-xs text-zinc-500 md:justify-self-end md:text-sm">
+            © {year} Richacle. All rights reserved.
           </p>
-
-          {/* Links + social */}
-          <div className="flex md:flex-row flex-col items-center flex-wrap md:gap-6 gap-3 justify-center">
-
-            {/* Links */}
-            <ul className="flex items-center gap-4">
-              <li>
-                <Link
-                  href="/policy"
-                  className="text-sm  hover:text-white/70 transition"
-                >
-                  Policy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/terms"
-                  className="text-sm  hover:text-white/70 transition"
-                >
-                  Terms
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="https://richacle.lemonsqueezy.com/affiliates"
-                  className="text-sm  hover:text-white/70 transition"
-                >
-                  Affiliate
-                </Link>
-              </li>
-            </ul>
-
-            <div className="flex text-center text-sm items-center gap-4">
-            {/* Telegram */}
-            <Link
-              href="https://t.me/richacle"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2  hover:text-white/70 transition"
-            >
-              Telegram
-            </Link>
-            {/* X */}
-            <Link
-              href="https://X.com/richacleai"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2  hover:text-white/70 transition"
-            >
-              X
-            </Link>
-            <Link
-              href="https://instagram.com/richaclee"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 hover:text-white/70 transition"
-            >
-              Instagram
-            </Link>
-            </div>
-
-          </div>
         </div>
       </div>
     </footer>
