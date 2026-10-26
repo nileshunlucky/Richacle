@@ -37,8 +37,9 @@ body::-webkit-scrollbar {
 @font-face {
   font-family: 'cgothic Display';
   src: url('/cgothic.ttf') format('truetype');
-  font-weight: 100 900;
+  font-weight: 400;
   font-style: normal;
+  font-display: swap;
 }
 
 .cgothic {

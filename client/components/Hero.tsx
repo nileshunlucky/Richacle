@@ -31,7 +31,7 @@ export default function Hero() {
 
       <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-6 px-4 py-12 text-center sm:gap-8 sm:px-6">
         {/* Headline */}
-        <h1 className="theseason text-balance text-[1.75rem] leading-[1.15] tracking-tight sm:text-4xl md:text-6xl">
+        <h1 className="theseason font-semibold text-balance text-[1.75rem] leading-[1.15] tracking-tight sm:text-4xl md:text-6xl">
           Every prediction begins
           <br className="hidden sm:block" /> with clarity research
         </h1>

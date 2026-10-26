@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, memo, Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import Menu from "@/components/Menu"
+
 import Navbar from "@/components/Navbar"
 
 import Journal from "@/components/Journal";
@@ -23,7 +23,7 @@ import {
   ChartNoAxesColumn,
   Calendar,
   Search ,
-  Lock
+  Lock,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { toast } from "sonner";
@@ -780,7 +780,6 @@ function VibeTradingUIContent() {
     const [email, setEmail] = useState("");
     const [activeSymbol, setActiveSymbol] = useState("BTC/USDT");
     const [activeTimeframe, setActiveTimeframe] = useState("15m"); 
-  const [showPricing, setShowPricing] = useState(false);
   const [isConfigLoaded, setIsConfigLoaded] = useState(false);
   // Add this near your other state declarations in VibeTradingUI
 const [confirmedEntryPrice, setConfirmedEntryPrice] = useState<number | null>(null);
@@ -910,11 +909,15 @@ useEffect(() => {
   fetchBinance(); 
 }, [email]);
 
+const redirectToUpgrade = () => {
+  window.location.href = `https://mellvitta.vercel.app?email=${encodeURIComponent(email)}`;
+};
+
   // Inside VibeTradingUI component
 const handleAccept = async (tradeParams: TradeParams) => {
    if (!isVerified) {
-    toast("Upgrade your plan to trade on coinbase.");
-    setShowPricing(true);
+    toast("Upgrade your plan to trade on binance.");
+    redirectToUpgrade();
     return false;
   }
   setActiveTradeParams(tradeParams);
@@ -1110,12 +1113,12 @@ const handleSend = async () => {
         role: "ai", 
         content: (
             <div>
-              You run out of credits. Please <span onClick={()=> setShowPricing(true)} className="underline cursor-pointer text-zinc-100"> upgrade your plan </span> to continue trading.
+              You run out of credits. Please <span onClick={redirectToUpgrade()} className="underline cursor-pointer text-zinc-100"> upgrade your plan </span> to continue trading.
             </div>
         ),
       }]);
       toast("You've run out of credits. Please upgrade your plan to continue trading.")
-      setShowPricing(true);
+      redirectToUpgrade();
       return;
     }
 
@@ -1231,19 +1234,6 @@ const handleClearMemory = async () => {
     <>
        <Navbar   isVerified={isVerified}/>
     <div className="flex h-[94vh] bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
-    {showPricing && (
-  <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
-    {/* Close Button */}
-    <button 
-      onClick={() => setShowPricing(false)}
-      className="fixed top-5 right-10 z-[10000] text-white cursor-pointer"
-    >
-      ✕
-    </button>
-    
-    <Pricing />
-  </div>
-)}
 
       {/* LEFT SIDE: 70% */}
 <div className="flex-[7] flex flex-col min-w-0 relative">
@@ -1265,15 +1255,9 @@ const handleClearMemory = async () => {
 <div className="bg-black flex justify-end items-center p-2 px-4 gap-2">
 
 <h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right"><Plus size={20}/></h1>
+<Link className="md:hidden flex" href="/dashboard">Close</Link>
 
-<button onClick={() => setShowJournal(true)} className="cursor-pointer md:flex hidden text-white/40 hover:text-white/70 transition-colors">
-        <Calendar size={23} />
-      </button>
-      <AnimatePresence>
-        {showJournal && (
-          <Journal email={email} onClose={() => setShowJournal(false)} />
-        )}
-      </AnimatePresence>
+
 </div>
 
 
@@ -1370,9 +1354,9 @@ const handleClearMemory = async () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 10 }}
-              className="p-4 "
+              className="p-4  "
             >
-              <div className="relative mb-10 bg-[#0d0d0d] rounded-2xl  p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
+              <div className="relative mb-2 bg-[#0d0d0d] rounded-2xl  p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
               
                 <div className="relative w-full">
   {/* Highlighted text layer — purely visual, sits behind the textarea */}
@@ -1433,7 +1417,7 @@ const handleClearMemory = async () => {
     const model = models.find(m => m.id === val);
     if (model?.id !== "auto" && !isVerified) {
       toast("Upgrade your plan to unlock Top models.");
-      setShowPricing(true);
+      
       return; 
     }
     setSelectedModel(val);
@@ -1503,7 +1487,7 @@ export default function VibeTradingUI() {
   return (
     <Suspense fallback={null}>
       <VibeTradingUIContent />
-         <Menu/>
+        
     </Suspense>
   );
 }

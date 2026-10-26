@@ -17,8 +17,8 @@ const MODELS = [
 const QUERY = "What's the Market Condition?"
 
 const STEPS = [
-  { active: "Thinking", done: "Thought", detail: "Choose a coin" },
-  { active: "Researching", done: "Researched", detail: "coin market condition?" },
+  { active: "Thinking", done: "Thought", detail: "Choosed a Bitcoin" },
+  { active: "Researching", done: "Researched", detail: "Bitcoin market news, x condition?" },
   { active: "Predicting", done: "Predicted", detail: "Highest chance found" },
 ]
 
@@ -37,7 +37,7 @@ const LEVERAGE_TICKS = [1, 25, 50, 75, 100, 125]
 
 const TOOLS = [
   { name: "TradingView", dot: "bg-black", pos: "left-4 bottom-14 -rotate-[10deg]" },
-  { name: "Coinbase", dot: "bg-blue-600", pos: "right-4 bottom-20 rotate-[10deg]" },
+  { name: "Claude", dot: "bg-orange-500", pos: "right-4 bottom-20 rotate-[10deg]" },
   { name: "Telegram", dot: "bg-cyan-500", pos: "left-14 bottom-4 -rotate-[5deg]" },
   { name: "Binance", dot: "bg-amber-400", pos: "right-5 bottom-5 rotate-[4deg]" },
 ]

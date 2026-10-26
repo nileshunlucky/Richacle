@@ -25,7 +25,7 @@ const faqs = [
 const columns: FooterColumn[] = [
   {
     title: "User Service",
-    links: [{ label: "Contact", href: "/contact" }],
+    links: [{ label: "Contact", href: "mailto:richacle.ai@gmail.com" }],
     showFaq: true,
   },
   {
@@ -47,7 +47,7 @@ const columns: FooterColumn[] = [
   },
   {
     title: "Social Media",
-    links: [{ label: "X", href: "https://X.com/richacleai", external: true }],
+    links: [{ label: "Instagram", href: "https://www.instagram.com/traderichacle", external: true }, { label: "YouTube", href: "https://www.youtube.com/@richacle", external: true }],
   },
 ];
 
@@ -161,7 +161,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-4 md:gap-6">
           {columns.map((col) => (
             <div key={col.title}>
-              <h3 className="theseason mb-5 text-lg text-zinc-100">
+              <h3 className=" mb-5 text-lg text-zinc-100">
                 {col.title}
               </h3>
               <ul className="space-y-3">
