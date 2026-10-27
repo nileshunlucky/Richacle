@@ -68,7 +68,7 @@ export default function Brands() {
   return (
     <div className="bg-black p-3">
       <p className="text-center md:text-2xl text-sm text-zinc-100 ">
-        Some of your <span className="theseason bg-gradient-to-r from-rose-500 to-rose-700 bg-clip-text text-transparent">favorite</span> brands
+        Some of your <span className="theseason font-bold bg-gradient-to-r from-rose-500 to-rose-700 bg-clip-text text-transparent">favorite</span> brands
       </p>
 
       <div className="relative overflow-hidden group">
