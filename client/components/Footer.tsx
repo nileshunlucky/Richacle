@@ -196,13 +196,13 @@ export default function Footer() {
           </div>
 
           {/* Wordmark (centered) */}
-          <span className="theseason text-center text-4xl tracking-wide text-zinc-100">
+          <span className="theseason text-center text-4xl tracking-wide text-white">
             RICHACLE
           </span>
 
           {/* Copyright */}
           <p className="text-center text-xs text-zinc-400 md:justify-self-end md:text-sm">
-            © {year} Richacle. All rights reserved.
+            © {year} RICHACLE. All rights reserved.
           </p>
         </div>
       </div>

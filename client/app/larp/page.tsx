@@ -21,7 +21,6 @@ import {
   MessageCircle,
   X,
   ChartNoAxesColumn,
-  Calendar,
   Search ,
   Lock,
   Pencil
@@ -42,6 +41,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useSearchParams } from "next/navigation";
+
+// LIGHT MODE: chart palette (deeper green/red read better on white)
+const UP = "#089981";
+const DOWN = "#F23645";
 
 const avatarVariants = {
   initial: { opacity: 0, scale: 0.88 },
@@ -159,10 +162,10 @@ const lastCandleRef = useRef<{ time: number; open: number; high: number; low: nu
     // 3. Use the imported LightweightCharts directly
     tpFillRef.current = chartInstance.current.addBaselineSeries({
       baseValue: { type: 'price', price: entry },
-topFillColor1: isBuy ? 'rgba(0, 230, 118, 0.30)' : 'rgba(0,0,0,0)',
-topFillColor2: isBuy ? 'rgba(0, 230, 118, 0.20)' : 'rgba(0,0,0,0)',
-      bottomFillColor1: !isBuy ? 'rgba(0, 230, 118, 0.25)' : 'rgba(0,0,0,0)',
-      bottomFillColor2: !isBuy ? 'rgba(0, 230, 118, 0.05)' : 'rgba(0,0,0,0)',
+      topFillColor1: isBuy ? 'rgba(8, 153, 129, 0.28)' : 'rgba(0,0,0,0)',
+      topFillColor2: isBuy ? 'rgba(8, 153, 129, 0.16)' : 'rgba(0,0,0,0)',
+      bottomFillColor1: !isBuy ? 'rgba(8, 153, 129, 0.22)' : 'rgba(0,0,0,0)',
+      bottomFillColor2: !isBuy ? 'rgba(8, 153, 129, 0.06)' : 'rgba(0,0,0,0)',
       lineVisible: false, 
       priceLineVisible: false, 
       lastValueVisible: false,
@@ -171,10 +174,10 @@ topFillColor2: isBuy ? 'rgba(0, 230, 118, 0.20)' : 'rgba(0,0,0,0)',
 
     slFillRef.current = chartInstance.current.addBaselineSeries({
       baseValue: { type: 'price', price: entry },
-      topFillColor1: !isBuy ? 'rgba(255, 23, 68, 0.30)' : 'rgba(0,0,0,0)',
-      topFillColor2: !isBuy ? 'rgba(255, 23, 68, 0.20)' : 'rgba(0,0,0,0)',
-      bottomFillColor1: isBuy ? 'rgba(255, 23, 68, 0.25)' : 'rgba(0,0,0,0)',
-      bottomFillColor2: isBuy ? 'rgba(255, 23, 68, 0.05)' : 'rgba(0,0,0,0)',
+      topFillColor1: !isBuy ? 'rgba(242, 54, 69, 0.26)' : 'rgba(0,0,0,0)',
+      topFillColor2: !isBuy ? 'rgba(242, 54, 69, 0.16)' : 'rgba(0,0,0,0)',
+      bottomFillColor1: isBuy ? 'rgba(242, 54, 69, 0.22)' : 'rgba(0,0,0,0)',
+      bottomFillColor2: isBuy ? 'rgba(242, 54, 69, 0.06)' : 'rgba(0,0,0,0)',
       lineVisible: false,
       priceLineVisible: false, 
       lastValueVisible: false,
@@ -195,14 +198,14 @@ tpFillRef.current.setData([{ time: startTime, value: tp }, { time: endTime, valu
 slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, value: sl }]);
 
     const eLine = seriesRef.current.createPriceLine({ 
-      price: entry, color: isBuy ? '#1e3a8a' : '#FF1744', 
+      price: entry, color: isBuy ? '#1e3a8a' : DOWN, 
       lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid
     });
     const tLine = seriesRef.current.createPriceLine({ 
-      price: tp, color: '#00E676', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid
+      price: tp, color: UP, lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid
     });
     const sLine = seriesRef.current.createPriceLine({ 
-      price: sl, color: '#FF1744', lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid
+      price: sl, color: DOWN, lineWidth: 2, lineStyle: LightweightCharts.LineStyle.Solid
     });
 
     activeLinesRef.current = [eLine, tLine, sLine];
@@ -213,8 +216,8 @@ slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, valu
     if (!container.current) return;
 
     const chart = LightweightCharts.createChart(container.current, {
-      layout: { background: { color: "#000" }, textColor: "#DDD" },
-      grid: { vertLines: { color: "rgba(255,255,255,0.05)" }, horzLines: { color: "rgba(255,255,255,0.05)" } },
+      layout: { background: { type: LightweightCharts.ColorType.Solid, color: "#FFFFFF" }, textColor: "#333333" },
+      grid: { vertLines: { color: "rgba(0,0,0,0.06)" }, horzLines: { color: "rgba(0,0,0,0.06)" } },
       width: container.current.clientWidth,
       height: container.current.clientHeight,
       timeScale: { timeVisible: true, borderVisible: false },
@@ -222,8 +225,8 @@ slFillRef.current.setData([{ time: startTime, value: sl }, { time: endTime, valu
     });
 
     const candleSeries = chart.addCandlestickSeries({
-      upColor: "#00E676", downColor: "#FF1744", borderVisible: false,
-      wickUpColor: "#00E676", wickDownColor: "#FF1744", priceLineColor: "#FFFFFF",
+      upColor: UP, downColor: DOWN, borderVisible: false,
+      wickUpColor: UP, wickDownColor: DOWN, priceLineColor: "#111111",
     });
 
     chartInstance.current = chart;
@@ -489,22 +492,22 @@ const calcQty = () => {
 };
 
   return (
-    <div className="flex-1 w-full bg-black relative overflow-hidden flex flex-col"> 
-      <div className="absolute top-4 left-4 z-20 flex items-center gap-3 gap-1 pointer-events-none bg-black p-2 rounded-xl">
-        <h2 className="font-semibold text-white ">{symbol}</h2>
+    <div className="flex-1 w-full bg-white relative overflow-hidden flex flex-col"> 
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-3 gap-1 pointer-events-none bg-white p-2 rounded-xl">
+        <h2 className="font-semibold text-neutral-900 ">{symbol}</h2>
         
         <div className="pointer-events-auto">
         
         <Select value={interval} onValueChange={setInterval}>
-  <SelectTrigger className="border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70  hover:text-white transition-colors cursor-pointer outline-none">
+  <SelectTrigger className="border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-black/60  hover:text-black transition-colors cursor-pointer outline-none">
     <SelectValue />
   </SelectTrigger>
-  <SelectContent side="top" sideOffset={3} align="start" position="popper" className="text-white border-0">
+  <SelectContent side="top" sideOffset={3} align="start" position="popper" className="bg-white text-neutral-900 border border-neutral-200 shadow-lg">
     {timeframes.map((tf) => (
       <SelectItem
         key={tf}
         value={tf}
-        className="text-[11px] font-semibold focus:text-white cursor-pointer transition-colors"
+        className="text-[11px] font-semibold focus:bg-neutral-100 focus:text-neutral-900 cursor-pointer transition-colors"
       >
         {tf.toUpperCase()}
       </SelectItem>
@@ -514,11 +517,11 @@ const calcQty = () => {
 
       </div>
       </div>
-      <div className="absolute inset-0 h-full w-full" ref={container} />
+      <div className="absolute inset-0 h-full w-full bg-white" style={{ background: "#FFFFFF" }} ref={container} />
       {tradeLines && (
   <div className="absolute inset-0 pointer-events-none z-10">
     {badgeY.tp !== null && (
-      <div className="absolute right-28 -translate-y-1/2 flex items-center gap-2 bg-black border border-[#00E676] text-[#00E676] text-xs font-semibold px-3 py-1 rounded-lg"
+      <div className="absolute right-28 -translate-y-1/2 flex items-center gap-2 bg-white border border-[#089981] text-[#089981] text-xs font-semibold px-3 py-1 rounded-lg shadow-sm"
            style={{ top: badgeY.tp }}>
         <span>{calcQty()}</span>
         |
@@ -527,10 +530,10 @@ const calcQty = () => {
     )}
     {badgeY.entry !== null && (
       <div className={cn(
-        "absolute right-28 -translate-y-1/2 flex items-center gap-2 text-xs font-semibold rounded-lg pr-2 border bg-black",
-        tradeLines.side.toUpperCase() === "BUY" ? " border-blue-500 text-blue-400" : " border-[#FF1744] text-[#FF1744]"
+        "absolute right-28 -translate-y-1/2 flex items-center gap-2 text-xs font-semibold rounded-lg pr-2 border bg-white shadow-sm",
+        tradeLines.side.toUpperCase() === "BUY" ? " border-blue-600 text-blue-700" : " border-[#F23645] text-[#F23645]"
       )} style={{ top: badgeY.entry }}>
-        <span className={`${tradeLines.side.toUpperCase() === "BUY" ? "bg-blue-500" : " bg-[#FF1744]"} p-1 px-2
+        <span className={`${tradeLines.side.toUpperCase() === "BUY" ? "bg-blue-600" : " bg-[#F23645]"} p-1 px-2
         rounded-l-lg text-white`}>{calcQty()}</span>
 
         <span>
@@ -542,7 +545,7 @@ const calcQty = () => {
         {canClose && (
           <button
             onClick={onClose}
-            className="pointer-events-auto cursor-pointer px-1.5 text-white/60 hover:text-white"
+            className="pointer-events-auto cursor-pointer px-1.5 text-black/50 hover:text-black"
           >
             ✕
           </button>
@@ -551,7 +554,7 @@ const calcQty = () => {
       </div>
     )}
     {badgeY.sl !== null && (
-      <div className="absolute right-28 -translate-y-1/2 flex items-center gap-2 bg-black border border-[#FF1744] text-[#FF1744] text-xs font-semibold px-3 py-1 rounded-lg"
+      <div className="absolute right-28 -translate-y-1/2 flex items-center gap-2 bg-white border border-[#F23645] text-[#F23645] text-xs font-semibold px-3 py-1 rounded-lg shadow-sm"
            style={{ top: badgeY.sl }}>
         <span>{calcQty()}</span>
         |
@@ -645,16 +648,16 @@ useEffect(() => {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "bg-[#191b1b]/40 rounded-2xl p-4 space-y-4 border border-white/[0.05] shadow-2xl transition-opacity",
-        disabled && "opacity-10 pointer-events-none"
+        "bg-neutral-100 rounded-2xl p-4 space-y-4 border border-black/5 shadow-sm transition-opacity text-neutral-700",
+        disabled && "opacity-40 pointer-events-none"
       )}
     >
-      <div className="grid grid-cols-2 rounded-xl overflow-hidden font-bold border border-white/5">
+      <div className="grid grid-cols-2 rounded-xl overflow-hidden font-bold border border-black/10">
         <button 
           onClick={() => !disabled && setSide("SELL")}
           className={cn(
             "p-3 transition-all text-left  cursor-pointer",
-            side === "SELL" ? "bg-[#FF1744]/20 text-[#FF1744]" : "bg-[#2a2b2b] text-[#d1d1d1] opacity-50 hover:opacity-100"
+            side === "SELL" ? "bg-[#F23645]/15 text-[#D62839]" : "bg-neutral-200 text-neutral-600 opacity-60 hover:opacity-100"
           )}
         >
           <span className="text-[10px] uppercase opacity-70 block mb-1">SELL</span>
@@ -664,7 +667,7 @@ useEffect(() => {
           onClick={() => !disabled && setSide("BUY")}
           className={cn(
             "p-3 transition-all text-right cursor-pointer",
-            side === "BUY" ? "bg-blue-500/20 text-blue-500" : "bg-[#2a2b2b] text-[#d1d1d1] opacity-50 hover:opacity-100"
+            side === "BUY" ? "bg-blue-500/15 text-blue-700" : "bg-neutral-200 text-neutral-600 opacity-60 hover:opacity-100"
           )}
         >
           <span className="text-[10px] uppercase opacity-70 block mb-1">BUY</span>
@@ -674,10 +677,10 @@ useEffect(() => {
 
       <div className="space-y-4">
         <div className="space-y-1.5">
-          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-white/30 px-1">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wider text-black/40 px-1">
             Amount
           </div>
-          <div className="flex items-center py-2 border-b border-white/10 transition-all">
+          <div className="flex items-center py-2 border-b border-black/10 transition-all">
 
 
 <input 
@@ -689,7 +692,7 @@ useEffect(() => {
     const rawValue = e.target.value.replace(/[^0-9.]/g, '');
     setAmount(rawValue);
   }}
-  className="bg-transparent outline-none text-white text-right text-2xl w-full p-0 focus:ring-0"
+  className="bg-transparent outline-none text-neutral-900 text-right text-2xl w-full p-0 focus:ring-0"
   placeholder="$0"
 />
 </div>
@@ -698,7 +701,7 @@ useEffect(() => {
         <div className="flex justify-between items-center">
                   <div className="flex justify-between items-center w-full">
                   <div className="flex flex-col gap-1">
-    <span >To Win</span>
+    <span className="text-neutral-700">To Win</span>
     {/* Displaying the exact ROI percentage */}
     <span className="text-zinc-500">
       +{roiPercentage}% 
@@ -706,10 +709,10 @@ useEffect(() => {
       <Tooltip  open={showMobileTip || undefined}>
                   <TooltipTrigger asChild>
                     <button type="button" className="outline-none">
-                      <Info  onClick={toggleMobileTip} size={13} className="text-zinc-600 hover:text-zinc-300 transition-colors" />
+                      <Info  onClick={toggleMobileTip} size={13} className="text-zinc-500 hover:text-zinc-800 transition-colors" />
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent>
+                  <TooltipContent className="bg-neutral-900 text-white">
                     <p>ROI (Return on Investment)</p>
                   </TooltipContent>
                 </Tooltip>
@@ -718,7 +721,7 @@ useEffect(() => {
   </div> 
                   <span className={cn(
   "text-2xl",
-  Number(toWin) < (parseFloat(amount) || 0) ? "text-red-500" : "text-green-500"
+  Number(toWin) < (parseFloat(amount) || 0) ? "text-red-600" : "text-green-600"
 )}>
   {toWin ? `$${Number(toWin).toLocaleString("en-US")}` : "$0"}
 </span>
@@ -727,56 +730,56 @@ useEffect(() => {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Symbol</label>
-            <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+            <label className="text-[10px] uppercase tracking-wider text-black/40 px-1">Symbol</label>
+            <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-white border border-black/10 focus-within:border-black/30">
               <input 
                 disabled={true}
                 type="text" 
                 value={symbol} 
-                className="bg-transparent border-none outline-none font-medium text-white text-[13px] w-full p-0 focus:ring-0"
+                className="bg-transparent border-none outline-none font-medium text-neutral-900 text-[13px] w-full p-0 focus:ring-0"
               />
             </div>
           </div>
           <div className="space-y-3">
-  <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Leverage</label>
+  <label className="text-[10px] uppercase tracking-wider text-black/40 px-1">Leverage</label>
 
   {/* Value display with – and + */}
   <div className="flex items-center gap-2">
     <button
       disabled={disabled}
       onClick={() => setLeverage(v => String(Math.max(1, parseInt(v) - 1)))}
-      className="w-8 h-8 rounded bg-white/10 text-white text-lg flex items-center justify-center hover:bg-white/20 disabled:opacity-30 cursor-pointer"
+      className="w-8 h-8 rounded bg-black/5 text-neutral-900 text-lg flex items-center justify-center hover:bg-black/10 disabled:opacity-30 cursor-pointer"
     >−</button>
 
-    <div className="flex-1 text-center text-white font-bold text-xl tracking-tight">
-      {leverage}<span className="text-white text-base font-normal">x</span>
+    <div className="flex-1 text-center text-neutral-900 font-bold text-xl tracking-tight">
+      {leverage}<span className="text-neutral-900 text-base font-normal">x</span>
     </div>
 
     <button
       disabled={disabled}
       onClick={() => setLeverage(v => String(Math.min(125, parseInt(v) + 1)))}
-      className="w-8 h-8 rounded bg-white/10 text-white text-lg flex items-center justify-center hover:bg-white/20 disabled:opacity-30 cursor-pointer"
+      className="w-8 h-8 rounded bg-black/5 text-neutral-900 text-lg flex items-center justify-center hover:bg-black/10 disabled:opacity-30 cursor-pointer"
     >+</button>
   </div>
 
   {/* Slider track with dot markers */}
   <div className="relative px-1 py-2">
     {/* Track */}
-    <div className="relative h-[3px] rounded-full bg-white/15 mx-1">
+    <div className="relative h-[3px] rounded-full bg-black/15 mx-1">
       <div
-        className="absolute left-0 top-0 h-full rounded-full bg-white transition-all"
+        className="absolute left-0 top-0 h-full rounded-full bg-neutral-900 transition-all"
         style={{ width: `${((parseInt(leverage) - 1) / 124) * 100}%` }}
       />
       {/* Thumb dot */}
       <div
-        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-2 border-black shadow transition-all"
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-neutral-900 border-2 border-white shadow transition-all"
         style={{ left: `${((parseInt(leverage) - 1) / 124) * 100}%` }}
       />
       {/* Tick dots */}
       {[1, 25, 50, 75, 100, 125].map(v => (
         <div
           key={v}
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full border border-white/30"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-2 h-2 rounded-full border border-black/30"
           style={{
             left: `${((v - 1) / 124) * 100}%`,
             background: '#ffffff' 
@@ -796,7 +799,7 @@ useEffect(() => {
   </div>
 
   {/* Tick labels */}
-  <div className="flex justify-between text-[9px] text-white/25 px-1">
+  <div className="flex justify-between text-[9px] text-black/40 px-1">
     {[1, 25, 50, 75, 100, 125].map(v => (
       <span key={v}>{v}x</span>
     ))}
@@ -807,30 +810,30 @@ useEffect(() => {
         <div className="pt-2">
           <div className="space-y-3">
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-[10px] uppercase text-white/30 px-1">
+              <div className="flex items-center justify-between text-[10px] uppercase text-black/40 px-1">
                 Take profit
               </div>
-              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-white border border-black/10 focus-within:border-black/30">
                 <input 
                   disabled={disabled}
                   type="number" 
                   value={tp} 
                   onChange={(e) => setTp(e.target.value)}
-                  className="bg-transparent border-none outline-none text-white text-xs w-full p-0 focus:ring-0"
+                  className="bg-transparent border-none outline-none text-neutral-900 text-xs w-full p-0 focus:ring-0"
                 />
               </div>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between text-[10px] uppercase text-white/30 px-1">
+              <div className="flex items-center justify-between text-[10px] uppercase text-black/40 px-1">
                 Stop loss
               </div>
-              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-white border border-black/10 focus-within:border-black/30">
                 <input 
                   disabled={disabled}
                   type="number"   
                   value={sl} 
                   onChange={(e) => setSl(e.target.value)}
-                  className="bg-transparent border-none outline-none text-white text-xs w-full p-0 focus:ring-0"
+                  className="bg-transparent border-none outline-none text-neutral-900 text-xs w-full p-0 focus:ring-0"
                 />
               </div>
             </div>
@@ -852,13 +855,13 @@ useEffect(() => {
       entry
     });
   }}
-            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-green-700 bg-green-700/20 hover:bg-green-700/30 transition-colors text-green-200 text-xs rounded-l cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-green-600 bg-green-600/15 hover:bg-green-600/25 transition-colors text-green-800 text-xs rounded-l cursor-pointer"
           >
             <Check size={14} /> accept
           </button>
           <button 
             onClick={onReset}
-            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-red-700 bg-red-700/20 hover:bg-red-700/30 transition-colors text-red-200 text-xs rounded-r cursor-pointer"
+            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-red-600 bg-red-600/15 hover:bg-red-600/25 transition-colors text-red-800 text-xs rounded-r cursor-pointer"
           >
             x reject
           </button>
@@ -958,7 +961,7 @@ useEffect(() => {
   setIsPhone(phone);
   if (!phone) return;
 
-  document.body.style.background = "#000";
+  document.body.style.background = "#fff";
   let meta = document.querySelector('meta[name="viewport"]');
   if (!meta) {
     meta = document.createElement("meta");
@@ -988,7 +991,7 @@ useEffect(() => {
 
   const models = [
     { id: "auto", name: "Auto", tag: "Suggested" },
-    { id: "claude-fable-5", name: "Claude Fable 5" },
+    { id: "claude-Haiku-5.5", name: "Claude Haiku 5.5" },
     { id: "GPT-5.6-Sol", name: "GPT-5.6 Sol" },
     { id: "gemini-3.1", name: "Gemini 3.1 Pro" },
     { id: "grok-4.5", name: "Grok 4.5" },
@@ -1176,7 +1179,7 @@ const tradeData = {
         role: "ai",
         content: (
           <div className="space-y-2 flex flex-col">
-            <div className="p-3.5 text-zinc-200 text-[13px] leading-relaxed">
+            <div className="p-3.5 text-neutral-800 text-[13px] leading-relaxed">
               {cfg.research}
             </div>
           </div>
@@ -1205,9 +1208,9 @@ const tradeData = {
         {
           role: "ai",
           content: (
-            <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
+            <div className="p-3.5 text-xl text-neutral-800 flex justify-between items-center w-full">
               <h1 className="font-semibold">Chance {tradeData.confidence}%</h1>
-              <h1 className="font-light theseason">RICHACLE</h1>
+              <h1 className="font-light theseason !text-neutral-800">RICHACLE</h1>
             </div>
           ),
         },
@@ -1307,20 +1310,20 @@ for (let k = 0; k < N_CANDLES; k++) {
 
 return (
   <div
-    className={isPhone ? "fixed inset-0 bg-black flex items-center justify-center overflow-hidden" : ""}
+    className={isPhone ? "fixed inset-0 bg-white flex items-center justify-center overflow-hidden" : ""}
   >
   <div
     className="flex flex-col"
     style={isPhone ? { width: "100vw", height: "56.25vw" } : { height: "100vh" }}
   >
     <Navbar isVerified={isVerified} />
-  <div className="flex flex-1 min-h-0 bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
+  <div className="flex flex-1 min-h-0 bg-white text-neutral-700 overflow-hidden font-sans select-none">
     {showPricing && (
-  <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
+  <div className="fixed inset-0 w-full h-full z-[9999] bg-white/95 backdrop-blur-md overflow-y-auto">
     {/* Close Button */}
     <button 
       onClick={() => setShowPricing(false)}
-      className="fixed top-5 right-10 z-[10000] text-white cursor-pointer"
+      className="fixed top-5 right-10 z-[10000] text-neutral-900 cursor-pointer"
     >
       ✕
     </button>
@@ -1331,30 +1334,30 @@ return (
 
 {showEdit && (
   <div
-    className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 select-text"
+    className="fixed inset-0 z-[9999] bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 select-text"
     onClick={() => setShowEdit(false)}
   >
     <div
-      className="w-full max-w-md bg-[#0d0d0d]  rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto"
+      className="w-full max-w-md bg-white border border-black/10 shadow-xl rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="flex items-center justify-between">
-        <h2 className="text-white font-semibold">Edit trade settings</h2>
-        <button onClick={() => setShowEdit(false)} className="text-white/40 hover:text-white cursor-pointer">
+        <h2 className="text-neutral-900 font-semibold">Edit trade settings</h2>
+        <button onClick={() => setShowEdit(false)} className="text-black/40 hover:text-black cursor-pointer">
           <X size={18} />
         </button>
       </div>
 
       {/* Research message */}
       <div className="space-y-1.5">
-        <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Research message</label>
+        <label className="text-[10px] uppercase tracking-wider text-black/40 px-1">Research message</label>
         <textarea
           rows={5}
           value={draft.research}
           onChange={(e) => setDraft({ ...draft, research: e.target.value })}
-          className="w-full bg-[#191b1b]  rounded-lg p-2.5 text-xs text-white outline-none resize-none"
+          className="w-full bg-neutral-100 rounded-lg p-2.5 text-xs text-neutral-900 outline-none resize-none"
         />
-        {draftErrors.research && <p className="text-[10px] text-red-500 px-1">{draftErrors.research}</p>}
+        {draftErrors.research && <p className="text-[10px] text-red-600 px-1">{draftErrors.research}</p>}
       </div>
 
       {/* Numeric fields */}
@@ -1367,17 +1370,17 @@ return (
           ["slPct", "Stop loss (% below entry)"],
         ] as [keyof DemoConfig, string][]).map(([key, label]) => (
           <div key={key} className="space-y-1.5">
-            <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">{label}</label>
+            <label className="text-[10px] uppercase tracking-wider text-black/40 px-1">{label}</label>
             <input
               type="number"
               value={draft[key]}
               onChange={(e) => setDraft({ ...draft, [key]: e.target.value })}
               className={cn(
-                "w-full bg-[#191b1b]  rounded-lg p-2.5 text-xs text-white outline-none",
-                draftErrors[key] ? "border-red-500/60" : "border-white/10"
+                "w-full bg-neutral-100 rounded-lg p-2.5 text-xs text-neutral-900 outline-none",
+                draftErrors[key] ? "border-red-500/60" : "border-black/10"
               )}
             />
-            {draftErrors[key] && <p className="text-[10px] text-red-500 px-1">{draftErrors[key]}</p>}
+            {draftErrors[key] && <p className="text-[10px] text-red-600 px-1">{draftErrors[key]}</p>}
           </div>
         ))}
       </div>
@@ -1386,21 +1389,21 @@ return (
       <div className="flex gap-2 pt-1">
         <button
           onClick={() => setDraft(DEFAULT_CONFIG)}
-          className="px-3 py-2 text-xs rounded-lg text-white/50 hover:text-white cursor-pointer"
+          className="px-3 py-2 text-xs rounded-lg text-black/50 hover:text-black cursor-pointer"
         >
           Reset defaults
         </button>
         <div className="flex-1" />
         <button
           onClick={() => setShowEdit(false)}
-          className="px-4 py-2 text-xs rounded-lg bg-white/5 text-white/70 hover:bg-white/10 cursor-pointer"
+          className="px-4 py-2 text-xs rounded-lg bg-black/5 text-black/70 hover:bg-black/10 cursor-pointer"
         >
           Cancel
         </button>
         <button
           onClick={handleSaveEdit}
           disabled={!canSave}
-          className="px-4 py-2 text-xs rounded-lg bg-green-700/30 text-green-200 hover:bg-green-700/40 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+          className="px-4 py-2 text-xs rounded-lg bg-green-600/15 text-green-800 hover:bg-green-600/25 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
         >
           Save
         </button>
@@ -1423,25 +1426,23 @@ return (
 
       {/* RIGHT SIDE: 30% (Exactly as you wanted it) */}
   <div className={cn(
-  "flex-[3] flex flex-col bg-black min-w-[320px] max-w-[450px]  transition-all",
+  "flex-[3] flex flex-col bg-white border-l border-black/10 min-w-[320px] max-w-[450px]  transition-all",
   // Mobile logic: Cover screen if shown, hide if not
-  !showAgent ? "hidden md:flex" : "fixed inset-0 z-40 md:relative md:inset-auto"
+  !showAgent ? "hidden md:flex md:relative" : "fixed inset-0 z-40 md:relative md:inset-auto"
 )}>
-<div className="bg-black flex justify-end items-center p-2 px-4 gap-2">
+<div className="bg-white flex justify-end items-center p-2 px-4 gap-2">
  <button
     onClick={openEdit}
     disabled={editLocked}
     title={editLocked ? "Finish or close the current trade first" : "Edit trade settings"}
-    className="cursor-pointer fixed bottom-12 right-12 text-white/40 hover:text-white/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed z-50"
+    className="cursor-pointer fixed bottom-12 right-12 text-black/40 hover:text-black/70 transition-colors disabled:opacity-30 disabled:cursor-not-allowed z-50"
   >
     <Pencil size={18} />
   </button>
 
-<h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right"><Plus size={20}/></h1>
+<h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right text-neutral-900"><Plus size={20}/></h1>
 
-<button onClick={() => setShowJournal(true)} className="cursor-pointer md:flex hidden text-white/40 hover:text-white/70 transition-colors">
-        <Calendar size={23} />
-      </button>
+
       <AnimatePresence>
         {showJournal && (
           <Journal email={email} onClose={() => setShowJournal(false)} />
@@ -1452,9 +1453,9 @@ return (
 
 
 {messages.length === 0 && (
-  <div className="w-full justify-center items-center flex h-full">
+  <div className="absolute inset-0 z-0 w-full h-full flex justify-center items-center pointer-events-none">
     <h1 
-      className="text-3xl theseason pulse"
+      className="text-3xl theseason pulse !text-neutral-900"
     >
       RICHACLE
     </h1>
@@ -1472,11 +1473,11 @@ return (
                 {typeof msg.content === 'string' ? (
                   <div className={cn(
                     "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg",
-                    msg.role === "user" ? "bg-zinc-900 text-white" : "bg-transparent text-[#d1d1d1] pl-4"
+                    msg.role === "user" ? "bg-neutral-100 text-neutral-900" : "bg-transparent text-neutral-700 pl-4"
                   )}>
 {msg.content.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
                       /^\/(thinking|deep-research)$/i.test(part) ? (
-                        <span key={i} className="bg-blue-950/60 text-blue-300 rounded px-1">{part}</span>
+                        <span key={i} className="bg-blue-100 text-blue-700 rounded px-1">{part}</span>
                       ) : (
                         <span key={i}>{part}</span>
                       )
@@ -1505,12 +1506,12 @@ return (
             {isSearching && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
                 <span className="relative flex size-3">
-  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
-  <span className="relative inline-flex size-3 rounded-full bg-white"></span>
+  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neutral-900 opacity-75"></span>
+  <span className="relative inline-flex size-3 rounded-full bg-neutral-900"></span>
 </span>
                 
  {tradeStatusText && (
-      <span className="text-white/40 pulse">{tradeStatusText}</span>
+      <span className="text-black/50 pulse">{tradeStatusText}</span>
     )}
               </motion.div>
             )}
@@ -1518,19 +1519,19 @@ return (
             {isTrading && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
               <span className="relative flex size-3">
-  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
-  <span className="relative inline-flex size-3 rounded-full bg-white"></span>
+  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neutral-900 opacity-75"></span>
+  <span className="relative inline-flex size-3 rounded-full bg-neutral-900"></span>
 </span> 
-                <span className=" text-white/40 pulse">Trading</span>
+                <span className=" text-black/50 pulse">Trading</span>
               </motion.div>
             )}
             {isClosing && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-3 pl-1 pt-1">
               <span className="relative flex size-3">
-  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-75"></span>
-  <span className="relative inline-flex size-3 rounded-full bg-white"></span>
+  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-neutral-900 opacity-75"></span>
+  <span className="relative inline-flex size-3 rounded-full bg-neutral-900"></span>
 </span> 
-                <span className=" text-white/40 pulse">Closing</span>
+                <span className=" text-black/50 pulse">Closing</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -1545,7 +1546,7 @@ return (
               exit={{ opacity: 0, y: 10 }}
               className="p-4 "
             >
-              <div className="relative mb-10 bg-[#0d0d0d] rounded-2xl  p-4 flex flex-col min-h-[140px] focus-within:border-white/20 transition-all">
+              <div className="relative mb-10 bg-neutral-100 border border-black/10 rounded-2xl  p-4 flex flex-col min-h-[140px] focus-within:border-black/30 transition-all">
               
                 <div className="relative w-full">
   {/* Highlighted text layer — purely visual, sits behind the textarea */}
@@ -1556,13 +1557,13 @@ return (
   >
     {prompt.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
   /^\/(thinking|deep-research)$/i.test(part) ? (
-    <span key={i} className="bg-blue-950/60 text-blue-300 rounded">{part}</span>
+    <span key={i} className="bg-blue-100 text-blue-700 rounded">{part}</span>
   ) : (
-    <span key={i} className="text-white">{part}</span>
+    <span key={i} className="text-neutral-900">{part}</span>
   )
 )}
     {/* trailing space so caret has room to sit after last char */}
-    {prompt.length === 0 && <span className="text-white/50">Ask Richacle</span>}
+    {prompt.length === 0 && <span className="text-black/40">Ask Richacle</span>}
   </div>
 
   {/* Actual textarea — text made transparent, only caret/selection visible */}
@@ -1574,7 +1575,7 @@ return (
     onChange={(e) => setPrompt(e.target.value)}
     onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
     placeholder=""
-    className="relative w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none text-transparent caret-white"
+    className="relative w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none text-transparent caret-black"
   />
 </div>
                 <div className="flex justify-between items-center mt-auto">
@@ -1583,15 +1584,15 @@ return (
   <Plus
     size={40}
     onClick={() => setShowModeMenu(v => !v)}
-    className="hover:bg-zinc-950 p-2 rounded-full cursor-pointer"
+    className="hover:bg-black/5 text-neutral-700 p-2 rounded-full cursor-pointer"
   />
   {showModeMenu && (
-    <div className="absolute bottom-12 left-0 bg-[#141414] rounded-lg p-1 overflow-hidden z-50 min-w-[150px] shadow-xl">
+    <div className="absolute bottom-12 left-0 bg-white border border-black/10 rounded-lg p-1 overflow-hidden z-50 min-w-[150px] shadow-xl">
       {["thinking", "deep-research"].map((mode) => (
         <button
           key={mode}
           onClick={() => insertMode(mode)}
-          className="block w-full text-left px-3  rounded-lg py-2 text-xs hover:bg-zinc-800 transition-colors cursor-pointer"
+          className="block w-full text-left px-3 text-neutral-800 rounded-lg py-2 text-xs hover:bg-neutral-100 transition-colors cursor-pointer"
         >
           {mode}
         </button>
@@ -1612,11 +1613,11 @@ return (
     setSelectedModel(val);
   }}
 >
-  <SelectTrigger className="border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-white/70 hover:text-white transition-colors cursor-pointer outline-none">
+  <SelectTrigger className="border-none bg-transparent p-2 focus:ring-0 focus:ring-offset-0 gap-1 text-[11px] font-semibold text-black/60 hover:text-black transition-colors cursor-pointer outline-none">
     <SelectValue />
   </SelectTrigger>
 
-  <SelectContent side="top" sideOffset={3} align="start" position="popper" className="text-white border-0">
+  <SelectContent side="top" sideOffset={3} align="start" position="popper" className="bg-white text-neutral-900 border border-neutral-200 shadow-lg">
   {models.map((model) => {
     const locked = model.id !== "auto" && !isVerified;
     return (
@@ -1624,7 +1625,7 @@ return (
         key={model.id} 
         value={model.id}
         className={cn(
-          "text-[11px] font-semibold focus:text-white transition-colors cursor-pointer",
+          "text-[11px] font-semibold focus:bg-neutral-100 focus:text-neutral-900 transition-colors cursor-pointer",
           locked && "opacity-40 " 
         )}
       >
@@ -1649,7 +1650,7 @@ return (
                   <button 
                     onClick={handleSend}
                     disabled={!prompt.trim() || loading || isWidgetActive || isTrading || isClosing}
-                    className={`p-1.5 bg-white cursor-pointer text-black rounded-full  transition-all active:scale-90 shadow-xl ${!prompt.trim() || loading|| isWidgetActive || isTrading || isClosing ? "opacity-50 hover:opacity-50" : "hover:opacity-80"}`}
+                    className={`p-1.5 bg-neutral-900 cursor-pointer text-white rounded-full  transition-all active:scale-90 shadow-xl ${!prompt.trim() || loading|| isWidgetActive || isTrading || isClosing ? "opacity-50 hover:opacity-50" : "hover:opacity-80"}`}
                   >
                     {loading || isWidgetActive || isTrading || isClosing ? <LoaderCircle className="animate-spin" size={16} strokeWidth={2.5} /> :  <ArrowUp size={16} strokeWidth={2.5} />}
                   </button>
@@ -1662,9 +1663,10 @@ return (
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
+        :root { color-scheme: light; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.15); border-radius: 10px; }
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
       `}} />
       </div>
