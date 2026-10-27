@@ -1113,7 +1113,7 @@ const handleSend = async () => {
         role: "ai", 
         content: (
             <div>
-              You run out of credits. Please <span onClick={redirectToUpgrade()} className="underline cursor-pointer text-zinc-100"> upgrade your plan </span> to continue trading.
+              You run out of credits. Please <span onClick={redirectToUpgrade} className="underline cursor-pointer text-zinc-100"> upgrade your plan </span> to continue trading.
             </div>
         ),
       }]);
