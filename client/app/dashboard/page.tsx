@@ -910,7 +910,7 @@ useEffect(() => {
 }, [email]);
 
 const redirectToUpgrade = () => {
-  window.location.href = `https://mellvitta.vercel.app?email=${encodeURIComponent(email)}`;
+  window.location.href = `https://mellvitta.vercel.app/pricing?email=${encodeURIComponent(email)}`;
 };
 
   // Inside VibeTradingUI component

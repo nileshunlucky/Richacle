@@ -136,7 +136,7 @@ export default function Navbar({ isVerified = false }: NavbarProps) {
 
   const promptUpgrade = () => {
   toast("Upgrade your plan to connect Binance.");
-  window.location.href = `https://mellvitta.vercel.app?email=${encodeURIComponent(email)}`;
+  window.location.href = `https://mellvitta.vercel.app/pricing?email=${encodeURIComponent(email)}`;
 };
 
   const handleOpenBinance = () => {
