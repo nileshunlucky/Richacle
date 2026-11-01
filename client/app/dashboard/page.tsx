@@ -1417,7 +1417,7 @@ const handleClearMemory = async () => {
     const model = models.find(m => m.id === val);
     if (model?.id !== "auto" && !isVerified) {
       toast("Upgrade your plan to unlock Top models.");
-      
+      redirectToUpgrade();
       return; 
     }
     setSelectedModel(val);
