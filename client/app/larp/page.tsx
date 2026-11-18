@@ -868,7 +868,7 @@ useEffect(() => {
   );
 });
 
-const DEMO_PROMPT = "/thinking on Bitcoin";
+const DEMO_PROMPT = "/trade on Bitcoin";
 const DEMO_TICKS_PER_CANDLE = 10;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -900,6 +900,10 @@ const validateConfig = (c: DemoConfig) => {
 };
 
 function VibeTradingUIContent() {
+  const [showBinance, setShowBinance] = useState(false);
+const [bnKey, setBnKey] = useState("");
+const [bnSecret, setBnSecret] = useState("");
+const [balanceInput, setBalanceInput] = useState("17534.08");
   const searchParams = useSearchParams();
     const [forcedPrice, setForcedPrice] = useState<number | null>(null);
   const [prompt, setPrompt] = useState("");
@@ -1052,6 +1056,56 @@ useEffect(() => {
     }
   }, [currentPrice, isExecuted, activeLines, activeSymbol]);
 
+
+  const runForcedWin = async () => {
+  await sleep(2000); // pause after order placed, before price starts moving
+  if (demoCancelRef.current) return;
+  const l2 = activeLinesRef.current;
+  if (!l2) return;
+
+  const start = parseFloat(currentPriceRef.current || "") || l2.entry;
+  const target = l2.tp;
+  const T = DEMO_TICKS_PER_CANDLE;
+
+  const N_CANDLES = 9;
+  const redCount = 2 + Math.floor(Math.random() * 4);
+  const RED_RATIO = 0.6;
+
+  const pool = Array.from({ length: N_CANDLES - 2 }, (_, i) => i + 1);
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  const redSet = new Set(pool.slice(0, redCount));
+  const greenCount = N_CANDLES - redCount;
+
+  const g = (target - start) / (greenCount - RED_RATIO * redCount);
+  const floorPrice = l2.sl + (start - l2.sl) * 0.5;
+  const ceilPrice = target - g * 0.2;
+
+  const levels: number[] = [start];
+  for (let k = 0; k < N_CANDLES; k++) {
+    if (k === N_CANDLES - 1) { levels.push(target); break; }
+    const step = redSet.has(k) ? -g * RED_RATIO : g;
+    levels.push(Math.min(ceilPrice, Math.max(floorPrice, levels[k] + step)));
+  }
+
+  for (let k = 0; k < N_CANDLES; k++) {
+    const from = levels[k];
+    const to = levels[k + 1];
+    for (let t = 1; t <= T; t++) {
+      if (demoCancelRef.current) return;
+      const isLast = t === T;
+      const noise = isLast ? 0 : (Math.random() - 0.5) * Math.abs(to - from) * 0.15;
+      const p = isLast ? to : from + ((to - from) * t) / T + noise;
+
+      setForcedPrice(p);
+      setCurrentPrice(p.toFixed(2));
+      await sleep(150);
+    }
+  }
+};
+
   // DEMO: fake order placement
   const handleAccept = async (tradeParams: TradeParams) => {
     setActiveTradeParams(tradeParams);
@@ -1073,6 +1127,8 @@ useEffect(() => {
       },
     ]);
     setIsTrading(false);
+
+     runForcedWin();  
   };
 
   const handleReject = () => {
@@ -1082,6 +1138,7 @@ useEffect(() => {
   };
 
   const handleReset = () => {
+    setForcedPrice(null);  
     setMessages([]);
     setIsSearching(false);
     setPrompt("");
@@ -1123,7 +1180,6 @@ useEffect(() => {
     setIsPositionClosed(false);
     setIsRejected(false);
     setIsClosing(false);
-    setForcedPrice(null);
   };
 
   useEffect(() => {
@@ -1142,6 +1198,7 @@ useEffect(() => {
   const handleSend = async () => {
     if (!prompt.trim() || loading) return;
     demoCancelRef.current = false;
+    setForcedPrice(null);
     const currentPrompt = prompt;
     setLoading(true);
     setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
@@ -1232,53 +1289,7 @@ const tradeData = {
 
     // let the viewer see the widget, then auto place the trade
     await sleep(3500);
-    const l = activeLinesRef.current;
-    await handleAccept({
-      symbol: tradeData.symbol,
-      side: tradeData.side,
-      leverage: String(tradeData.leverage),
-      amount: String(tradeData.amount),
-      tp: String(l?.tp ?? tradeData.take_profit),
-      sl: String(l?.sl ?? tradeData.stop_loss),
-      entry: l?.entry ?? tradeData.entry_price,
-    });
-    // DEMO: force the trade to win
-await sleep(4000);
-if (demoCancelRef.current) return; // let the viewer see the open position first
-const l2 = activeLinesRef.current;
-if (!l2) return;
-
-const start = parseFloat(currentPriceRef.current || "") || l2.entry;
-const target = l2.tp;
-const T = DEMO_TICKS_PER_CANDLE;
-
-// ---- plan the candles ----
-const N_CANDLES = 9;                                  // total candles in the move
-const redCount = 2 + Math.floor(Math.random() * 4);   // 2..5 red candles
-const RED_RATIO = 0.6;                                // red drop size relative to a green rise
-
-// red candles can't be the first or last (last must be green so we land on TP)
-const pool = Array.from({ length: N_CANDLES - 2 }, (_, i) => i + 1);
-for (let i = pool.length - 1; i > 0; i--) {           // shuffle
-  const j = Math.floor(Math.random() * (i + 1));
-  [pool[i], pool[j]] = [pool[j], pool[i]];
-}
-const redSet = new Set(pool.slice(0, redCount));
-const greenCount = N_CANDLES - redCount;
-
-// size of one green step so that (greens up - reds down) = total distance to TP
-const g = (target - start) / (greenCount - RED_RATIO * redCount);
-
-// keep dips well above the stop loss, and never touch TP before the last candle
-const floorPrice = l2.sl + (start - l2.sl) * 0.5;
-const ceilPrice = target - g * 0.2;
-
-const levels: number[] = [start];                     // close price of each candle
-for (let k = 0; k < N_CANDLES; k++) {
-  if (k === N_CANDLES - 1) { levels.push(target); break; }
-  const step = redSet.has(k) ? -g * RED_RATIO : g;
-  levels.push(Math.min(ceilPrice, Math.max(floorPrice, levels[k] + step)));
-}
+  
 
 // ---- play it tick by tick ----
 for (let k = 0; k < N_CANDLES; k++) {
@@ -1309,6 +1320,90 @@ return (
   <div
     className={isPhone ? "fixed inset-0 bg-black flex items-center justify-center overflow-hidden" : ""}
   >
+  <nav className="h-14 shrink-0 bg-black flex items-center justify-between px-4 md:px-6 border-b border-white/5 relative z-50">
+  <h1 className="text-xl text-white theseason">RICHACLE</h1>
+
+  <div className="flex items-center gap-3">
+    <div className="flex items-center text-sm font-semibold text-white tabular-nums">
+  <span>$</span>
+  <input
+    type="text"
+    value={balanceInput}
+    onChange={(e) => setBalanceInput(e.target.value.replace(/[^0-9.]/g, ""))}
+    onBlur={() => {
+      const n = parseFloat(balanceInput);
+      setBalanceInput(isNaN(n) ? "0.00" : n.toFixed(2));
+    }}
+    onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+    style={{ width: `${Math.max(balanceInput.length, 4) + 1}ch` }}
+    className="bg-transparent border-none outline-none focus:ring-0 p-0 text-white"
+  />
+</div>
+
+    <div className="relative">
+      <button
+        onClick={() => setShowBinance((v) => !v)}
+        className="flex items-center justify-center w-9 h-9 rounded-full bg-white/5 hover:bg-white/10 transition-colors cursor-pointer"
+      >
+        <svg width="22" height="22" viewBox="0 0 126.61 126.61" fill="#FFFFFF">
+  <path d="M38.73 53.2l24.59-24.58 24.6 24.6 14.3-14.31L63.32 0 24.42 38.9z" />
+  <path d="M0 63.31l14.3-14.31 14.31 14.31-14.31 14.3z" />
+  <path d="M38.73 73.41l24.59 24.59 24.6-24.6 14.31 14.29-.01.01-38.9 38.91-38.9-38.88-.02-.02z" />
+  <path d="M97.99 63.31l14.3-14.31 14.32 14.31-14.31 14.3z" />
+  <path d="M77.83 63.3L63.32 48.78 52.59 59.51l-1.24 1.23-2.54 2.54-.02.02.02.02 14.51 14.5 14.51-14.52.01-.01z" />
+</svg>
+      </button>
+
+      <AnimatePresence>
+        {showBinance && (
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.15 }}
+            className="absolute right-0 top-12 w-[300px] bg-[#0d0d0d] rounded-2xl p-4 space-y-3 shadow-2xl select-text"
+          >
+            <p className="text-sm font-semibold text-white">Binance Futures</p>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">API key</label>
+              <input
+                value={bnKey}
+                onChange={(e) => setBnKey(e.target.value)}
+                placeholder="Paste your API key"
+                className="w-full bg-[#191b1b] rounded-lg p-2.5 text-xs text-white outline-none placeholder:text-white/20"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">API secret</label>
+              <input
+                type="password"
+                value={bnSecret}
+                onChange={(e) => setBnSecret(e.target.value)}
+                placeholder="Paste your API secret"
+                className="w-full bg-[#191b1b]  rounded-lg p-2.5 text-xs text-white outline-none placeholder:text-white/20"
+              />
+            </div>
+
+            <button
+              disabled={!bnKey.trim() || !bnSecret.trim()}
+              onClick={() => {
+                toast("Binance Futures connected");
+                setBnKey("");
+                setBnSecret("");
+                setShowBinance(false);
+              }}
+              className="w-full p-2.5 rounded-lg bg-white text-black text-xs font-semibold hover:brightness-110 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+            >
+              Connect
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  </div>
+</nav>
   <div
     className="flex flex-col"
     style={isPhone ? { width: "100vw", height: "56.25vw" } : { height: "100vh" }}
@@ -1439,9 +1534,7 @@ return (
 
 <h1 onClick={handleClearMemory} className="cursor-pointer p-2 text-right"><Plus size={20}/></h1>
 
-<button onClick={() => setShowJournal(true)} className="cursor-pointer md:flex hidden text-white/40 hover:text-white/70 transition-colors">
-        <Calendar size={23} />
-      </button>
+
       <AnimatePresence>
         {showJournal && (
           <Journal email={email} onClose={() => setShowJournal(false)} />
@@ -1474,8 +1567,8 @@ return (
                     "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg",
                     msg.role === "user" ? "bg-zinc-900 text-white" : "bg-transparent text-[#d1d1d1] pl-4"
                   )}>
-{msg.content.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
-                      /^\/(thinking|deep-research)$/i.test(part) ? (
+{msg.content.split(/(\/trade|\/deep-research)/gi).map((part, i) =>
+                      /^\/(trade|deep-research)$/i.test(part) ? (
                         <span key={i} className="bg-blue-950/60 text-blue-300 rounded px-1">{part}</span>
                       ) : (
                         <span key={i}>{part}</span>
@@ -1554,8 +1647,8 @@ return (
     className="absolute inset-0 w-full text-[14px] px-0 py-0 whitespace-pre-wrap break-words pointer-events-none"
     style={{ fontFamily: "inherit", lineHeight: "inherit" }}
   >
-    {prompt.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
-  /^\/(thinking|deep-research)$/i.test(part) ? (
+    {prompt.split(/(\/trade|\/deep-research)/gi).map((part, i) =>
+  /^\/(trade|deep-research)$/i.test(part) ? (
     <span key={i} className="bg-blue-950/60 text-blue-300 rounded">{part}</span>
   ) : (
     <span key={i} className="text-white">{part}</span>
@@ -1587,7 +1680,7 @@ return (
   />
   {showModeMenu && (
     <div className="absolute bottom-12 left-0 bg-[#141414] rounded-lg p-1 overflow-hidden z-50 min-w-[150px] shadow-xl">
-      {["thinking", "deep-research"].map((mode) => (
+      {["trade", "deep-research"].map((mode) => (
         <button
           key={mode}
           onClick={() => insertMode(mode)}

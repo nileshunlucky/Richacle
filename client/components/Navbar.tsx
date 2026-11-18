@@ -209,7 +209,7 @@ export default function Navbar({ isVerified = false }: NavbarProps) {
       {/* Top bar */}
       <div className="flex justify-between md:px-12 px-3 py-3 h-12 items-center bg-transparent">
         {/* Logo */}
-        <span className="theseason md:text-2xl text-xl">RICHACLE</span>
+        <span className="theseason md:text-2xl text-xl font-semibold">RICHACLE</span>
 
         {/* Balance + connect button */}
         <div className="relative">
@@ -237,7 +237,7 @@ export default function Navbar({ isVerified = false }: NavbarProps) {
     ) : (
       <button
         onClick={promptUpgrade}
-        className="flex items-center cursor-pointer justify-center px-4 py-1.5 text-sm font-medium text-white transition-colors font-semibold"
+        className="flex items-center cursor-pointer justify-center px-4 py-1.5 text-sm text-white transition-colors font-semibold"
       >
         Upgrade
       </button>

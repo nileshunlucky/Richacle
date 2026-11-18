@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useEffect, useRef, useState } from "react"
-import { ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, Info, Plus } from "lucide-react"
+import { ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, Info, Plus, ShieldCheck } from "lucide-react"
 
 /* ----------------------------- Data ----------------------------- */
 
@@ -35,10 +35,21 @@ const TRADE = {
 
 const LEVERAGE_TICKS = [1, 25, 50, 75, 100, 125]
 
+const CANDLES = [
+  { o: 64100, h: 64350, l: 63900, c: 64250 },
+  { o: 64250, h: 64400, l: 63950, c: 64050 },
+  { o: 64050, h: 64200, l: 63700, c: 63800 },
+  { o: 63800, h: 64100, l: 63650, c: 64000 },
+  { o: 64000, h: 64450, l: 63950, c: 64400 },
+  { o: 64400, h: 64650, l: 64300, c: 64500 },
+  { o: 64500, h: 64700, l: 64350, c: 64420 },
+  { o: 64420, h: 64800, l: 64400, c: 64750 },
+]
+
 const TOOLS = [
   { name: "TradingView", dot: "bg-black", pos: "left-4 bottom-14 -rotate-[10deg]" },
   { name: "Claude", dot: "bg-orange-500", pos: "right-4 bottom-20 rotate-[10deg]" },
-  { name: "Telegram", dot: "bg-cyan-500", pos: "left-14 bottom-4 -rotate-[5deg]" },
+  { name: "ChatGPT", dot: "bg-green-400", pos: "left-14 bottom-4 -rotate-[5deg]" },
   { name: "Binance", dot: "bg-amber-400", pos: "right-5 bottom-5 rotate-[4deg]" },
 ]
 
@@ -97,7 +108,7 @@ function useResearchLoop() {
 
 function Card({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex h-[470px] w-[86vw] shrink-0 snap-center flex-col overflow-hidden rounded-[2rem] md:w-auto border border-white/80 bg-gradient-to-b from-white to-white/70 shadow-[0_20px_50px_-20px_rgba(244,63,94,0.25)] backdrop-blur">
+    <div className="relative flex h-[470px] w-[86vw] shrink-0 snap-center flex-col overflow-hidden rounded-[2rem] md:w-auto border border-white/80 bg-gradient-to-b from-white to-white/70 shadow-[0_20px_50px_-20px_rgba(200,150,84,0.4)] backdrop-blur">
       {children}
     </div>
   )
@@ -122,6 +133,73 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /* ------------------------------ Card 1 ------------------------------ */
+/* Connect Binance Futures */
+
+function ConnectBinanceUI() {
+  const [apiKey, setApiKey] = useState("")
+  const [secret, setSecret] = useState("")
+  const [connected, setConnected] = useState(false)
+
+  const input =
+    "w-full rounded-lg border border-zinc-200 bg-zinc-50 px-2.5 py-2 text-xs text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-amber-400"
+
+  return (
+    <div className="mx-6 space-y-2.5 rounded-2xl border border-zinc-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center ">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M16.624 13.9202l2.7175 2.7154-7.353 7.353-7.353-7.352 2.7175-2.7164 4.6355 4.6595 4.6356-4.6595zm4.6366-4.6366L24 12l-2.7154 2.7164L18.5682 12l2.6924-2.7164zm-9.272.001l2.7163 2.6914-2.7164 2.7174v-.001L9.2721 12l2.7164-2.7154zm-9.2722-.001L5.4088 12l-2.6914 2.6924L0 12l2.7164-2.7164zM11.9885.0115l7.353 7.329-2.7174 2.7154-4.6356-4.6356-4.6355 4.6595-2.7174-2.7154 7.353-7.353z" />
+    </svg>
+        </span>
+        <div>
+          <div className="text-sm font-medium text-zinc-900">Binance Futures</div>
+          <div className="text-[10px] text-zinc-400">{connected ? "Connected" : "Not connected"}</div>
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <div className="px-0.5 text-[9px] uppercase tracking-wider text-zinc-400">API Key</div>
+        <input
+          value={apiKey}
+          onChange={(e) => setApiKey(e.target.value)}
+          placeholder="Paste your API key"
+          className={input}
+        />
+      </div>
+
+      <div className="space-y-1">
+        <div className="px-0.5 text-[9px] uppercase tracking-wider text-zinc-400">Secret Key</div>
+        <input
+          type="password"
+          value={secret}
+          onChange={(e) => setSecret(e.target.value)}
+          placeholder="Paste your secret key"
+          className={input}
+        />
+      </div>
+
+      <button
+        onClick={() => setConnected(true)}
+        className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-zinc-900 py-2 text-xs font-medium text-white transition hover:bg-zinc-800"
+      >
+        {connected ? (
+          <>
+            <Check className="h-3.5 w-3.5" /> Connected
+          </>
+        ) : (
+          "Connect Binance"
+        )}
+      </button>
+
+      <div className="flex items-center gap-1.5 text-[10px] text-zinc-400">
+        <ShieldCheck className="h-3 w-3" />
+        Enable Futures only. Keep withdrawals off.
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------ Card 2 ------------------------------ */
 /* Model selector */
 
 function ModelSelectorUI() {
@@ -166,7 +244,7 @@ function ModelSelectorUI() {
   )
 }
 
-/* ------------------------------ Card 2 ------------------------------ */
+/* ------------------------------ Card 3 ------------------------------ */
 /* Research animation */
 
 function ResearchUI() {
@@ -203,7 +281,100 @@ function ResearchUI() {
   )
 }
 
-/* ------------------------------ Card 3 ------------------------------ */
+/* ------------------------------ Card 4 ------------------------------ */
+/* Candle chart + long position (TP / SL) */
+
+function PredictionChartUI() {
+  const W = 300
+  const H = 175
+  const MAX = 67000
+  const MIN = 63300
+  const y = (p: number) => 5 + ((MAX - p) / (MAX - MIN)) * 165
+
+  const { entry, takeProfit, stopLoss, leverage, symbol } = TRADE
+  const entryX = 14 + (CANDLES.length - 1) * 18
+  const zoneW = W - entryX - 4
+  const rr = ((takeProfit - entry) / (entry - stopLoss)).toFixed(2)
+
+  return (
+    <div className="px-6 pt-8">
+      <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-sm">
+        {/* Header */}
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-zinc-900">{symbol}</span>
+            <span className="rounded bg-green-100 px-1.5 py-0.5 text-[9px] font-bold uppercase text-green-700">
+              Long {leverage}x
+            </span>
+          </div>
+          <span className="text-[10px] text-zinc-400">1H</span>
+        </div>
+
+        {/* Chart */}
+        <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+          {/* grid */}
+          {[0.2, 0.4, 0.6, 0.8].map((g) => (
+            <line key={g} x1="0" x2={W} y1={H * g} y2={H * g} stroke="#f4f4f5" strokeWidth="1" />
+          ))}
+
+          {/* TP zone */}
+          <rect x={entryX} y={y(takeProfit)} width={zoneW} height={y(entry) - y(takeProfit)} fill="#16a34a" opacity="0.14" />
+          {/* SL zone */}
+          <rect x={entryX} y={y(entry)} width={zoneW} height={y(stopLoss) - y(entry)} fill="#e11d48" opacity="0.14" />
+
+          {/* TP / Entry / SL lines */}
+          <line x1={entryX} x2={W - 4} y1={y(takeProfit)} y2={y(takeProfit)} stroke="#16a34a" strokeWidth="1.2" />
+          <line x1={entryX} x2={W - 4} y1={y(entry)} y2={y(entry)} stroke="#71717a" strokeWidth="1" strokeDasharray="3 3" />
+          <line x1={entryX} x2={W - 4} y1={y(stopLoss)} y2={y(stopLoss)} stroke="#e11d48" strokeWidth="1.2" />
+
+          {/* Predicted path */}
+          <polyline
+            points={`${entryX},${y(entry)} ${entryX + 40},${y(65300)} ${entryX + 75},${y(64900)} ${entryX + 130},${y(takeProfit)}`}
+            fill="none"
+            stroke="#a97142"
+            strokeWidth="1.5"
+            strokeDasharray="4 3"
+            strokeLinecap="round"
+          />
+
+          {/* Candles */}
+          {CANDLES.map((c, i) => {
+            const x = 14 + i * 18
+            const up = c.c >= c.o
+            const color = up ? "#16a34a" : "#e11d48"
+            const top = y(Math.max(c.o, c.c))
+            const bottom = y(Math.min(c.o, c.c))
+            return (
+              <g key={i}>
+                <line x1={x} x2={x} y1={y(c.h)} y2={y(c.l)} stroke={color} strokeWidth="1.2" />
+                <rect x={x - 5} y={top} width="10" height={Math.max(bottom - top, 1.5)} rx="1.5" fill={color} />
+              </g>
+            )
+          })}
+
+          {/* Labels */}
+          <text x={W - 8} y={y(takeProfit) + 11} textAnchor="end" fontSize="8" fontWeight="600" fill="#15803d">
+            TP {usd(takeProfit)}
+          </text>
+          <text x={W - 8} y={y(entry) - 4} textAnchor="end" fontSize="8" fontWeight="600" fill="#52525b">
+            Entry {usd(entry)}
+          </text>
+          <text x={W - 8} y={y(stopLoss) - 4} textAnchor="end" fontSize="8" fontWeight="600" fill="#be123c">
+            SL {usd(stopLoss)}
+          </text>
+        </svg>
+
+        {/* Footer */}
+        <div className="mt-1 flex items-center justify-between text-[10px]">
+          <span className="text-zinc-400">Risk / Reward</span>
+          <span className="font-semibold text-zinc-900">1 : {rr}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/* ------------------------------ Card 5 ------------------------------ */
 /* Predicted trade ticket */
 
 function TradeTicketUI() {
@@ -356,22 +527,22 @@ export default function TradingSolution() {
   const { trackRef, index, onScroll, goTo } = useCarousel()
 
   return (
-    <section className="relative overflow-hidden bg-[#f1f6f5] px-5 py-20 text-zinc-900">
-      {/* pink glow behind the headline */}
-      <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-rose-400/30 blur-[110px]" />
+    <section className="relative overflow-hidden bg-[#faf6ef] px-5 py-20 text-zinc-900">
+      {/* golden glow behind the headline */}
+      <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-[linear-gradient(135deg,#8a5a2b_0%,#c89654_45%,#e2b878_100%)] opacity-40 blur-[110px]" />
 
       {/* Headline */}
       <div className="relative mx-auto max-w-2xl text-center">
         <h2 className="text-3xl leading-tight tracking-tight md:text-5xl">
-          Your <span className="theseason bg-gradient-to-r from-rose-900 to-rose-600 bg-clip-text text-transparent">Prediction</span>
+          Your <span className="theseason bg-[linear-gradient(135deg,#6b4423_0%,#a97142_50%,#c89654_100%)] bg-clip-text text-transparent font-bold">Prediction</span>
           <br />
           Don&apos;t Get the Returns You Deserve.
         </h2>
         <p className="mt-6 text-sm text-zinc-500 md:text-lg">
-          Fix your researching flops instantly
+          Fix your predicting flops instantly
           <br />
           <span className="text-zinc-800">
-            Stop guessing. Get real time data clarity research on what&apos;s killing your ROI.
+            Stop guessing. Get real time data, clarity research on what&apos;s killing your ROI.
           </span>
         </p>
       </div>
@@ -380,9 +551,22 @@ export default function TradingSolution() {
       <div
         ref={trackRef}
         onScroll={onScroll}
-        className="relative -mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-[7vw] py-6 [scrollbar-width:none] md:mx-auto md:mt-14 md:grid md:max-w-6xl md:grid-cols-3 md:gap-5 md:overflow-visible md:px-0 md:py-0 [&::-webkit-scrollbar]:hidden"
+        className="relative -mx-5 mt-10 flex snap-x snap-mandatory gap-4 overflow-x-auto px-[7vw] py-6 [scrollbar-width:none] md:mx-auto md:mt-14 md:grid md:max-w-6xl md:grid-cols-2 lg:grid-cols-3 md:gap-5 md:overflow-visible md:px-0 md:py-0 [&::-webkit-scrollbar]:hidden"
       >
-        {/* 1 — Models */}
+        {/* 1 — Connect Binance */}
+        <Card>
+          <div className="pt-7">
+            <CardText title="Connect Binance Futures.">
+              Link your account with an API key &amp; secret in seconds.{" "}
+              <span className="text-zinc-700">Trade straight from Richacle.. no withdrawal access needed.</span>
+            </CardText>
+          </div>
+          <div className="mt-auto h-[270px] overflow-hidden pt-4" style={fadeBottom}>
+            <ConnectBinanceUI />
+          </div>
+        </Card>
+
+        {/* 2 — Models */}
         <Card>
           <div className="pt-7">
             <CardText title="Best Model for Every Market.">
@@ -395,7 +579,7 @@ export default function TradingSolution() {
           </div>
         </Card>
 
-        {/* 2 — Research */}
+        {/* 3 — Research */}
         <Card>
           <ResearchUI />
           <div className="mt-auto pb-7">
@@ -406,7 +590,18 @@ export default function TradingSolution() {
           </div>
         </Card>
 
-        {/* 3 — Setup */}
+        {/* 4 — Chart + Long position */}
+        <Card>
+          <PredictionChartUI />
+          <div className="mt-auto pb-7">
+            <CardText title="See the Trade Before You Take It.">
+              Live candles with your long entry, take profit &amp; stop loss drawn on the chart.{" "}
+              <span className="text-zinc-700">Know your risk and reward at a glance.</span>
+            </CardText>
+          </div>
+        </Card>
+
+        {/* 5 — Setup */}
         <Card>
           <div className="pt-7">
             <CardText title="One-Click Trade Setup.">
@@ -430,7 +625,7 @@ export default function TradingSolution() {
         </Card>
       </div>
 
-      <CarouselControls count={3} index={index} goTo={goTo} />
+      <CarouselControls count={5} index={index} goTo={goTo} />
     </section>
   )
 }

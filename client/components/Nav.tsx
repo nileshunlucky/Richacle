@@ -52,7 +52,7 @@ export default function Navbar() {
 
         {/* Centered Logo */}
         <Link href="/" className="justify-self-center text-center">
-          <h1 className="theseason text-3xl md:text-4xl">
+          <h1 className="theseason text-3xl md:text-5xl">
             RICHACLE
           </h1>
         </Link>

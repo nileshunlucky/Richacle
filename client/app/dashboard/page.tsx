@@ -1075,7 +1075,7 @@ const handleSend = async () => {
   setLoading(true)
 
   const currentPrompt = prompt;
-  const isTradeCommand = /\/(thinking|deep-research)\b/i.test(currentPrompt);
+  const isTradeCommand = /\/(trade|deep-research)\b/i.test(currentPrompt);
   setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
   setPrompt("");
   setIsSearching(true);
@@ -1285,8 +1285,8 @@ const handleClearMemory = async () => {
                     "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg",
                     msg.role === "user" ? "bg-zinc-900 text-white" : "bg-transparent text-[#d1d1d1] pl-4"
                   )}>
-{msg.content.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
-                      /^\/(thinking|deep-research)$/i.test(part) ? (
+{msg.content.split(/(\/trade|\/deep-research)/gi).map((part, i) =>
+                      /^\/(trade|deep-research)$/i.test(part) ? (
                         <span key={i} className="bg-blue-950/60 text-blue-300 rounded px-1">{part}</span>
                       ) : (
                         <span key={i}>{part}</span>
@@ -1365,8 +1365,8 @@ const handleClearMemory = async () => {
     className="absolute inset-0 w-full text-[14px] px-0 py-0 whitespace-pre-wrap break-words pointer-events-none"
     style={{ fontFamily: "inherit", lineHeight: "inherit" }}
   >
-    {prompt.split(/(\/thinking|\/deep-research)/gi).map((part, i) =>
-  /^\/(thinking|deep-research)$/i.test(part) ? (
+    {prompt.split(/(\/trade|\/deep-research)/gi).map((part, i) =>
+  /^\/(trade|deep-research)$/i.test(part) ? (
     <span key={i} className="bg-blue-950/60 text-blue-300 rounded">{part}</span>
   ) : (
     <span key={i} className="text-white">{part}</span>
@@ -1398,7 +1398,7 @@ const handleClearMemory = async () => {
   />
   {showModeMenu && (
     <div className="absolute bottom-12 left-0 bg-[#141414] rounded-lg p-1 overflow-hidden z-50 min-w-[150px] shadow-xl">
-      {["thinking", "deep-research"].map((mode) => (
+      {["trade", "deep-research"].map((mode) => (
         <button
           key={mode}
           onClick={() => insertMode(mode)}
