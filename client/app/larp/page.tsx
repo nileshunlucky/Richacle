@@ -1268,7 +1268,7 @@ const tradeData = {
             </div>
           ),
         },
-        {
+        {  
           role: "ai",
           content: (
             <TradeWidget
