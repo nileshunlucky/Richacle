@@ -1286,26 +1286,6 @@ const tradeData = {
       return next;
     });
     setLoading(false);
-
-    // let the viewer see the widget, then auto place the trade
-    await sleep(3500);
-  
-
-// ---- play it tick by tick ----
-for (let k = 0; k < N_CANDLES; k++) {
-  const from = levels[k];
-  const to = levels[k + 1];
-  for (let t = 1; t <= T; t++) {
-    if (demoCancelRef.current) return;
-    const isLast = t === T;
-    const noise = isLast ? 0 : (Math.random() - 0.5) * Math.abs(to - from) * 0.15;
-    const p = isLast ? to : from + ((to - from) * t) / T + noise;
-
-    setForcedPrice(p);
-    setCurrentPrice(p.toFixed(2));
-    await sleep(150);
-  }
-}
   };
 
   // "+" button = new chat (local only)
@@ -1320,8 +1300,13 @@ return (
   <div
     className={isPhone ? "fixed inset-0 bg-black flex items-center justify-center overflow-hidden" : ""}
   >
-  <nav className="h-14 shrink-0 bg-black flex items-center justify-between px-4 md:px-6 border-b border-white/5 relative z-50">
-  <h1 className="text-xl text-white theseason">RICHACLE</h1>
+  
+  <div
+    className="flex flex-col"
+    style={isPhone ? { width: "100vw", height: "56.25vw" } : { height: "100vh" }}
+  >
+    <nav className="h-14 shrink-0 bg-black flex items-center justify-between px-4 md:px-6 border-b border-white/5 relative z-50">
+  <h1 className="text-xl text-white font-semibold theseason">RICHACLE</h1>
 
   <div className="flex items-center gap-3">
     <div className="flex items-center text-sm font-semibold text-white tabular-nums">
@@ -1404,11 +1389,6 @@ return (
     </div>
   </div>
 </nav>
-  <div
-    className="flex flex-col"
-    style={isPhone ? { width: "100vw", height: "56.25vw" } : { height: "100vh" }}
-  >
-    <Navbar isVerified={isVerified} />
   <div className="flex flex-1 min-h-0 bg-[#0a0a0a] text-[#d1d1d1] overflow-hidden font-sans select-none">
     {showPricing && (
   <div className="fixed inset-0 w-full h-full z-[9999] bg-black/90 backdrop-blur-md overflow-y-auto">
