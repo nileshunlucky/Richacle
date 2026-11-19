@@ -10,7 +10,13 @@ export default function Hero() {
 
   return (
    <main className="relative isolate flex min-h-svh w-full flex-col overflow-hidden bg-[linear-gradient(135deg,#8a5a2b_0%,#c89654_45%,#e2b878_100%)] text-white">
-    
+    <img
+  src="https://static.vecteezy.com/system/resources/thumbnails/047/247/294/small/ethereum-bitcoin-transactions-3d-illustration-png.png"
+  alt=""
+  aria-hidden="true"
+  draggable={false}
+  className="pointer-events-none absolute bottom-25 md:bottom-0 left-1/2 -z-10 h-[55vh] w-auto max-w-none -translate-x-1/2 select-none object-contain object-bottom md:h-[60vh]"
+/>
   
       <section className="mx-auto flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-6 px-4 py-12 text-center sm:gap-8 sm:px-6">
         {/* Headline */}
@@ -19,7 +25,7 @@ export default function Hero() {
           <br className="hidden sm:block" /> Predicting Crypto Trades
         </h1>
 
-        <p className="md:text-2xl text-xl">predictions are won before they begins</p>
+        <p className="md:text-2xl">predictions are won before they begins</p>
 
         {/* CTAs */}
         <div className="flex w-full max-w-xs items-center justify-center gap-2 sm:w-auto sm:max-w-none sm:gap-3">
