@@ -66,7 +66,7 @@ export default function Brands() {
   const loop = [...brands, ...brands]
 
   return (
-    <div className="bg-black p-3">
+    <div className="bg-black ">
     
 
       <div className="relative overflow-hidden group">

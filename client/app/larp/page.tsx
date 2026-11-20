@@ -877,7 +877,7 @@ const DEFAULT_CONFIG = {
     "Bitcoin is holding above its 15m EMA-50 with rising buy volume and a bullish RSI divergence. Funding is neutral and order-book depth shows strong bids just below price. Short-term momentum favors a quick push higher, so I'm setting up a scalp long with a tight stop under the latest swing low.",
   tpPct: "0.6",
   slPct: "0.3",
-  chance: "78",
+  Confidence: "78",
   amount: "10000",
   leverage: "10",
 };
@@ -890,8 +890,8 @@ const validateConfig = (c: DemoConfig) => {
   if (!c.research.trim()) errors.research = "Message can't be empty";
   if (!(num(c.tpPct) > 0)) errors.tpPct = "Must be greater than 0";
   if (!(num(c.slPct) > 0)) errors.slPct = "Must be greater than 0";
-  const chance = num(c.chance);
-  if (!(chance >= 0 && chance <= 100)) errors.chance = "0 – 100";
+  const Confidence = num(c.Confidence);
+  if (!(Confidence >= 0 && Confidence <= 100)) errors.Confidence = "0 – 100";
   if (!(num(c.amount) > 0)) errors.amount = "Must be greater than 0";
   const lev = num(c.leverage);
   if (!(Number.isInteger(lev) && lev >= 1 && lev <= 125)) errors.leverage = "Whole number 1 – 125";
@@ -1223,7 +1223,7 @@ const tradeData = {
   entry_price: price,
   take_profit: +(price * (1 + Number(cfg.tpPct) / 100)).toFixed(2),
   stop_loss: +(price * (1 - Number(cfg.slPct) / 100)).toFixed(2),
-  confidence: Number(cfg.chance),
+  confidence: Number(cfg.Confidence),
 };
 
     // predefined research message
@@ -1263,7 +1263,7 @@ const tradeData = {
           role: "ai",
           content: (
             <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
-              <h1 className="font-semibold">Chance {tradeData.confidence}%</h1>
+              <h1 className="font-semibold">Confidence {tradeData.confidence}%</h1>
               <h1 className="font-light theseason">RICHACLE</h1>
             </div>
           ),
@@ -1435,7 +1435,7 @@ return (
       {/* Numeric fields */}
       <div className="grid grid-cols-2 gap-3">
         {([
-          ["chance", "Chance (%)"],
+          ["Confidence", "Confidence (%)"],
           ["leverage", "Leverage (x)"],
           ["amount", "Amount ($)"],
           ["tpPct", "Take profit (% above entry)"],

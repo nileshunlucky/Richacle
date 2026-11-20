@@ -547,11 +547,11 @@ useEffect(() => {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "bg-[#191b1b]/40 rounded-2xl p-4 space-y-4 border border-white/[0.05] shadow-2xl transition-opacity",
+        "bg-[#191b1b]/40 rounded-2xl p-4 space-y-4 shadow-2xl transition-opacity",
         disabled && "opacity-10 pointer-events-none"
       )}
     >
-      <div className="grid grid-cols-2 rounded-xl overflow-hidden font-bold border border-white/5">
+      <div className="grid grid-cols-2 rounded-xl overflow-hidden font-bold ">
         <button 
           onClick={() => !disabled && setSide("SELL")}
           className={cn(
@@ -630,7 +630,7 @@ useEffect(() => {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Symbol</label>
-            <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+            <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] ">
               <input 
                 disabled={true}
                 type="text" 
@@ -712,7 +712,7 @@ useEffect(() => {
               <div className="flex items-center justify-between text-[10px] uppercase text-white/30 px-1">
                 Take profit
               </div>
-              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-zinc-900 ">
                 <input 
                   disabled={disabled}
                   type="number" 
@@ -726,7 +726,7 @@ useEffect(() => {
               <div className="flex items-center justify-between text-[10px] uppercase text-white/30 px-1">
                 Stop loss
               </div>
-              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-zinc-900">
                 <input 
                   disabled={disabled}
                   type="number"   
@@ -740,27 +740,67 @@ useEffect(() => {
         </div>
       </div>
       {!disabled && (
-        <div className="flex">
-          <button 
-            onClick={async () => {
-  const ok = await onAccept({ symbol, side, leverage, amount, tp, sl, entry });
-  if (ok !== false) setCapturedEntry(entry);
-}}
-            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-green-700 bg-green-700/20 hover:bg-green-700/30 transition-colors text-green-200 text-xs rounded-l cursor-pointer"
-          >
-            <Check size={14} /> accept
-          </button>
-          <button 
-            onClick={onReset}
-            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-red-700 bg-red-700/20 hover:bg-red-700/30 transition-colors text-red-200 text-xs rounded-r cursor-pointer"
-          >
-            x reject
-          </button>
-        </div>
-      )}
+  <div className="flex items-center gap-2">
+    <button
+      onClick={async () => {
+        const ok = await onAccept({ symbol, side, leverage, amount, tp, sl, entry });
+        if (ok !== false) setCapturedEntry(entry);
+      }}
+      className="flex-1 h-10 flex items-center justify-center px-4 rounded-xl
+                 bg-white hover:bg-white/90 active:scale-[0.97]
+                 text-neutral-900  font-semibold tracking-tight
+                 transition-all duration-150 cursor-pointer"
+    >
+      Trade
+    </button>
+
+    <button
+      onClick={onReset}
+      aria-label="Cancel"
+      className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full
+                 bg-neutral-800 hover:bg-neutral-700 active:scale-90
+                 text-white transition-all duration-150 cursor-pointer"
+    >
+      <svg
+        width="14"
+        height="14"
+        viewBox="0 0 14 14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      >
+        <path d="M2 2l10 10M12 2L2 12" />
+      </svg>
+    </button>
+  </div>
+)}
     </motion.div>
   );
 });
+
+function parseSignal(params: URLSearchParams) {
+  const rawSymbol = params.get("symbol");
+  const side = params.get("side")?.toUpperCase();
+  const tp = parseFloat(params.get("tp") ?? "");
+  const sl = parseFloat(params.get("sl") ?? "");
+  const lev = parseInt(params.get("lev") ?? "10", 10);
+
+  if (!rawSymbol || (side !== "BUY" && side !== "SELL")) return null;
+  if (!isFinite(tp) || !isFinite(sl) || tp <= 0 || sl <= 0) return null;
+
+  const clean = rawSymbol.toUpperCase().replace(/[-_/]/g, "");
+  if (!clean.endsWith("USDT")) return null;
+
+  return {
+    symbol: `${clean.slice(0, -4)}/USDT`,
+    side,
+    take_profit: tp,
+    stop_loss: sl,
+    leverage: Math.min(125, Math.max(1, lev || 10)),
+    confidence: params.get("confidence") ?? undefined,
+  };
+}
 
 function VibeTradingUIContent() {
 
@@ -992,6 +1032,65 @@ const handleReset = () => {
   setIsRejected(false);
 };
 
+const showTradeWidget = (data: any) => {
+  setLastResearch(data);
+  setIsRejected(false);
+  setIsWidgetActive(true);
+
+  if (data.symbol) {
+    setActiveSymbol(data.symbol);
+    setActiveLines({
+      entry: parseFloat(data.entry_price || currentPrice || "0"),
+      tp: parseFloat(data.take_profit),
+      sl: parseFloat(data.stop_loss),
+      side: data.side,
+      startTime: Math.floor(Date.now() / 1000),
+    });
+  }
+
+  setMessages(prev => {
+    const next: Message[] = [
+      ...prev,
+      ...(data.confidence
+        ? [{
+            role: "ai" as const,
+            content: (
+              <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
+                <h1 className="">Confidence {data.confidence}%</h1>
+                <h1 className=" theseason">RICHACLE</h1>
+              </div>
+            ),
+          }]
+        : []),
+      {
+        role: "ai",
+        content: (
+          <TradeWidget
+            initialData={data}
+            onPriceChange={setActiveLines}
+            onReset={handleReject}
+            onAccept={handleAccept}
+            disabled={false}
+            price={currentPrice}
+          />
+        ),
+      },
+    ];
+    setActiveTradeWidgetIndex(next.length - 1);
+    return next;
+  });
+};
+
+const signalHandledRef = useRef(false);
+
+useEffect(() => {
+  if (signalHandledRef.current) return;
+  const signal = parseSignal(searchParams);
+  if (!signal) return;
+  signalHandledRef.current = true;
+  showTradeWidget(signal);
+}, [searchParams]);
+
   // Inside VibeTradingUI component
 const handleCloseOrder = async (symbol: string , exitPriceOverride?: number) => {
   if(isPositionClosed || isClosing){
@@ -1150,54 +1249,7 @@ const handleSend = async () => {
     ]);
 
     // If Oracle detected trade intent, show analysis + widget
-if (wants_to_trade && trade_data) {
-  const displayTradeData = trade_data;
-
-  setLastResearch(displayTradeData);
-  setIsRejected(false);
-  setIsWidgetActive(true);
-
-  if (displayTradeData.symbol) {
-    setActiveSymbol(displayTradeData.symbol);
-    setActiveLines({
-      entry: parseFloat(displayTradeData.entry_price || currentPrice || "0"),
-      tp: parseFloat(displayTradeData.take_profit),
-      sl: parseFloat(displayTradeData.stop_loss),
-      side: displayTradeData.side,
-       startTime: Math.floor(Date.now() / 1000),
-    });
-  }
-
-   setMessages(prev => {
-   const newMessages : Message[] = [
-    ...prev,
-    {
-      role: "ai",
-      content: (
-        <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
-          <h1 className="font-semibold">Chance {displayTradeData.confidence}%</h1>
-          <h1 className="font-light theseason">RICHACLE</h1>
-        </div>
-      ),
-    },
-    {
-      role: "ai",
-      content: (
-        <TradeWidget
-          initialData={displayTradeData}
-          onPriceChange={setActiveLines}
-          onReset={handleReject}
-          onAccept={handleAccept}
-          disabled={false}
-          price={currentPrice}
-        />
-      ),
-    },
-  ];
-  setActiveTradeWidgetIndex(newMessages.length - 1);
-  return newMessages;
-});
-}
+if (wants_to_trade && trade_data) showTradeWidget(trade_data);
 
 
 
