@@ -748,7 +748,7 @@ useEffect(() => {
       }}
       className="flex-1 h-10 flex items-center justify-center px-4 rounded-xl
                  bg-white hover:bg-white/90 active:scale-[0.97]
-                 text-neutral-900  font-semibold tracking-tight
+                 text-neutral-900  font-semibold 
                  transition-all duration-150 cursor-pointer"
     >
       Trade

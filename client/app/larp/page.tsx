@@ -645,11 +645,11 @@ useEffect(() => {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        "bg-[#191b1b]/40 rounded-2xl p-4 space-y-4 border border-white/[0.05] shadow-2xl transition-opacity",
+        "bg-[#191b1b]/40 rounded-2xl p-4 space-y-4  transition-opacity",
         disabled && "opacity-10 pointer-events-none"
       )}
     >
-      <div className="grid grid-cols-2 rounded-xl overflow-hidden font-bold border border-white/5">
+      <div className="grid grid-cols-2 rounded-xl overflow-hidden font-bold ">
         <button 
           onClick={() => !disabled && setSide("SELL")}
           className={cn(
@@ -728,7 +728,7 @@ useEffect(() => {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <label className="text-[10px] uppercase tracking-wider text-white/30 px-1">Symbol</label>
-            <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+            <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] ">
               <input 
                 disabled={true}
                 type="text" 
@@ -810,7 +810,7 @@ useEffect(() => {
               <div className="flex items-center justify-between text-[10px] uppercase text-white/30 px-1">
                 Take profit
               </div>
-              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-zinc-900 ">
                 <input 
                   disabled={disabled}
                   type="number" 
@@ -824,7 +824,7 @@ useEffect(() => {
               <div className="flex items-center justify-between text-[10px] uppercase text-white/30 px-1">
                 Stop loss
               </div>
-              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-[#0d0d0d] border border-white/10 focus-within:border-white/20">
+              <div className="flex items-center gap-2 p-2.5 px-3 rounded-lg bg-zinc-900 ">
                 <input 
                   disabled={disabled}
                   type="number"   
@@ -838,32 +838,40 @@ useEffect(() => {
         </div>
       </div>
       {!disabled && (
-        <div className="flex">
-          <button 
-            onClick={() => {
-              setCapturedEntry(entry);
-    onAccept({
-      symbol,
-      side,
-      leverage,
-      amount,
-      tp,
-      sl,
-      entry
-    });
-  }}
-            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-green-700 bg-green-700/20 hover:bg-green-700/30 transition-colors text-green-200 text-xs rounded-l cursor-pointer"
-          >
-            <Check size={14} /> accept
-          </button>
-          <button 
-            onClick={onReset}
-            className="flex-1 flex items-center justify-center gap-2 p-2 border-t border-red-700 bg-red-700/20 hover:bg-red-700/30 transition-colors text-red-200 text-xs rounded-r cursor-pointer"
-          >
-            x reject
-          </button>
-        </div>
-      )}
+  <div className="flex items-center gap-2">
+    <button
+      onClick={() => {
+        setCapturedEntry(entry);
+        onAccept({
+          symbol,
+          side,
+          leverage,
+          amount,
+          tp,
+          sl,
+          entry,
+        });
+      }}
+      className="flex-1 h-10 flex items-center justify-center gap-1.5 px-4 rounded-xl
+                 bg-white hover:bg-white/90 active:scale-[0.97]
+                 text-neutral-900 font-semibold 
+                 transition-all duration-150 cursor-pointer"
+    >
+ 
+      Trade
+    </button>
+
+    <button
+      onClick={onReset}
+      aria-label="Cancel"
+      className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full
+                 bg-neutral-800 hover:bg-neutral-700 active:scale-90
+                 text-white transition-all duration-150 cursor-pointer"
+    >
+      <X size={16} strokeWidth={2.5} />
+    </button>
+  </div>
+)}
     </motion.div>
   );
 });
@@ -1263,8 +1271,8 @@ const tradeData = {
           role: "ai",
           content: (
             <div className="p-3.5 text-xl text-zinc-200 flex justify-between items-center w-full">
-              <h1 className="font-semibold">Confidence {tradeData.confidence}%</h1>
-              <h1 className="font-light theseason">RICHACLE</h1>
+              <h1 className="">Confidence {tradeData.confidence}%</h1>
+              <h1 className=" theseason">RICHACLE</h1>
             </div>
           ),
         },
