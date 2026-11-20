@@ -47,7 +47,7 @@ const columns: FooterColumn[] = [
   },
   {
     title: "Social Media",
-    links: [{ label: "Instagram", href: "https://www.instagram.com/traderichacle", external: true }, { label: "YouTube", href: "https://www.youtube.com/@richacle", external: true }],
+    links: [{ label: "Telegram", href: "https://www.t.me/richacle", external: false }],
   },
 ];
 
