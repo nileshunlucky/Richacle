@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, Info, Plus, ShieldC
 
 /* ----------------------------- Data ----------------------------- */
 
-const models = [
+const MODELS = [
   { id: "auto", name: "Auto", tag: "Suggested" },
   { id: "claude-fable-5.2", name: "Claude Fable 5.2" },
   { id: "claude-opus-5.5", name: "Claude Opus 5.5" },
