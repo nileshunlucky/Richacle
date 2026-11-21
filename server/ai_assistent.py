@@ -75,6 +75,8 @@ async def autocomplete(
     ai_label = (model or "Richacle").strip() or "Richacle"
     default_symbol = (symbol or "BTC/USDT").strip().upper()
     tf = (timeframe or "15m").strip()
+    is_agent = bool(re.search(r"\bal+ad+in+berg\b", prompt, re.IGNORECASE)) \
+        and not re.search(r"\b(what|who|explain|about|tell me)\b", prompt, re.IGNORECASE)
 
     # frontend already streams live price via websocket — use it directly,
     # falls back to None if it hasn't arrived yet (e.g. right after page load)
@@ -93,13 +95,13 @@ async def autocomplete(
                 {
                     "role": "system",
                     "content": (
-                        f"You are {ai_label} AI (research trading for Prediction Market).\n"
+                        f"You are {ai_label} AI (crypto AI Agent for Predicting trades).\n"
                         f"The user is currently viewing {default_symbol} on the {tf} timeframe"
                         + (f", with a live price of {current_price}." if current_price else ".") +
                         "\n"
                         "Always respond with a JSON object with exactly three keys:\n"
                         '- "reply": short, simple friendly response. if user ask about market data give a short summary clear valuable details (if its deeply ask give it bigger summary). If user asks for a price, write "The current price of {symbol} is {{LIVE_PRICE}}" — use exactly {{LIVE_PRICE}} as placeholder.\n'
-                        '- "wants_to_trade": true if the user wants to open/enter or /trade (command) to trade on any crypto, false otherwise.'
+                        '- "wants_to_trade": true if the user wants to open/enter or Alladinberg command (its a AI Agent inspired by bloomberg terminal and blackrock alladin that scans crypto, deeply research, analysis, risk management and execute order) to trade on any crypto, false otherwise.\n'
                         '- "wants_price": true if user is asking for the current/live price of any crypto, false otherwise.\n'
                         '- "symbol": trading pair in BASE/USDT format if wants_to_trade or wants_price is true '
                         f'(default to {default_symbol} if the user does not clearly mention a different coin), otherwise null.'
@@ -114,6 +116,10 @@ async def autocomplete(
         chat_res = data.get("reply", "")
         wants_to_trade = data.get("wants_to_trade", False)
         wants_price    = data.get("wants_price", False)
+        if is_agent:
+            wants_to_trade = True
+            wants_price = False
+            detected_symbol = "BTC/USDT"
         detected_symbol = (data.get("symbol") or default_symbol).strip().upper()
 
         # Update memory

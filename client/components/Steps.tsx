@@ -5,14 +5,16 @@ import { ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, Info, Plus, ShieldC
 
 /* ----------------------------- Data ----------------------------- */
 
-const MODELS = [
-  { name: "Auto", tag: "Suggested" },
-  { name: "Claude Haiku 5.5" },
-  { name: "GPT-5.6 Sol" },
-  { name: "Gemini 3.1 Pro" },
-  { name: "Grok 4.5" },
-  { name: "Deepseek V3.2" },
-]
+const models = [
+  { id: "auto", name: "Auto", tag: "Suggested" },
+  { id: "claude-fable-5.2", name: "Claude Fable 5.2" },
+  { id: "claude-opus-5.5", name: "Claude Opus 5.5" },
+  { id: "claude-sonnet-5.5", name: "Claude Sonnet 5.5" },
+  { id: "gpt-6.2-astra", name: "GPT-6.2 Astra" },
+  { id: "gemini-4-carbon", name: "Gemini 4 Carbon" },
+  { id: "grok-4.6", name: "Grok 4.6" },
+  { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro" },
+];
 
 const QUERY = "What's the Market Condition?"
 

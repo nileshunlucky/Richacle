@@ -103,8 +103,10 @@ interface TradeParams {
 
 
 interface Message {
+  id?: string;
   role: "user" | "ai";
   content: string | React.ReactNode;
+  agentStage?: number; // 0-5, only for the Aladdinberg progress message
 }
 
 const AdvancedChart = memo(function AdvancedChart({ tradeLines, onPriceUpdate, symbol = "BTC/USDT", onIntervalChange, onClose, canClose  }: AdvancedChartProps) {
@@ -779,6 +781,284 @@ useEffect(() => {
   );
 });
 
+const SCAN_COINS = ["btc","eth","bnb","sol","xrp","doge","ada","avax","link","dot","ltc","trx"];
+const coinLogo = (s: string) => `https://assets.coincap.io/assets/icons/${s}@2x.png`;
+
+const SOURCES = [
+  { name: "X",           src: "https://cdn.simpleicons.org/x/ffffff" },
+  { name: "Reddit",      src: "https://cdn.simpleicons.org/reddit/FF4500" },
+  { name: "Google",      src: "https://cdn.simpleicons.org/google/ffffff" },
+  { name: "Binance",     src: "https://cdn.simpleicons.org/binance/F0B90B" },
+  { name: "TradingView", src: "https://cdn.simpleicons.org/tradingview/ffffff" },
+  { name: "CoinDesk",    src: "https://cdn.simpleicons.org/coindesk/ffffff" },
+  { name: "YouTube",     src: "https://cdn.simpleicons.org/youtube/FF0000" },
+  { name: "Telegram",    src: "https://cdn.simpleicons.org/telegram/26A5E4" },
+];
+
+const Logo = ({ src, label, size = 28 }: { src: string; label: string; size?: number }) => {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div
+        style={{ width: size, height: size }}
+        className="rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-semibold text-white/70 uppercase"
+      >
+        {label.slice(0, 3)}
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={label}
+      width={size}
+      height={size}
+      onError={() => setFailed(true)}
+      className="rounded-full object-contain"
+    />
+  );
+};
+
+const StepRow = ({ label, state }: { label: React.ReactNode; state: "active" | "done" }) => (
+  <div className="flex items-center gap-3">
+  
+    <span className={state === "active" ? "text-white/60 pulse" : "text-white/80"}>{label}</span>
+  </div>
+);
+
+const Reveal = ({ children }: { children: React.ReactNode }) => (
+  <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3">
+    {children}
+  </motion.div>
+);
+
+// rolling status text, one line at a time
+const Ticker = ({ lines, active }: { lines: string[]; active: boolean }) => {
+  const [i, setI] = useState(0);
+
+  useEffect(() => {
+    if (!active) return;
+    setI(0);
+    const t = setInterval(() => setI(n => (n + 1) % lines.length), 900);
+    return () => clearInterval(t);
+  }, [active]);
+
+  return (
+    <div className="h-5 overflow-hidden text-[11px] text-white/40">
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.2 }}
+        >
+          {lines[i]}
+        </motion.div>
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// slow progress bar that never quite reaches 100%
+const Bar = ({ seconds = 5 }: { seconds?: number }) => (
+  <div className="h-[2px] w-40 overflow-hidden rounded-full bg-white/10">
+    <motion.div
+      className="h-full bg-white/60"
+      initial={{ width: "0%" }}
+      animate={{ width: "95%" }}
+      transition={{ duration: seconds, ease: "easeOut" }}
+    />
+  </div>
+);
+
+// result chip that pops in
+const Chip = ({ text, delay = 0 }: { text: string; delay?: number }) => (
+  <motion.span
+    initial={{ opacity: 0, scale: 0.7, y: 6 }}
+    animate={{ opacity: 1, scale: 1, y: 0 }}
+    transition={{ delay, type: "spring", stiffness: 300, damping: 20 }}
+    className="inline-flex items-center gap-1 rounded-lg bg-zinc-900 px-2.5 py-1 text-[11px] text-white/70"
+  >
+    {text}
+  </motion.span>
+);
+
+const AgentProgress = memo(function AgentProgress({ stage }: { stage: number }) {
+  const [active, setActive] = useState(0);
+  const [sources, setSources] = useState<typeof SOURCES>([]);
+  const [shown, setShown] = useState<string[]>([]);
+
+useEffect(() => {
+  if (stage !== 0) return;
+
+  // pick a random coin that is not already visible
+  const pick = (cur: string[]) => {
+    const pool = SCAN_COINS.filter(c => !cur.includes(c));
+    return pool[Math.floor(Math.random() * pool.length)];
+  };
+
+  setShown([pick([])]);
+  const t = setInterval(() => {
+    setShown(cur => [...cur, pick(cur)].slice(-5)); // keep the latest 5
+  }, 600);
+
+  return () => clearInterval(t);
+}, [stage]);
+
+useEffect(() => {
+  if (stage !== 2) return;
+
+  const pick = (cur: typeof SOURCES) => {
+    const pool = SOURCES.filter(s => !cur.some(c => c.name === s.name));
+    return pool[Math.floor(Math.random() * pool.length)];
+  };
+
+  setSources([pick([])]);
+  const t = setInterval(() => {
+    setSources(cur => [...cur, pick(cur)].slice(-5)); // keep the latest 5
+  }, 600);
+
+  return () => clearInterval(t);
+}, [stage]);
+
+  useEffect(() => {
+    if (stage !== 0) return;
+    const t = setInterval(() => setActive(a => (a + 1) % SCAN_COINS.length), 130);
+    return () => clearInterval(t);
+  }, [stage]);
+
+  const st = (activeAt: number): "active" | "done" => (stage > activeAt ? "done" : "active");
+
+  return (
+    <div className="p-3.5 space-y-5 ">
+      {/* 1. Scan */}
+      <Reveal>
+        
+<StepRow
+  label={
+    <span className="inline-flex items-center gap-2">
+      {stage === 0 ? "Scanning Market" : "Scanned Market"}
+
+      {stage === 0 && (
+        <span className="inline-flex items-center pl-1">
+          <AnimatePresence initial={false} mode="popLayout">
+            {shown.map((c, i) => (
+              <motion.span
+                key={c}
+                layout
+                initial={{ opacity: 0, x: 24, scale: 0.4, rotate: -35 }}
+                animate={{ opacity: 1, x: 0, scale: 1, rotate: 0 }}
+                exit={{ opacity: 0, x: -24, scale: 0.4 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                className="relative -ml-2 first:ml-0"
+                style={{ zIndex: i + 1 }}
+              >
+                <span className="block rounded-full">
+                  <Logo src={coinLogo(c)} label={c} size={23} />
+                </span>
+              </motion.span>
+            ))}
+          </AnimatePresence>
+        </span>
+      )}
+    </span>
+  }
+  state={st(0)}
+/>
+
+
+        {stage >= 1 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.7 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex items-center gap-3 rounded-xl bg-zinc-900 px-3 py-2 w-fit"
+          >
+            <Logo src={coinLogo("btc")} label="btc" size={28} />
+            <div className="leading-tight">
+              <div className="text-white font-semibold">Bitcoin</div>
+              <div className="text-white/40 text-[11px]">BTC/USDT</div>
+            </div>
+          </motion.div>
+        )}
+      </Reveal>
+
+      {/* 2. Research */}
+{stage >= 2 && (
+  <Reveal>
+    <StepRow
+      label={
+        <span className="inline-flex items-center gap-2">
+          {stage === 2 ? "Researching" : "Researched"}
+
+          {stage === 2 && (
+            <span className="inline-flex items-center pl-1">
+              <AnimatePresence initial={false} mode="popLayout">
+                {sources.map((s, i) => (
+                  <motion.span
+                    key={s.name}
+                    layout
+                    initial={{ opacity: 0, x: 24, scale: 0.4, rotate: -35 }}
+                    animate={{ opacity: 1, x: 0, scale: 1, rotate: 0 }}
+                    exit={{ opacity: 0, x: -24, scale: 0.4 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                    className="relative -ml-2 first:ml-0"
+                    style={{ zIndex: i + 1 }}
+                  >
+                    <span className="block rounded-full bg-black p-1">
+                      <Logo src={s.src} label={s.name} size={17} />
+                    </span>
+                  </motion.span>
+                ))}
+              </AnimatePresence>
+            </span>
+          )}
+        </span>
+      }
+      state={st(2)}
+    />
+
+    {/* after research: keep the sources + a summary line */}
+    {stage >= 3 && (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex items-center gap-2"
+      >
+        <span className="inline-flex items-center">
+          {SOURCES.slice(0, 5).map((s, i) => (
+            <span
+              key={s.name}
+              className="relative -ml-2 first:ml-0 block rounded-full bg-zinc-900 p-1 ring-2 ring-black"
+              style={{ zIndex: i + 1 }}
+            >
+              <Logo src={s.src} label={s.name} size={17} />
+            </span>
+          ))}
+        </span>
+        <span className="text-[11px] text-white/40">{SOURCES.length} sources scanned</span>
+      </motion.div>
+    )}
+  </Reveal>
+)}
+
+{/* 3. Predict */}
+{stage >= 3 && (
+  <Reveal>
+    <StepRow label={stage === 3 ? "Predicting & Analysing" : "Analysed"} state={st(3)} />
+  </Reveal>
+)}
+
+{/* 4. Risk */}
+{stage >= 4 && (
+  <Reveal>
+    <StepRow label={stage === 4 ? "Risk Managing" : "Risk Managed"} state={st(4)} />
+  </Reveal>
+)}
+    </div>
+  );
+});
+
 function parseSignal(params: URLSearchParams) {
   const rawSymbol = params.get("symbol");
   const side = params.get("side")?.toUpperCase();
@@ -801,6 +1081,28 @@ function parseSignal(params: URLSearchParams) {
     confidence: params.get("confidence") ?? undefined,
   };
 }
+
+const AGENT_RE = /\bal+ad+in+berg\b/i;
+const SolidLock = ({ size = 14, className = "text-white" }: { size?: number; className?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    aria-hidden="true"
+    className={className}
+  >
+    {/* shackle */}
+    <path
+      d="M7.9 10.5V8a4.1 4.1 0 0 1 8.2 0v2.5"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="butt"
+    />
+    {/* body */}
+    <rect x="5.6" y="10" width="12.8" height="10.8" rx="2.4" fill="currentColor" />
+  </svg>
+);
 
 function VibeTradingUIContent() {
 
@@ -842,19 +1144,21 @@ const [activeTradeWidgetIndex, setActiveTradeWidgetIndex] = useState<number | nu
 const [isVerified, setIsVerified] = useState(false);
 
 const insertMode = (mode: string) => {
-  setPrompt(prev => prev ? `${prev} /${mode} ` : `/${mode} `);
+  setPrompt(mode);
   setShowModeMenu(false);
   textareaRef.current?.focus();
 };
 
 const models = [
   { id: "auto", name: "Auto", tag: "Suggested" },
-  { id: "Claude-Haiku-5.5", name: "Claude Haiku 5.5" },
-  { id: "GPT-5.6-Sol", name: "GPT-5.6 Sol" },
-  { id: "gemini-3.1", name: "Gemini 3.1 Pro" },
-  { id: "grok-4.5", name: "Grok 4.5" },
-  { id: "deepseek-v3.2", name: "Deepseek V3.2" },
-]
+   { id: "claude-fable-5.2", name: "Claude Fable 5.2" },
+  { id: "claude-opus-5.5", name: "Claude Opus 5.5" },
+  { id: "claude-sonnet-5.5", name: "Claude Sonnet 5.5" },
+  { id: "gpt-6.2-astra", name: "GPT-6.2 Astra" },
+  { id: "gemini-4-carbon", name: "Gemini 4 Carbon" },
+  { id: "grok-4.6", name: "Grok 4.6" },
+  { id: "deepseek-v4-pro", name: "DeepSeek V4 Pro" },
+];
 
 
 const calcTerminalPnl = (priceOverride?: number) => {
@@ -1171,23 +1475,26 @@ useEffect(() => {
 
 const handleSend = async () => {
   if (!prompt.trim() || !email) return;
-  setLoading(true)
+  setLoading(true);
 
   const currentPrompt = prompt;
-  const isTradeCommand = /\/(trade|deep-research)\b/i.test(currentPrompt);
-  setMessages((prev) => [...prev, { role: "user", content: currentPrompt }]);
+  const isAgent = /\bal+ad+in+berg\b/i.test(currentPrompt);
+  const agentId = isAgent ? `agent-${Date.now()}` : null;
+
+  const setStage = (stage: number) =>
+    setMessages(prev => prev.map(m => (m.id === agentId ? { ...m, agentStage: stage } : m)));
+  const dropAgent = () =>
+    setMessages(prev => prev.filter(m => m.id !== agentId));
+  const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+  setMessages(prev => [...prev, { role: "user", content: currentPrompt }]);
   setPrompt("");
-  setIsSearching(true);
 
-
-   if (isTradeCommand) {
-    setTradeStatusText("Researching");
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-
-    setTradeStatusText("Predicting");
-    await new Promise((resolve) => setTimeout(resolve, 5000));
+  if (isAgent) {
+    setMessages(prev => [...prev, { id: agentId!, role: "ai", content: "", agentStage: 0 }]);
+  } else {
+    setIsSearching(true);
   }
-
 
   try {
     const formData = new FormData();
@@ -1198,73 +1505,78 @@ const handleSend = async () => {
     formData.append("model", selectedModel);
     formData.append("symbol", activeSymbol);
 
-    const response = await fetch("https://richacle.onrender.com/api/chat", {
+    // start the real request right away, it runs while the animation plays
+    const request = fetch("https://richacle.onrender.com/api/chat", {
       method: "POST",
       body: formData,
     });
+    request.catch(() => {}); // avoid unhandled-rejection warning, we await it below
 
-    console.log(response)
+    if (isAgent) {
+      // scanning -> bitcoin -> researching -> predicting -> risk managing
+      const waits = [2500, 1200, 3500, 4500, 4000];
+      for (let s = 0; s < waits.length; s++) {
+        await sleep(waits[s]);
+        if (s < 4) setStage(s + 1);
+      }
+    }
 
-    // 1. Handle Credits Exhausted
+    // risk managing stays on screen until the real response arrives
+    const response = await request;
+
     if (response.status === 403) {
       setIsSearching(false);
-      setMessages(prev => [...prev, { 
-        role: "ai", 
+      dropAgent();
+      setMessages(prev => [...prev, {
+        role: "ai",
         content: (
-            <div>
-              You run out of credits. Please <span onClick={redirectToUpgrade} className="underline cursor-pointer text-zinc-100"> upgrade your plan </span> to continue trading.
-            </div>
+          <div>
+            You run out of credits. Please <span onClick={redirectToUpgrade} className="underline cursor-pointer text-zinc-100"> upgrade your plan </span> to continue trading.
+          </div>
         ),
       }]);
-      toast("You've run out of credits. Please upgrade your plan to continue trading.")
+      toast("You've run out of credits. Please upgrade your plan to continue trading.");
       redirectToUpgrade();
       return;
     }
 
-    // 2. Handle Other Server Errors (404, 500, etc.)
     if (!response.ok) {
       setIsSearching(false);
+      dropAgent();
       toast.error("Failed to fetch prediction");
-      return; // STOP execution here
+      return;
     }
 
-    // 3. Process Successful Response
     const result = await response.json();
-    console.log(result)
     const { chat_res, wants_to_trade, trade_data } = result;
 
+    if (isAgent) setStage(5); // all steps complete
     setIsSearching(false);
-    setMessages((prev) => [
+
+    setMessages(prev => [
       ...prev,
       {
         role: "ai",
         content: (
           <div className="space-y-2 flex flex-col">
-            <div className="p-3.5 text-zinc-200">
-              {chat_res}
-            </div>
+            <div className="p-3.5 text-zinc-200 whitespace-pre-line">{chat_res}</div>
           </div>
         ),
       },
     ]);
 
-    // If Oracle detected trade intent, show analysis + widget
-if (wants_to_trade && trade_data) showTradeWidget(trade_data);
-
-
+    if (wants_to_trade && trade_data) showTradeWidget(trade_data);
 
   } catch (error) {
     console.error("Error:", error);
-    setIsSearching(false);
-    setMessages((prev) => [
+    dropAgent();
+    setMessages(prev => [
       ...prev,
       { role: "ai", content: "Error: Could not connect to the research server." },
     ]);
   } finally {
-    setLoading(false)
-    setIsSearching(false);
     setLoading(false);
-    setTradeStatusText(null)
+    setIsSearching(false);
   }
 };
 
@@ -1332,18 +1644,22 @@ const handleClearMemory = async () => {
                 key={i} 
                 className={cn("flex flex-col gap-2", msg.role === "user" ? "items-end" : "items-start")}
               >
-                {typeof msg.content === 'string' ? (
+                {msg.agentStage !== undefined ? (
+  <div className="w-full">
+    <AgentProgress stage={msg.agentStage} />
+  </div>
+) : typeof msg.content === 'string' ? (
                   <div className={cn(
                     "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg",
                     msg.role === "user" ? "bg-zinc-900 text-white" : "bg-transparent text-[#d1d1d1] pl-4"
                   )}>
-{msg.content.split(/(\/trade|\/deep-research)/gi).map((part, i) =>
-                      /^\/(trade|deep-research)$/i.test(part) ? (
-                        <span key={i} className="bg-blue-950/60 text-blue-300 rounded px-1">{part}</span>
-                      ) : (
-                        <span key={i}>{part}</span>
-                      )
-                    )}
+{msg.content.split(/(Aladdinberg Agent)/gi).map((part, i) =>
+  /^Aladdinberg Agent$/i.test(part) ? (
+    <span key={i} className="bg-white text-black rounded px-3 py-1 font-semibold">{part}</span>
+  ) : (
+    <span key={i}>{part}</span>
+  )
+)}
                   </div>
                 ) : (
                   <div className="w-full">
@@ -1417,9 +1733,10 @@ const handleClearMemory = async () => {
     className="absolute inset-0 w-full text-[14px] px-0 py-0 whitespace-pre-wrap break-words pointer-events-none"
     style={{ fontFamily: "inherit", lineHeight: "inherit" }}
   >
-    {prompt.split(/(\/trade|\/deep-research)/gi).map((part, i) =>
-  /^\/(trade|deep-research)$/i.test(part) ? (
-    <span key={i} className="bg-blue-950/60 text-blue-300 rounded">{part}</span>
+   {prompt.split(/(Aladdinberg Agent)/gi).map((part, i) =>
+  /^Aladdinberg Agent$/i.test(part) ? (
+    <span key={i} className="bg-white text-black font-semibold rounded py-1 px-3"
+>{part}</span>
   ) : (
     <span key={i} className="text-white">{part}</span>
   )
@@ -1431,11 +1748,19 @@ const handleClearMemory = async () => {
   {/* Actual textarea — text made transparent, only caret/selection visible */}
   <textarea
     ref={textareaRef}
+    readOnly={AGENT_RE.test(prompt)}
     rows={2}
     maxLength={500}
     value={prompt}
     onChange={(e) => setPrompt(e.target.value)}
-    onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), handleSend())}
+    onKeyDown={(e) => {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    handleSend();
+  } else if (e.key === "Backspace" && AGENT_RE.test(prompt)) {
+    setPrompt("");
+  }
+}}
     placeholder=""
     className="relative w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none text-transparent caret-white"
   />
@@ -1450,7 +1775,7 @@ const handleClearMemory = async () => {
   />
   {showModeMenu && (
     <div className="absolute bottom-12 left-0 bg-[#141414] rounded-lg p-1 overflow-hidden z-50 min-w-[150px] shadow-xl">
-      {["trade", "deep-research"].map((mode) => (
+      {["Aladdinberg Agent"].map((mode) => (
         <button
           key={mode}
           onClick={() => insertMode(mode)}
@@ -1500,7 +1825,7 @@ const handleClearMemory = async () => {
               </span>
             )}
           </span>
-          {locked && <Lock size={11} className="text-zinc-500" />}
+          {locked && <SolidLock size={14} />}
         </span>
       </SelectItem>
     );
