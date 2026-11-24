@@ -534,17 +534,15 @@ export default function TradingSolution() {
       <div className="pointer-events-none absolute left-1/2 top-10 h-[420px] w-[760px] -translate-x-1/2 rounded-full bg-[linear-gradient(135deg,#8a5a2b_0%,#c89654_45%,#e2b878_100%)] opacity-40 blur-[110px]" />
 
       {/* Headline */}
-      <div className="relative mx-auto max-w-2xl text-center">
+       <div className="relative mx-auto max-w-2xl text-center">
         <h2 className="text-3xl leading-tight tracking-tight md:text-5xl">
-          Your <span className="theseason bg-[linear-gradient(135deg,#6b4423_0%,#a97142_50%,#c89654_100%)] bg-clip-text text-transparent font-bold">Prediction</span>
+          Your <span className="theseason bg-[linear-gradient(135deg,#6b4423_0%,#a97142_50%,#c89654_100%)] bg-clip-text text-transparent font-bold">Trading Agent</span>
           <br />
-          Don&apos;t Get the Returns You Deserve.
+          Should do all workflows in sec.
         </h2>
         <p className="mt-6 text-sm text-zinc-500 md:text-lg">
-          Fix your predicting flops instantly
-          <br />
           <span className="text-zinc-800">
-            Stop guessing. Get real time data, clarity research on what&apos;s killing your ROI.
+           Scans the market, deeply research, analysis, risk manage and execute it by you.
           </span>
         </p>
       </div>
