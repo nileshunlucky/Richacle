@@ -32,7 +32,7 @@ export default function Hero() {
     <main className="relative isolate flex min-h-svh w-full flex-col overflow-hidden bg-[linear-gradient(135deg,#8a5a2b_0%,#c89654_45%,#e2b878_100%)] text-white">
       <section className="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center gap-6 px-4 py-12 text-center sm:gap-8 sm:px-6">
         {/* Headline: always 2 lines, font scales with screen width */}
-        <h1 className="theseason font-semibold leading-[1.15] text-[clamp(1.1rem,5.6vw,3.5rem)]">
+       <h1 className="theseason font-semibold leading-[1.15] text-[clamp(1.35rem,7.5vw,3.75rem)] mb-5">
           <span className="block whitespace-nowrap">
              Your Crypto AI Trading
           </span>
