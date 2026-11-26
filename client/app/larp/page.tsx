@@ -826,7 +826,7 @@ const TradeWidget = memo(function TradeWidget({ onReset, onAccept, disabled, onP
   );
 });
 
-/* ───────────────────────── ALADDINBERG AGENT UI ───────────────────────── */
+/* ───────────────────────── /trade-setup-agent UI ───────────────────────── */
 
 const SCAN_COINS = ["btc","eth","bnb","sol","xrp","doge","ada","avax","link","dot","ltc","trx"];
 const coinLogo = (s: string) => `https://assets.coincap.io/assets/icons/${s}@2x.png`;
@@ -925,7 +925,7 @@ const AgentProgress = memo(function AgentProgress({ stage }: { stage: number }) 
         <StepRow
           label={
             <span className="inline-flex items-center gap-2">
-              {stage === 0 ? "Scanning Market" : "Scanned Market"}
+              {stage === 0 ? "Trenching" : "trenched"}
 
               {stage === 0 && (
                 <span className="inline-flex items-center pl-1">
@@ -1044,7 +1044,7 @@ const AgentProgress = memo(function AgentProgress({ stage }: { stage: number }) 
   );
 });
 
-const AGENT_RE = /\bal+ad+in+berg\b/i;
+const AGENT_RE = /\/trade-setup-agent/i;
 
 const SolidLock = ({ size = 14, className = "text-white" }: { size?: number; className?: string }) => (
   <svg
@@ -1067,7 +1067,7 @@ const SolidLock = ({ size = 14, className = "text-white" }: { size?: number; cla
 
 /* ───────────────────────── DEMO CONFIG ───────────────────────── */
 
-const DEMO_PROMPT = "Aladdinberg Agent";
+const DEMO_PROMPT = "/trade-setup-agent";
 const DEMO_TICKS_PER_CANDLE = 10;
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -1184,11 +1184,11 @@ function VibeTradingUIContent() {
   currentPriceRef.current = currentPrice;
   activeLinesRef.current = activeLines;
 
-  const insertMode = (mode: string) => {
-    setPrompt(mode);
-    setShowModeMenu(false);
-    textareaRef.current?.focus();
-  };
+const insertMode = (mode: string) => {
+  setPrompt(mode + " ");
+  setShowModeMenu(false);
+  textareaRef.current?.focus();
+};
 
   const models = [
     { id: "auto", name: "Auto", tag: "Suggested" },
@@ -1756,13 +1756,13 @@ function VibeTradingUIContent() {
                         "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg",
                         msg.role === "user" ? "bg-zinc-900 text-white" : "bg-transparent text-[#d1d1d1] pl-4"
                       )}>
-                        {msg.content.split(/(Aladdinberg Agent)/gi).map((part, j) =>
-                          /^Aladdinberg Agent$/i.test(part) ? (
-                            <span key={j} className="bg-white text-black rounded px-3 py-1 font-semibold">{part}</span>
-                          ) : (
-                            <span key={j}>{part}</span>
-                          )
-                        )}
+                       {msg.content.split(/(\/trade-setup-agent)/gi).map((part, i) =>
+  /^\/trade-setup-agent$/i.test(part) ? (
+    <span key={i} className="font-bold pulse">{part}</span>
+  ) : (
+    <span key={i}>{part}</span>
+  )
+)}
                       </div>
                     ) : (
                       <div className="w-full">
@@ -1834,35 +1834,32 @@ function VibeTradingUIContent() {
                         className="absolute inset-0 w-full text-[14px] px-0 py-0 whitespace-pre-wrap break-words pointer-events-none"
                         style={{ fontFamily: "inherit", lineHeight: "inherit" }}
                       >
-                        {prompt.split(/(Aladdinberg Agent)/gi).map((part, i) =>
-                          /^Aladdinberg Agent$/i.test(part) ? (
-                            <span key={i} className="bg-white text-black font-semibold rounded py-1 px-3">{part}</span>
-                          ) : (
-                            <span key={i} className="text-white">{part}</span>
-                          )
-                        )}
+                       {prompt.split(/(\/trade-setup-agent)/gi).map((part, i) =>
+  /^\/trade-setup-agent$/i.test(part) ? (
+    <span key={i} className="font-bold pulse">{part}</span>
+  ) : (
+    <span key={i} className="text-white">{part}</span>
+  )
+)}
                         {prompt.length === 0 && <span className="text-white/50">Ask Richacle</span>}
                       </div>
 
                       {/* Actual textarea — text transparent, only caret/selection visible */}
                       <textarea
-                        ref={textareaRef}
-                        readOnly={AGENT_RE.test(prompt)}
-                        rows={2}
-                        maxLength={500}
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handleSend();
-                          } else if (e.key === "Backspace" && AGENT_RE.test(prompt)) {
-                            setPrompt("");
-                          }
-                        }}
-                        placeholder=""
-                        className="relative w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none text-transparent caret-white"
-                      />
+  ref={textareaRef}
+  rows={2}
+  maxLength={500}
+  value={prompt}
+  onChange={(e) => setPrompt(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }}
+  placeholder=""
+  className="relative w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none text-transparent caret-white"
+/>
                     </div>
                     <div className="flex justify-between items-center mt-auto">
                       <div className="flex items-center gap-2">
@@ -1874,15 +1871,15 @@ function VibeTradingUIContent() {
                           />
                           {showModeMenu && (
                             <div className="absolute bottom-12 left-0 bg-[#141414] rounded-lg p-1 overflow-hidden z-50 min-w-[150px] shadow-xl">
-                              {["Aladdinberg Agent"].map((mode) => (
-                                <button
-                                  key={mode}
-                                  onClick={() => insertMode(mode)}
-                                  className="block w-full text-left px-3  rounded-lg py-2 text-xs hover:bg-zinc-800 transition-colors cursor-pointer"
-                                >
-                                  {mode}
-                                </button>
-                              ))}
+                              {["/trade-setup-agent"].map((mode) => (
+  <button
+    key={mode}
+    onClick={() => insertMode(mode)}
+    className="block w-full text-left px-3 rounded-lg py-2 text-xs hover:bg-zinc-800 transition-colors cursor-pointer"
+  >
+    {mode}
+  </button>
+))}
                             </div>
                           )}
                         </div>

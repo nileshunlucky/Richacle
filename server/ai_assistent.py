@@ -45,6 +45,7 @@ class CryptoPrediction(BaseModel):
     take_profit: float = Field(description="Target price calculated with 1:3 Risk-to-Reward.")
     stop_loss: float = Field(description="Stop loss price calculated to protect capital.")
     confidence: int = Field(description="Accuracy score between 0 and 100 representing prediction certainty.")
+    research_summary: str = Field(description="Short 3-4 sentence research summary of the asset: current trend, key support/resistance, momentum, and why this setup was chosen.")
 
 async def get_live_price(symbol: str):
     """Fetches real-time price from Binance using CCXT."""
@@ -75,7 +76,7 @@ async def autocomplete(
     ai_label = (model or "Richacle").strip() or "Richacle"
     default_symbol = (symbol or "BTC/USDT").strip().upper()
     tf = (timeframe or "15m").strip()
-    is_agent = bool(re.search(r"\bal+ad+in+berg\b", prompt, re.IGNORECASE)) \
+    is_agent = bool(re.search(r"(?:^|\s)/trade-setup-agent\b", prompt, re.IGNORECASE)) \
         and not re.search(r"\b(what|who|explain|about|tell me)\b", prompt, re.IGNORECASE)
 
     # frontend already streams live price via websocket — use it directly,
@@ -101,7 +102,7 @@ async def autocomplete(
                         "\n"
                         "Always respond with a JSON object with exactly three keys:\n"
                         '- "reply": short, simple friendly response. if user ask about market data give a short summary clear valuable details (if its deeply ask give it bigger summary). If user asks for a price, write "The current price of {symbol} is {{LIVE_PRICE}}" — use exactly {{LIVE_PRICE}} as placeholder.\n'
-                        '- "wants_to_trade": true if the user wants to open/enter or Alladinberg command (its a AI Agent inspired by bloomberg terminal and blackrock alladin that scans crypto, deeply research, analysis, risk management and execute order) to trade on any crypto, false otherwise.\n'
+                        '- "wants_to_trade": true if the user wants to open/enter a trade on any crypto, or uses the /trade-setup-agent command (an AI agent that scans crypto, researches deeply, analyses, manages risk and sets up the trade), false otherwise.\n'
                         '- "wants_price": true if user is asking for the current/live price of any crypto, false otherwise.\n'
                         '- "symbol": trading pair in BASE/USDT format if wants_to_trade or wants_price is true '
                         f'(default to {default_symbol} if the user does not clearly mention a different coin), otherwise null.'
@@ -120,7 +121,7 @@ async def autocomplete(
             wants_to_trade = True
             wants_price = False
             detected_symbol = "BTC/USDT"
-        detected_symbol = (data.get("symbol") or default_symbol).strip().upper()
+        detected_symbol = (data.get("symbol") or default_symbol).strip().upper()  # overwrites it
 
         # Update memory
         history.append({"role": "user", "content": prompt})
@@ -180,7 +181,7 @@ async def autocomplete(
                             f"3. Leverage: 1-125 based on volatility.\n"
                             f"4. TP/SL: Calculate based on a 1:3 Risk-to-Reward ratio relative to the live price ({live_price}).\n"
                             f"5. Confidence: 0-100 score based on technical strength."
-                            f" : give reply with Short real-time research summary of the crypto asset.\n"
+                            f"6. research_summary: short, clear research on {detected_symbol} (trend, social news, x (twitter) reddit, reason for the setup).\n"
                         )},
                         {"role": "user", "content": prompt},
                     ],

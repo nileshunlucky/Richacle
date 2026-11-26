@@ -938,7 +938,7 @@ useEffect(() => {
 <StepRow
   label={
     <span className="inline-flex items-center gap-2">
-      {stage === 0 ? "Scanning Market" : "Scanned Market"}
+      {stage === 0 ? "Trenching" : "Trenched"}
 
       {stage === 0 && (
         <span className="inline-flex items-center pl-1">
@@ -1082,7 +1082,7 @@ function parseSignal(params: URLSearchParams) {
   };
 }
 
-const AGENT_RE = /\bal+ad+in+berg\b/i;
+const AGENT_RE = /\/trade-setup-agent/i;
 const SolidLock = ({ size = 14, className = "text-white" }: { size?: number; className?: string }) => (
   <svg
     width={size}
@@ -1144,7 +1144,7 @@ const [activeTradeWidgetIndex, setActiveTradeWidgetIndex] = useState<number | nu
 const [isVerified, setIsVerified] = useState(false);
 
 const insertMode = (mode: string) => {
-  setPrompt(mode);
+  setPrompt(mode + " ");
   setShowModeMenu(false);
   textareaRef.current?.focus();
 };
@@ -1478,7 +1478,7 @@ const handleSend = async () => {
   setLoading(true);
 
   const currentPrompt = prompt;
-  const isAgent = /\bal+ad+in+berg\b/i.test(currentPrompt);
+  const isAgent = AGENT_RE.test(currentPrompt);
   const agentId = isAgent ? `agent-${Date.now()}` : null;
 
   const setStage = (stage: number) =>
@@ -1653,9 +1653,9 @@ const handleClearMemory = async () => {
                     "max-w-[90%] p-3 text-[13px] leading-relaxed rounded-lg",
                     msg.role === "user" ? "bg-zinc-900 text-white" : "bg-transparent text-[#d1d1d1] pl-4"
                   )}>
-{msg.content.split(/(Aladdinberg Agent)/gi).map((part, i) =>
-  /^Aladdinberg Agent$/i.test(part) ? (
-    <span key={i} className="bg-white text-black rounded px-3 py-1 font-semibold">{part}</span>
+{msg.content.split(/(\/trade-setup-agent)/gi).map((part, i) =>
+  /^\/trade-setup-agent$/i.test(part) ? (
+    <span key={i} className="font-bold pulse">{part}</span>
   ) : (
     <span key={i}>{part}</span>
   )
@@ -1733,10 +1733,9 @@ const handleClearMemory = async () => {
     className="absolute inset-0 w-full text-[14px] px-0 py-0 whitespace-pre-wrap break-words pointer-events-none"
     style={{ fontFamily: "inherit", lineHeight: "inherit" }}
   >
-   {prompt.split(/(Aladdinberg Agent)/gi).map((part, i) =>
-  /^Aladdinberg Agent$/i.test(part) ? (
-    <span key={i} className="bg-white text-black font-semibold rounded py-1 px-3"
->{part}</span>
+{prompt.split(/(\/trade-setup-agent)/gi).map((part, i) =>
+  /^\/trade-setup-agent$/i.test(part) ? (
+    <span key={i} className="font-bold pulse">{part}</span>
   ) : (
     <span key={i} className="text-white">{part}</span>
   )
@@ -1746,24 +1745,21 @@ const handleClearMemory = async () => {
   </div>
 
   {/* Actual textarea — text made transparent, only caret/selection visible */}
-  <textarea
-    ref={textareaRef}
-    readOnly={AGENT_RE.test(prompt)}
-    rows={2}
-    maxLength={500}
-    value={prompt}
-    onChange={(e) => setPrompt(e.target.value)}
-    onKeyDown={(e) => {
-  if (e.key === "Enter" && !e.shiftKey) {
-    e.preventDefault();
-    handleSend();
-  } else if (e.key === "Backspace" && AGENT_RE.test(prompt)) {
-    setPrompt("");
-  }
-}}
-    placeholder=""
-    className="relative w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none text-transparent caret-white"
-  />
+<textarea
+  ref={textareaRef}
+  rows={2}
+  maxLength={500}
+  value={prompt}
+  onChange={(e) => setPrompt(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }}
+  placeholder=""
+  className="relative w-full bg-transparent border-none outline-none focus:ring-0 text-[14px] px-0 py-0 resize-none text-transparent caret-white"
+/>
 </div>
                 <div className="flex justify-between items-center mt-auto">
                 <div className="flex items-center gap-2">
@@ -1775,15 +1771,15 @@ const handleClearMemory = async () => {
   />
   {showModeMenu && (
     <div className="absolute bottom-12 left-0 bg-[#141414] rounded-lg p-1 overflow-hidden z-50 min-w-[150px] shadow-xl">
-      {["Aladdinberg Agent"].map((mode) => (
-        <button
-          key={mode}
-          onClick={() => insertMode(mode)}
-          className="block w-full text-left px-3  rounded-lg py-2 text-xs hover:bg-zinc-800 transition-colors cursor-pointer"
-        >
-          {mode}
-        </button>
-      ))}
+      {["/trade-setup-agent"].map((mode) => (
+  <button
+    key={mode}
+    onClick={() => insertMode(mode)}
+    className="block w-full text-left px-3 rounded-lg py-2 text-xs hover:bg-zinc-800 transition-colors cursor-pointer"
+  >
+    {mode}
+  </button>
+))}
     </div>
   )}
 </div>
